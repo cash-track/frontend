@@ -1,0 +1,5 @@
+public/dist/*
+!public/dist/.gitkeep
+*.log
+node_modules/
+.env
