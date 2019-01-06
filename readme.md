@@ -6,6 +6,9 @@ Static resources and frontend code for Cash Track web interface.
 
 ```bash
 $ ./cmd npm run dev
+$
+$ ./cmd yarn // install dependencies
+$ ./cmd yarn run dev
 ```
 
 ## Push to registry
