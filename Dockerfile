@@ -1,4 +1,4 @@
-FROM node:11.4.0-alpine AS builder
+FROM node:11.9-alpine AS builder
 
 ARG APP_ENV=production
 ENV APP_ENV ${APP_ENV}
@@ -12,7 +12,7 @@ RUN if [ $APP_ENV = "production" ] ; then \
 
 CMD ["npm"]
 
-FROM nginx:1.15.7-alpine AS web
+FROM nginx:1.15-alpine AS web
 
 ADD ./config/host.conf /etc/nginx/conf.d/default.conf
 RUN mkdir /var/www/public
