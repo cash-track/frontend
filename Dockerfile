@@ -1,4 +1,4 @@
-FROM node:11.9-alpine AS builder
+FROM node:11.10-alpine AS builder
 
 ARG APP_ENV=production
 ENV APP_ENV ${APP_ENV}
