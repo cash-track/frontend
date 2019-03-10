@@ -3,15 +3,15 @@ import VueRouter from 'vue-router';
 
 Vue.use(VueRouter);
 
-import LoginPage from './components/LoginPage';
+import ExampleComponent from './components/ExampleComponent';
 
 const routes = [
     {
-        path: '/login',
-        name: 'login',
-        component: LoginPage,
+        path: '/example',
+        name: 'example',
+        component: ExampleComponent,
         meta: {
-            title: 'Login'
+            title: 'Example'
         }
     }
 ];
