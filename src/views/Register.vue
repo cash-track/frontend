@@ -8,7 +8,7 @@
                     </template>
 
                     <b-form-group label-cols-md="4"
-                                  label-align-sm="right"
+                                  label-align-md="right"
                                   label-for="name">
                         <template v-slot:label>
                             Name: <span class="text-danger">*</span>
@@ -17,7 +17,7 @@
                     </b-form-group>
 
                     <b-form-group label-cols-md="4"
-                                  label-align-sm="right"
+                                  label-align-md="right"
                                   label-for="last-name">
                         <template v-slot:label>
                             Last Name:
@@ -26,7 +26,7 @@
                     </b-form-group>
 
                     <b-form-group label-cols-md="4"
-                                  label-align-sm="right"
+                                  label-align-md="right"
                                   label-for="nick-name">
                         <template v-slot:label>
                             Nick Name: <span class="text-danger">*</span>
@@ -35,7 +35,7 @@
                     </b-form-group>
 
                     <b-form-group label-cols-md="4"
-                                  label-align-sm="right"
+                                  label-align-md="right"
                                   label-for="email">
                         <template v-slot:label>
                             Email: <span class="text-danger">*</span>
@@ -44,7 +44,7 @@
                     </b-form-group>
 
                     <b-form-group label-cols-md="4"
-                                  label-align-sm="right"
+                                  label-align-md="right"
                                   label-for="password">
                         <template v-slot:label>
                             Password: <span class="text-danger">*</span>
@@ -53,7 +53,7 @@
                     </b-form-group>
 
                     <b-form-group label-cols-md="4"
-                                  label-align-sm="right"
+                                  label-align-md="right"
                                   label-for="password-confirmation">
                         <template v-slot:label>
                             Confirm Password: <span class="text-danger">*</span>

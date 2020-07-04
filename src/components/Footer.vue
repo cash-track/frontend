@@ -2,7 +2,7 @@
     <div class="footer text-center">
         <b-container>
             <div class="text-center float-sm-left">
-                © 2020 Cash Track
+                © {{ year() }} Cash Track
             </div>
             <b-nav class="justify-content-center float-sm-right">
                 <b-nav-item to="help">Help</b-nav-item>
@@ -15,11 +15,13 @@
 </template>
 
 <script lang="ts">
-import { Component, Prop, Vue } from 'vue-property-decorator';
+import { Component, Vue } from 'vue-property-decorator';
 
 @Component
 export default class Footer extends Vue {
-
+    year() {
+        return (new Date()).getFullYear()
+    }
 }
 </script>
 
@@ -28,15 +30,21 @@ export default class Footer extends Vue {
         border-top: 1px solid #eee;
         padding: 20px 0;
         font-size: 14px;
-        position: absolute;
         bottom: 0;
         width: 100%;
         height: 60px;
+        margin-top: 15px;
 
         .nav-link {
             display: block;
             padding: 0 1rem;
             line-height: 22px;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .footer {
+            height: auto;
         }
     }
 </style>
