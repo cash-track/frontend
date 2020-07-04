@@ -11,7 +11,7 @@
                                   label-align-md="right"
                                   label-for="name">
                         <template v-slot:label>
-                            Name: <span class="text-danger">*</span>
+                            Name <span class="text-danger">*</span>
                         </template>
                         <b-form-input id="name" class="col-md-8" v-model="form.name" required></b-form-input>
                     </b-form-group>
@@ -20,7 +20,7 @@
                                   label-align-md="right"
                                   label-for="last-name">
                         <template v-slot:label>
-                            Last Name:
+                            Last Name
                         </template>
                         <b-form-input id="last-name" class="col-md-8" v-model="form.lastName"></b-form-input>
                     </b-form-group>
@@ -29,7 +29,7 @@
                                   label-align-md="right"
                                   label-for="nick-name">
                         <template v-slot:label>
-                            Nick Name: <span class="text-danger">*</span>
+                            Nick Name <span class="text-danger">*</span>
                         </template>
                         <b-form-input id="nick-name" class="col-md-8" v-model="form.nickName" required></b-form-input>
                     </b-form-group>
@@ -38,7 +38,7 @@
                                   label-align-md="right"
                                   label-for="email">
                         <template v-slot:label>
-                            Email: <span class="text-danger">*</span>
+                            Email <span class="text-danger">*</span>
                         </template>
                         <b-form-input id="email" class="col-md-8" type="email" v-model="form.email" required></b-form-input>
                     </b-form-group>
@@ -47,7 +47,7 @@
                                   label-align-md="right"
                                   label-for="password">
                         <template v-slot:label>
-                            Password: <span class="text-danger">*</span>
+                            Password <span class="text-danger">*</span>
                         </template>
                         <b-form-input id="password" class="col-md-8" type="password" v-model="form.password" required></b-form-input>
                     </b-form-group>
@@ -56,7 +56,7 @@
                                   label-align-md="right"
                                   label-for="password-confirmation">
                         <template v-slot:label>
-                            Confirm Password: <span class="text-danger">*</span>
+                            Confirm Password <span class="text-danger">*</span>
                         </template>
                         <b-form-input id="password-confirmation" class="col-md-8" type="password" v-model="form.passwordConfirmation" required></b-form-input>
                     </b-form-group>
