@@ -2,7 +2,7 @@ import Vue from 'vue'
 import VueRouter, { RouteConfig } from 'vue-router'
 import Home from '@/views/Home.vue'
 import LoginView from '@/views/LoginView.vue'
-import Register from '@/views/Register.vue'
+import RegisterView from '@/views/RegisterView.vue'
 import ForgotPassword from "@/views/ForgotPassword.vue";
 import ResetPassword from "@/views/ResetPassword.vue";
 
@@ -35,7 +35,7 @@ const routes: Array<RouteConfig> = [
   {
     path: '/register',
     name: 'register',
-    component: Register,
+    component: RegisterView,
   },
   {
     path: '/password/forgot',
