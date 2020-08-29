@@ -65,39 +65,13 @@
 
 <script lang="ts">
     import {Component, Vue} from 'vue-property-decorator';
-    import axios, {AxiosError, AxiosResponse} from 'axios';
-
-    interface LoginFormInterface {
-        login: string;
-        password: string;
-        remember: boolean;
-    }
-
-    interface EntityIDResponseInterface {
-        type: string;
-        id: string|number;
-    }
-
-    interface ValidationResponseInterface {
-        errors: Record<string, string>;
-    }
-
-    interface ErrorResponseInterface {
-        error?: string;
-        message: string;
-    }
-
-    interface LoginResponseInterface {
-        data: EntityIDResponseInterface;
-        accessToken: string;
-        accessTokenExpiredAt: string;
-        refreshToken: string;
-        refreshTokenExpiredAt: string;
-    }
+    import {AxiosError, AxiosResponse} from 'axios';
+    import {login, LoginRequestInterface, LoginResponseInterface} from "@/api/login";
+    import {ErrorResponseInterface, ValidationResponseInterface} from "@/api/responses";
 
     @Component
     export default class Login extends Vue {
-        form!: LoginFormInterface
+        form!: LoginRequestInterface
         validation!: Record<string, string>
         showMessage = false
         message = ''
@@ -128,15 +102,7 @@
 
             this.loading = true
 
-            axios.request({
-                url: '/auth/login',
-                method: 'POST',
-                baseURL: process.env.VUE_APP_API_URL,
-                data: {
-                    email: this.form.login,
-                    password: this.form.password,
-                },
-            }).then(this.onSuccess)
+            login(this.form).then(this.onSuccess)
                 .catch(this.dispatchError)
                 .finally(() => this.loading = false)
         }

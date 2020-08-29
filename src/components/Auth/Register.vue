@@ -138,45 +138,16 @@
 
 <script lang="ts">
     import {Component, Mixins, Watch} from 'vue-property-decorator';
-    import axios, {AxiosError, AxiosResponse} from 'axios';
+    import {AxiosError, AxiosResponse} from 'axios';
     import Loader from '@/shared/Loader'
     import Messager from '@/shared/Messager'
     import Validator from '@/shared/Validator'
-
-    interface RegisterFormInterface {
-        name: string;
-        lastName: string;
-        nickName: string;
-        email: string;
-        password: string;
-        passwordConfirmation: string;
-    }
-
-    interface ValidationResponseInterface {
-        errors: Record<string, string>;
-    }
-
-    interface ErrorResponseInterface {
-        error?: string;
-        message: string;
-    }
-
-    interface EntityIDResponseInterface {
-        type: string;
-        id: string|number;
-    }
-
-    interface RegisterResponseInterface {
-        data: EntityIDResponseInterface;
-        accessToken: string;
-        accessTokenExpiredAt: string;
-        refreshToken: string;
-        refreshTokenExpiredAt: string;
-    }
+    import {checkNickName, register, RegisterRequestInterface, RegisterResponseInterface} from "@/api/register";
+    import {ErrorResponseInterface, ValidationResponseInterface} from "@/api/responses";
 
     @Component
     export default class Register extends Mixins(Loader, Messager, Validator) {
-        form!: RegisterFormInterface
+        form!: RegisterRequestInterface
         isNickNameValid: boolean|null = null
 
         data() {
@@ -211,15 +182,7 @@
         }
 
         validateNickName() {
-            axios.request({
-                url: '/auth/register/check/nick-name',
-                method: 'POST',
-                baseURL: process.env.VUE_APP_API_URL,
-                data: {
-                    nickName: this.form.nickName,
-                },
-                validateStatus: status => status == 200
-            })
+            checkNickName(this.form)
                 .then(() => {
                     this.isNickNameValid = true
                 })
@@ -256,19 +219,8 @@
             this.resetMessage()
             this.setLoading()
 
-            axios.request({
-                url: '/auth/register',
-                method: 'POST',
-                baseURL: process.env.VUE_APP_API_URL,
-                data: {
-                    name: this.form.name,
-                    lastName: this.form.lastName,
-                    nickName: this.form.nickName,
-                    email: this.form.email,
-                    password: this.form.password,
-                    passwordConfirmation: this.form.passwordConfirmation,
-                },
-            }).then(this.onSuccess)
+            register(this.form)
+                .then(this.onSuccess)
                 .catch(this.dispatchError)
                 .finally(this.setLoaded)
         }
