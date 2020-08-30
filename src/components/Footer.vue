@@ -5,9 +5,8 @@
                 © {{ year() }} Cash Track
             </div>
             <b-nav class="justify-content-center float-sm-right">
-                <b-nav-item to="help">Help</b-nav-item>
-                <b-nav-item>Blog</b-nav-item>
-                <b-nav-item to="about">About</b-nav-item>
+                <b-nav-item :href="getWebSiteLink('/help')">Help</b-nav-item>
+                <b-nav-item :href="getWebSiteLink('/about')">About</b-nav-item>
             </b-nav>
             <div class="clearfix"></div>
         </b-container>
@@ -16,11 +15,16 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
+import { webSiteLink } from '@/shared/links';
 
 @Component
 export default class Footer extends Vue {
     year() {
         return (new Date()).getFullYear()
+    }
+
+    getWebSiteLink(path: string): string {
+        return webSiteLink(path)
     }
 }
 </script>
