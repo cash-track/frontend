@@ -1,4 +1,9 @@
 import { Vue, Component } from 'vue-property-decorator'
+import {
+    ErrorResponseInterface,
+    ValidationResponseInterface,
+} from '@/api/responses'
+import {AxiosError} from "axios";
 
 @Component
 export default class Messager extends Vue {
@@ -25,5 +30,52 @@ export default class Messager extends Vue {
 
     get hasMessage(): boolean {
         return this.message !== ''
+    }
+
+    protected dispatchError(error: AxiosError) {
+        if (error.response) {
+            switch (error.response.status) {
+                case 400:
+                    this.onBadRequestResponse(error.response.data)
+                    break
+                case 401:
+                    this.onUnauthorisedResponse(error.response.data)
+                    break
+                case 403:
+                    this.onForbiddenResponse(error.response.data)
+                    break
+                case 422:
+                    this.onUnprocessableEntityResponse(error.response.data)
+                    break
+                case 500:
+                    this.onInternalServerError(error.response.data)
+                    break
+            }
+        }
+
+        return error
+    }
+
+    protected onBadRequestResponse(response: ErrorResponseInterface) {
+        this.setMessage(response.message)
+    }
+
+    protected onUnauthorisedResponse(response: ErrorResponseInterface) {
+        this.setMessage(response.message)
+    }
+
+    protected onForbiddenResponse(response: ErrorResponseInterface) {
+        this.setMessage(response.message)
+    }
+
+    protected onUnprocessableEntityResponse(
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        response: ValidationResponseInterface
+    ) {
+        this.setMessage('One or more fields is not valid')
+    }
+
+    protected onInternalServerError(response: ErrorResponseInterface) {
+        this.setMessage(response.message)
     }
 }
