@@ -23,7 +23,7 @@ export default new Vuex.Store({
     actions: {
         loadProfile() {
             return profileGet().then(res => {
-                if (res.status !== 200 || res.data.data.id === 0) {
+                if (res.status === 401) {
                     this.commit('logout')
                     return
                 }
