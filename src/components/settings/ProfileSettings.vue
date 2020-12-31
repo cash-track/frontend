@@ -188,6 +188,10 @@ export default class ProfileSettings extends Mixins(Loader, Messager, Validator)
 
     @Watch('form.nickName')
     onNickNameChanged() {
+        if (this.$store.state.profile.nickName === this.form.nickName) {
+            return
+        }
+
         this.isNickNameValid = null
         this.validateNickName()
     }
