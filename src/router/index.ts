@@ -1,18 +1,23 @@
 import Vue from 'vue'
 import VueRouter, { RouteConfig } from 'vue-router'
-import DashboardView from '@/views/DashboardView.vue'
 import SettingsView from "@/views/settings/SettingsView.vue";
 import ProfileSettingsView from "@/views/settings/ProfileSettingsView.vue";
 import SecuritySettingsView from "@/views/settings/SecuritySettingsView.vue";
 import ProfileView from "@/views/ProfileView.vue";
+import WalletsView from "@/views/WalletsView.vue";
+import WalletView from "@/views/WalletView.vue";
 
 Vue.use(VueRouter)
 
 const routes: Array<RouteConfig> = [
     {
         path: '/',
-        name: 'dashboard',
-        component: DashboardView,
+        redirect: '/wallets'
+    },
+    {
+        path: '/wallets',
+        name: 'wallets',
+        component: WalletsView,
     },
     {
         path: '/profile',
@@ -35,6 +40,12 @@ const routes: Array<RouteConfig> = [
                 component: SecuritySettingsView
             },
         ],
+    },
+    {
+        path: '/wallets/:walletID',
+        name: 'wallets.show',
+        component: WalletView,
+        props: true,
     },
 ]
 
