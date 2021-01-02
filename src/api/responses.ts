@@ -9,9 +9,11 @@ export interface ValidationResponseInterface {
     errors: Record<string, string>;
 }
 
-export interface ErrorResponseInterface {
+export interface ErrorResponseInterface extends MessageResponseInterface {
     error?: string;
     message: string;
 }
 
-
+export interface MessageResponseInterface {
+    message: string;
+}

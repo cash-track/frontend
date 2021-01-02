@@ -1,4 +1,5 @@
 import { Vue, Component } from 'vue-property-decorator'
+import { ValidationResponseInterface } from '@/api/responses'
 
 @Component({
     data: () => {
@@ -15,7 +16,7 @@ export default class Validator extends Vue {
     }
 
     public resetValidationMessage(field: string) {
-        if (! this.hasValidationMessage(field)) {
+        if (!this.hasValidationMessage(field)) {
             return
         }
 
@@ -23,14 +24,23 @@ export default class Validator extends Vue {
     }
 
     public hasValidationMessage(field: string): boolean {
-        if (typeof this.validationMessages !== "object") {
+        if (typeof this.validationMessages !== 'object') {
             this.resetValidationMessages()
         }
 
-        return Object.keys(this.validationMessages).filter(key => key === field).length > 0 && this.validationMessages[field] !== ""
+        return (
+            Object.keys(this.validationMessages).filter(key => key === field).length > 0 && this.validationMessages[field] !== ""
+        )
     }
 
-    public getValidationMessage(field: string): string {
+    /**
+     * Used on bootstrap validation state
+     */
+    public validationState(field: string): boolean | null {
+        return this.hasValidationMessage(field) ? false : null
+    }
+
+    public validationMessage(field: string): string {
         if (this.hasValidationMessage(field)) {
             return this.validationMessages[field]
         }
@@ -45,5 +55,11 @@ export default class Validator extends Vue {
     public setValidationMessage(field: string, msg: string) {
         this.hasValidationMessage(field)
         this.validationMessages[field] = msg
+    }
+
+    protected onUnprocessableEntityResponse(
+        response: ValidationResponseInterface
+    ) {
+        this.setValidationMessages(response.errors)
     }
 }
