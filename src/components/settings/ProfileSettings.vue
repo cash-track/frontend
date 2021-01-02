@@ -154,6 +154,8 @@ export default class ProfileSettings extends Mixins(Loader, Messager, Validator)
 
     successMessage = ''
 
+    unsubscribeFromStore: Function|null = null
+
     mounted() {
         this.loadProfile()
         this.loadCurrencies()
@@ -161,7 +163,7 @@ export default class ProfileSettings extends Mixins(Loader, Messager, Validator)
         if (this.$store.state.isLogged) {
             this.loadProfile()
         } else {
-            this.$store.subscribe(this.onProfileLoaded)
+            this.unsubscribeFromStore = this.$store.subscribe(this.onProfileLoaded)
         }
     }
 
@@ -174,6 +176,10 @@ export default class ProfileSettings extends Mixins(Loader, Messager, Validator)
     }
 
     protected loadProfile() {
+        if (typeof this.unsubscribeFromStore === 'function') {
+            this.unsubscribeFromStore()
+        }
+
         this.form.name = this.$store.state.profile.name
         this.form.lastName = this.$store.state.profile.lastName
         this.form.nickName = this.$store.state.profile.nickName
@@ -188,6 +194,10 @@ export default class ProfileSettings extends Mixins(Loader, Messager, Validator)
 
     @Watch('form.nickName')
     onNickNameChanged() {
+        if (this.$store.state.profile.nickName === this.form.nickName) {
+            return
+        }
+
         this.isNickNameValid = null
         this.validateNickName()
     }

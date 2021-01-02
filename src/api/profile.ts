@@ -11,6 +11,7 @@ export interface ProfileInterface {
     name: string;
     lastName: string;
     nickName: string;
+    email: string;
     isEmailConfirmed: boolean;
     photoUrl: string | null;
     defaultCurrencyCode: string;
@@ -22,6 +23,7 @@ export function emptyProfile(): ProfileInterface {
         name: '',
         lastName: '',
         nickName: '',
+        email: '',
         isEmailConfirmed: false,
         photoUrl: '',
         defaultCurrencyCode: '',
