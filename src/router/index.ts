@@ -4,6 +4,7 @@ import DashboardView from '@/views/DashboardView.vue'
 import SettingsView from "@/views/settings/SettingsView.vue";
 import ProfileSettingsView from "@/views/settings/ProfileSettingsView.vue";
 import SecuritySettingsView from "@/views/settings/SecuritySettingsView.vue";
+import ProfileView from "@/views/ProfileView.vue";
 
 Vue.use(VueRouter)
 
@@ -12,6 +13,11 @@ const routes: Array<RouteConfig> = [
         path: '/',
         name: 'dashboard',
         component: DashboardView,
+    },
+    {
+        path: '/profile',
+        name: 'profile',
+        component: ProfileView,
     },
     {
         path: '/settings',

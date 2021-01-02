@@ -9,7 +9,7 @@
                 <b-collapse id="nav-collapse" is-nav>
                     <b-navbar-nav>
                         <b-nav-item :to="{name: 'dashboard'}" exact-active-class="active">Dashboard</b-nav-item>
-                        <b-nav-item exact-active-class="active">Profile</b-nav-item>
+                        <b-nav-item :to="{name: 'profile'}" exact-active-class="active">Profile</b-nav-item>
                         <b-nav-item :href="helpLink">Help</b-nav-item>
                         <b-nav-item :href="aboutLink">About</b-nav-item>
                     </b-navbar-nav>
@@ -26,7 +26,7 @@
                             <b-dropdown-item :to="{name: 'dashboard'}">Dashboard</b-dropdown-item>
                             <b-dropdown-item>New Wallet</b-dropdown-item>
                             <b-dropdown-divider></b-dropdown-divider>
-                            <b-dropdown-item>Profile</b-dropdown-item>
+                            <b-dropdown-item :to="{name: 'profile'}">Profile</b-dropdown-item>
                             <b-dropdown-item :to="{name: 'settings.profile'}">Settings</b-dropdown-item>
                             <b-dropdown-item href="#" @click="onLogout">Sign Out</b-dropdown-item>
                         </b-nav-item-dropdown>
