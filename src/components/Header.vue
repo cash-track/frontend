@@ -24,7 +24,7 @@
                                 {{ profile.name }}
                             </template>
                             <b-dropdown-item :to="{name: 'wallets'}">Wallets</b-dropdown-item>
-                            <b-dropdown-item>New Wallet</b-dropdown-item>
+                            <b-dropdown-item :to="{name: 'wallets.create'}">New Wallet</b-dropdown-item>
                             <b-dropdown-divider></b-dropdown-divider>
                             <b-dropdown-item :to="{name: 'profile'}">Profile</b-dropdown-item>
                             <b-dropdown-item :to="{name: 'settings.profile'}">Settings</b-dropdown-item>

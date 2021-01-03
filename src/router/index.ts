@@ -6,6 +6,7 @@ import SecuritySettingsView from "@/views/settings/SecuritySettingsView.vue";
 import ProfileView from "@/views/ProfileView.vue";
 import WalletsView from "@/views/WalletsView.vue";
 import WalletView from "@/views/WalletView.vue";
+import WalletCreateView from "@/views/WalletCreateView.vue";
 
 Vue.use(VueRouter)
 
@@ -40,6 +41,11 @@ const routes: Array<RouteConfig> = [
                 component: SecuritySettingsView
             },
         ],
+    },
+    {
+        path: '/wallets/create',
+        name: 'wallets.create',
+        component: WalletCreateView,
     },
     {
         path: '/wallets/:walletID',
