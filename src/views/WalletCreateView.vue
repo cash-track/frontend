@@ -8,7 +8,7 @@
 
 <script lang="ts">
 import { Vue, Component } from 'vue-property-decorator'
-import WalletCreate from "@/components/wallets/WalletCreate.vue";
+import WalletCreate from '@/components/wallets/WalletCreate.vue';
 
 @Component({
     components: {WalletCreate}

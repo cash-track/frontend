@@ -132,12 +132,12 @@
 
 <script lang="ts">
 import { Mixins, Component, Watch } from 'vue-property-decorator';
-import Loader from "@/shared/Loader";
-import Messager from "@/shared/Messager";
-import Validator from "@/shared/Validator";
-import { currenciesGet, CurrencyInterface } from "@/api/currency";
-import { profilePut, profileCheckNickName, UpdateProfileRequestInterface} from "@/api/profile";
 import { MutationPayload } from "vuex";
+import Loader from '@/shared/Loader';
+import Messager from '@/shared/Messager';
+import Validator from '@/shared/Validator';
+import { currenciesGet, CurrencyInterface } from '@/api/currency';
+import { profilePut, profileCheckNickName, UpdateProfileRequestInterface} from '@/api/profile';
 
 @Component
 export default class ProfileSettings extends Mixins(Loader, Messager, Validator) {

@@ -82,13 +82,13 @@
 
 <script lang="ts">
 import { Component, Mixins } from 'vue-property-decorator'
-import { AxiosResponse } from "axios";
-import Loader from "@/shared/Loader";
-import Messager from "@/shared/Messager";
-import Validator from "@/shared/Validator";
-import { walletCreate, WalletCreateRequestInterface, WalletResponseInterface } from "@/api/wallets";
-import WarningMessage from "@/components/shared/WarningMessage.vue";
-import { currenciesGet, CurrencyInterface } from "@/api/currency";
+import { AxiosResponse } from 'axios';
+import Loader from '@/shared/Loader';
+import Messager from '@/shared/Messager';
+import Validator from '@/shared/Validator';
+import { walletCreate, WalletCreateRequestInterface, WalletResponseInterface } from '@/api/wallets';
+import WarningMessage from '@/components/shared/WarningMessage.vue';
+import { currenciesGet, CurrencyInterface } from '@/api/currency';
 
 @Component({
     components: {WarningMessage}

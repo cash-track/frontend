@@ -22,9 +22,9 @@
 
 <script lang="ts">
 import { Vue, Component } from 'vue-property-decorator'
-import { walletsGet, WalletInterface } from "@/api/wallets";
-import WarningMessage from "@/components/shared/WarningMessage.vue";
-import WalletCard from "@/components/wallets/WalletCard.vue";
+import { walletsGet, WalletInterface } from '@/api/wallets';
+import WarningMessage from '@/components/shared/WarningMessage.vue';
+import WalletCard from '@/components/wallets/WalletCard.vue';
 
 @Component({
     components: {WalletCard, WarningMessage}

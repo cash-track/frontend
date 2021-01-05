@@ -1,9 +1,9 @@
 import { Vue, Component } from 'vue-property-decorator'
+import { AxiosError } from 'axios';
 import {
     ErrorResponseInterface,
     ValidationResponseInterface,
 } from '@/api/responses'
-import {AxiosError} from "axios";
 
 @Component
 export default class Messager extends Vue {

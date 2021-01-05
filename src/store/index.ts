@@ -1,6 +1,6 @@
 import Vue from 'vue'
 import Vuex from 'vuex'
-import {emptyProfile, profileGet, ProfileInterface} from "@/api/profile";
+import { emptyProfile, profileGet, ProfileInterface } from '@/api/profile';
 
 Vue.use(Vuex)
 

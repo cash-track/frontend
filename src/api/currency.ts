@@ -1,5 +1,5 @@
-import {client} from "@/api/client";
-import {AxiosResponse} from "axios";
+import { AxiosResponse } from 'axios';
+import { client } from '@/api/client';
 
 export interface CurrenciesResponseInterface {
     data: Array<CurrencyInterface>;

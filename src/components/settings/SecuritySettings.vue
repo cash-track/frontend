@@ -102,15 +102,15 @@
 
 <script lang="ts">
 import { Mixins, Component } from 'vue-property-decorator'
-import Loader from "@/shared/Loader";
-import Messager from "@/shared/Messager";
-import Validator from "@/shared/Validator";
+import { AxiosResponse } from 'axios';
+import Loader from '@/shared/Loader';
+import Messager from '@/shared/Messager';
+import Validator from '@/shared/Validator';
 import {
     passwordChange,
     ChangePasswordRequestInterface
 } from '@/api/profile/password'
-import {MessageResponseInterface} from "@/api/responses";
-import {AxiosResponse} from "axios";
+import { MessageResponseInterface } from '@/api/responses';
 
 @Component
 export default class SecuritySettings extends Mixins(Loader, Messager, Validator) {

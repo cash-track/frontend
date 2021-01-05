@@ -1,5 +1,5 @@
-import axios, {AxiosInstance} from 'axios';
-import {webSiteLink} from "@/shared/links";
+import axios, { AxiosInstance } from 'axios';
+import { webSiteLink } from '@/shared/links';
 
 export function client(): AxiosInstance {
     const instance = axios.create({

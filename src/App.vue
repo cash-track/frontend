@@ -11,10 +11,10 @@
 </template>
 
 <script lang="ts">
-import {Component, Vue} from 'vue-property-decorator';
-import Header from "@/components/Header.vue";
-import Footer from "@/components/Footer.vue";
-import {webSiteLink} from './shared/links';
+import { Component, Vue } from 'vue-property-decorator';
+import Header from '@/components/Header.vue';
+import Footer from '@/components/Footer.vue';
+import { webSiteLink } from './shared/links';
 
 @Component({
     components: {Header, Footer}

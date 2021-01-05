@@ -1,12 +1,12 @@
 import Vue from 'vue'
 import VueRouter, { RouteConfig } from 'vue-router'
-import SettingsView from "@/views/settings/SettingsView.vue";
-import ProfileSettingsView from "@/views/settings/ProfileSettingsView.vue";
-import SecuritySettingsView from "@/views/settings/SecuritySettingsView.vue";
-import ProfileView from "@/views/ProfileView.vue";
-import WalletsView from "@/views/WalletsView.vue";
-import WalletView from "@/views/WalletView.vue";
-import WalletCreateView from "@/views/WalletCreateView.vue";
+import SettingsView from '@/views/settings/SettingsView.vue';
+import ProfileSettingsView from '@/views/settings/ProfileSettingsView.vue';
+import SecuritySettingsView from '@/views/settings/SecuritySettingsView.vue';
+import ProfileView from '@/views/ProfileView.vue';
+import WalletsView from '@/views/WalletsView.vue';
+import WalletView from '@/views/WalletView.vue';
+import WalletCreateView from '@/views/WalletCreateView.vue';
 
 Vue.use(VueRouter)
 
