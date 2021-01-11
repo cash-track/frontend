@@ -22,6 +22,12 @@ export interface WalletCreateRequestInterface {
     defaultCurrencyCode: string;
 }
 
+export interface WalletUpdateRequestInterface {
+    name: string;
+    isPublic: boolean;
+    defaultCurrencyCode: string;
+}
+
 export interface WalletInterface {
     id: number;
     name: string;
@@ -74,6 +80,14 @@ export function walletCreate(request: WalletCreateRequestInterface): Promise<Axi
     return client().post<WalletResponseInterface>('/api/wallets', {
         name: request.name,
         slug: request.slug,
+        isPublic: request.isPublic,
+        defaultCurrencyCode: request.defaultCurrencyCode,
+    })
+}
+
+export function walletUpdate(walletId: number, request: WalletUpdateRequestInterface): Promise<AxiosResponse<WalletResponseInterface>> {
+    return client().put<WalletResponseInterface>(`/api/wallets/${walletId}`, {
+        name: request.name,
         isPublic: request.isPublic,
         defaultCurrencyCode: request.defaultCurrencyCode,
     })

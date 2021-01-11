@@ -13,12 +13,11 @@
 
                 <div>
                     <b-btn-group>
-                        <b-dropdown right split variant="primary">
-                            <template v-slot:button-content>
-                                <b-icon-pencil></b-icon-pencil>
-                                Edit
-                            </template>
-
+                        <b-button variant="primary" :to="{name: 'wallets.edit', params: {walletID: wallet.id.toString()}}">
+                            <b-icon-pencil></b-icon-pencil>
+                            Edit
+                        </b-button>
+                        <b-dropdown right variant="primary">
                             <b-dropdown-header>More actions</b-dropdown-header>
 
                             <b-dropdown-item>Share</b-dropdown-item>
