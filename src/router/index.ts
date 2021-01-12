@@ -8,6 +8,7 @@ import WalletsView from '@/views/WalletsView.vue';
 import WalletView from '@/views/WalletView.vue';
 import WalletCreateView from '@/views/WalletCreateView.vue';
 import WalletEditView from '@/views/WalletEditView.vue';
+import WalletShareView from '@/views/WalletShareView.vue';
 
 Vue.use(VueRouter)
 
@@ -58,6 +59,12 @@ const routes: Array<RouteConfig> = [
         path: '/wallets/:walletID/edit',
         name: 'wallets.edit',
         component: WalletEditView,
+        props: true,
+    },
+    {
+        path: '/wallets/:walletID/share',
+        name: 'wallets.share',
+        component: WalletShareView,
         props: true,
     },
 ]

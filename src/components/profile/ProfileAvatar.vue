@@ -4,12 +4,12 @@
 
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator'
-import { ProfileInterface } from '@/api/profile';
+import { UserInterface } from '@/api/users';
 
 @Component
 export default class ProfileAvatar extends Vue {
-    @Prop()
-    user!: ProfileInterface
+    @Prop({required: true})
+    user!: UserInterface
 
     get alt(): string {
         return `${this.user.name} ${this.user.lastName}`

@@ -1,7 +1,7 @@
 import { AxiosResponse } from 'axios';
 import { client } from '@/api/client';
 import { CurrencyInterface, emptyCurrency } from '@/api/currency';
-import { ProfilesResponseInterface } from '@/api/profile';
+import { UserInterface, UsersResponseInterface } from '@/api/users';
 
 export interface WalletsResponseInterface {
     data: Array<WalletInterface>;
@@ -93,10 +93,6 @@ export function walletUpdate(walletId: number, request: WalletUpdateRequestInter
     })
 }
 
-export function walletUsersGet(walletId: number): Promise<AxiosResponse<ProfilesResponseInterface>> {
-    return client().get<ProfilesResponseInterface>(`/api/wallets/${walletId}/users`)
-}
-
 export function walletDelete(walletId: number): Promise<AxiosResponse> {
     return client().delete(`/api/wallets/${walletId}`)
 }
@@ -115,4 +111,16 @@ export function walletArchive(walletId: number): Promise<AxiosResponse> {
 
 export function walletUnArchive(walletId: number): Promise<AxiosResponse> {
     return client().post(`/api/wallets/${walletId}/un-archive`)
+}
+
+export function walletUsersGet(walletId: number): Promise<AxiosResponse<UsersResponseInterface>> {
+    return client().get<UsersResponseInterface>(`/api/wallets/${walletId}/users`)
+}
+
+export function walletUsersAdd(walletId: number, user: UserInterface): Promise<AxiosResponse> {
+    return client().patch(`/api/wallets/${walletId}/users/${user.id.toString()}`)
+}
+
+export function walletUsersDelete(walletId: number, user: UserInterface): Promise<AxiosResponse> {
+    return client().delete(`/api/wallets/${walletId}/users/${user.id.toString()}`)
 }

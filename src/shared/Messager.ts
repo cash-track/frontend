@@ -19,6 +19,10 @@ export default class Messager extends Vue {
     }
 
     public setMessage(msg: string) {
+        if (msg === undefined) {
+            msg = 'Something went wrong. Please, try again later.'
+        }
+
         this.message = msg
         this.showMessage = true
     }

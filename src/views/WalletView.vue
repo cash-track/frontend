@@ -20,7 +20,7 @@
                         <b-dropdown right variant="primary">
                             <b-dropdown-header>More actions</b-dropdown-header>
 
-                            <b-dropdown-item>Share</b-dropdown-item>
+                            <b-dropdown-item :to="{name: 'wallets.share', params: {walletID: wallet.id.toString()}}">Share</b-dropdown-item>
 
                             <b-dropdown-item v-if="!wallet.isActive" @click="onActivate">Activate</b-dropdown-item>
                             <b-dropdown-item v-if="wallet.isActive" @click="onDisable">Disable</b-dropdown-item>
@@ -37,7 +37,7 @@
             </div>
 
             <div class="wallet-owners">
-                <span v-for="user of users" v-bind:key="user.id">
+                <span v-for="user of users" v-bind:key="user.id" class="mr-3">
                     <profile-avatar-badge :user="user"></profile-avatar-badge>
                 </span>
             </div>
@@ -105,8 +105,8 @@ import {
     WalletTotalInterface
 } from '@/api/wallets';
 import { walletChargesGet, ChargeInterface } from '@/api/charges';
+import { UserInterface } from '@/api/users';
 import WarningMessage from '@/components/shared/WarningMessage.vue';
-import {ProfileInterface} from '@/api/profile';
 import ProfileAvatarBadge from '@/components/profile/ProfileAvatarBadge.vue';
 import ProfileAvatar from '@/components/profile/ProfileAvatar.vue';
 import ChargeItem, {ChargeDeletedEvent} from '@/components/wallets/ChargeItem.vue';
@@ -130,7 +130,7 @@ export default class WalletView extends Vue {
 
     loadFailed = false
 
-    users: Array<ProfileInterface> = []
+    users: Array<UserInterface> = []
 
     charges: Array<ChargeInterface> = []
 
