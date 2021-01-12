@@ -21,10 +21,11 @@
 
                         <b-nav-item-dropdown v-if="isLogged" right>
                             <template v-slot:button-content>
+                                <profile-avatar :user="profile"></profile-avatar>
                                 {{ profile.name }}
                             </template>
                             <b-dropdown-item :to="{name: 'wallets'}">Wallets</b-dropdown-item>
-                            <b-dropdown-item>New Wallet</b-dropdown-item>
+                            <b-dropdown-item :to="{name: 'wallets.create'}">New Wallet</b-dropdown-item>
                             <b-dropdown-divider></b-dropdown-divider>
                             <b-dropdown-item :to="{name: 'profile'}">Profile</b-dropdown-item>
                             <b-dropdown-item :to="{name: 'settings.profile'}">Settings</b-dropdown-item>
@@ -40,9 +41,12 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { webSiteLink } from '@/shared/links';
-import {ProfileInterface} from "@/api/profile";
+import {ProfileInterface} from '@/api/profile';
+import ProfileAvatar from '@/components/profile/ProfileAvatar.vue';
 
-@Component
+@Component({
+    components: {ProfileAvatar}
+})
 export default class Header extends Vue {
     getWebSiteLink(path: string): string {
         return webSiteLink(path)
@@ -75,11 +79,15 @@ export default class Header extends Vue {
 }
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
     .navbar {
         background: #f5f5f5;
         border-bottom: 1px solid #e5e5e5;
         border-radius: 0;
         margin-bottom: 20px;
+
+        .b-avatar {
+            margin: -13px 5px -10px 0;
+        }
     }
 </style>

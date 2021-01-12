@@ -4,7 +4,7 @@
 
 <script lang="ts">
 import { Vue, Component } from 'vue-property-decorator'
-import ProfileSettings from "@/components/settings/ProfileSettings.vue";
+import ProfileSettings from '@/components/settings/ProfileSettings.vue';
 
 @Component({
     components: {ProfileSettings}

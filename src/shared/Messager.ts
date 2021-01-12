@@ -1,9 +1,9 @@
 import { Vue, Component } from 'vue-property-decorator'
+import { AxiosError } from 'axios';
 import {
     ErrorResponseInterface,
     ValidationResponseInterface,
 } from '@/api/responses'
-import {AxiosError} from "axios";
 
 @Component
 export default class Messager extends Vue {
@@ -19,6 +19,10 @@ export default class Messager extends Vue {
     }
 
     public setMessage(msg: string) {
+        if (msg === undefined) {
+            msg = 'Something went wrong. Please, try again later.'
+        }
+
         this.message = msg
         this.showMessage = true
     }

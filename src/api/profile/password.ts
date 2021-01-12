@@ -1,6 +1,6 @@
-import {client} from "@/api/client";
-import {AxiosResponse} from "axios";
-import {MessageResponseInterface} from "@/api/responses";
+import { AxiosResponse } from 'axios';
+import { client } from '@/api/client';
+import { MessageResponseInterface } from '@/api/responses';
 
 export interface ChangePasswordRequestInterface {
     currentPassword: string;

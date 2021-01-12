@@ -1,11 +1,14 @@
 import Vue from 'vue'
 import VueRouter, { RouteConfig } from 'vue-router'
-import SettingsView from "@/views/settings/SettingsView.vue";
-import ProfileSettingsView from "@/views/settings/ProfileSettingsView.vue";
-import SecuritySettingsView from "@/views/settings/SecuritySettingsView.vue";
-import ProfileView from "@/views/ProfileView.vue";
-import WalletsView from "@/views/WalletsView.vue";
-import WalletView from "@/views/WalletView.vue";
+import SettingsView from '@/views/settings/SettingsView.vue';
+import ProfileSettingsView from '@/views/settings/ProfileSettingsView.vue';
+import SecuritySettingsView from '@/views/settings/SecuritySettingsView.vue';
+import ProfileView from '@/views/ProfileView.vue';
+import WalletsView from '@/views/WalletsView.vue';
+import WalletView from '@/views/WalletView.vue';
+import WalletCreateView from '@/views/WalletCreateView.vue';
+import WalletEditView from '@/views/WalletEditView.vue';
+import WalletShareView from '@/views/WalletShareView.vue';
 
 Vue.use(VueRouter)
 
@@ -42,9 +45,26 @@ const routes: Array<RouteConfig> = [
         ],
     },
     {
+        path: '/wallets/create',
+        name: 'wallets.create',
+        component: WalletCreateView,
+    },
+    {
         path: '/wallets/:walletID',
         name: 'wallets.show',
         component: WalletView,
+        props: true,
+    },
+    {
+        path: '/wallets/:walletID/edit',
+        name: 'wallets.edit',
+        component: WalletEditView,
+        props: true,
+    },
+    {
+        path: '/wallets/:walletID/share',
+        name: 'wallets.share',
+        component: WalletShareView,
         props: true,
     },
 ]

@@ -19,8 +19,8 @@
 
 <script lang="ts">
 import { Vue, Component } from 'vue-property-decorator'
-import ProfileTitle from "@/components/profile/ProfileTitle.vue";
-import LastCharges from "@/components/profile/LastCharges.vue";
+import ProfileTitle from '@/components/profile/ProfileTitle.vue';
+import LastCharges from '@/components/profile/LastCharges.vue';
 
 @Component({
     components: {LastCharges, ProfileTitle}

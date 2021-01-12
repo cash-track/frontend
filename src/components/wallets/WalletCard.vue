@@ -39,7 +39,7 @@
 
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator'
-import {emptyWallet, WalletInterface} from "@/api/wallets";
+import { emptyWallet, WalletInterface } from '@/api/wallets';
 
 @Component
 export default class WalletCard extends Vue {
@@ -62,6 +62,7 @@ export default class WalletCard extends Vue {
     .wallet-card {
         cursor: pointer;
         background-color: #f5f5f5;
+        margin-bottom: 15px;
 
         .list-group-item {
             background-color: #f5f5f5;
@@ -74,6 +75,10 @@ export default class WalletCard extends Vue {
         .list-group {
             border-top: 1px solid rgba(0, 0, 0, 0.125);
             border-bottom: none;
+        }
+
+        .badge {
+            margin-left: 5px;
         }
     }
 

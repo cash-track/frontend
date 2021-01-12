@@ -1,19 +1,19 @@
-import {client} from "@/api/client";
-import {AxiosResponse} from "axios";
-import {MessageResponseInterface} from "@/api/responses";
+import { AxiosResponse } from 'axios';
+import { client } from '@/api/client';
+import { MessageResponseInterface } from '@/api/responses';
+import { UserInterface } from '@/api/users';
 
 export interface ProfileResponseInterface {
     data: ProfileInterface;
 }
 
-export interface ProfileInterface {
-    id: number;
-    name: string;
-    lastName: string;
-    nickName: string;
+export interface ProfilesResponseInterface {
+    data: Array<ProfileInterface>;
+}
+
+export interface ProfileInterface extends UserInterface {
     email: string;
     isEmailConfirmed: boolean;
-    photoUrl: string | null;
     defaultCurrencyCode: string;
 }
 
