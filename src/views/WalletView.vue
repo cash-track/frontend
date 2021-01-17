@@ -66,24 +66,12 @@
             </div>
 
             <div class="wallet-charges">
-                <b-row class="charge-item" v-if="wallet.isActive">
-                    <b-col offset-sm="4" sm="8" class="charge-main-container wallet-charge-create">
-                        <b-icon-plus class="charge-type" variant="muted" scale="2"></b-icon-plus>
-
-                        <b-button variant="outline-primary" v-b-toggle.charge-create>New Charge</b-button>
-                        <b-collapse class="charge-create" id="charge-create">
-                            <charge-create :wallet="wallet" @created="onChargeCreated"></charge-create>
-                        </b-collapse>
-                    </b-col>
-                </b-row>
-                <charge-item
-                    v-for="charge of charges"
-                    v-bind:key="charge.id"
+                <charges-list
                     :wallet="wallet"
-                    :charge="charge"
+                    @created="onChargeCreated"
                     @updated="onChargeUpdated"
                     @deleted="onChargeDeleted"
-                ></charge-item>
+                ></charges-list>
             </div>
         </div>
     </div>
@@ -104,17 +92,16 @@ import {
     WalletInterface,
     WalletTotalInterface
 } from '@/api/wallets';
-import { walletChargesGet, ChargeInterface } from '@/api/charges';
 import { UserInterface } from '@/api/users';
 import WarningMessage from '@/components/shared/WarningMessage.vue';
 import ProfileAvatarBadge from '@/components/profile/ProfileAvatarBadge.vue';
 import ProfileAvatar from '@/components/profile/ProfileAvatar.vue';
-import ChargeItem, {ChargeDeletedEvent} from '@/components/wallets/ChargeItem.vue';
-import ChargeCreate, { ChargeCreatedEvent } from '@/components/wallets/ChargeCreate.vue';
-import { ChargeUpdatedEvent } from '@/components/wallets/ChargeEdit.vue';
+import ChargeItem from '@/components/wallets/ChargeItem.vue';
+import ChargeCreate from '@/components/wallets/ChargeCreate.vue';
+import ChargesList from "@/components/wallets/charges/ChargesList.vue";
 
 @Component({
-    components: {ChargeCreate, ChargeItem, ProfileAvatar, ProfileAvatarBadge, WarningMessage}
+    components: {ChargesList, ChargeCreate, ChargeItem, ProfileAvatar, ProfileAvatarBadge, WarningMessage}
 })
 export default class WalletView extends Vue {
     @Prop()
@@ -132,13 +119,10 @@ export default class WalletView extends Vue {
 
     users: Array<UserInterface> = []
 
-    charges: Array<ChargeInterface> = []
-
     mounted() {
         this.load()
         this.loadTotal()
         this.loadUsers()
-        this.loadCharges()
     }
 
     protected load() {
@@ -167,46 +151,15 @@ export default class WalletView extends Vue {
         })
     }
 
-    protected loadCharges() {
-        walletChargesGet(this.walletID).then(response => {
-            this.charges = response.data.data
-        }).catch(() => {
-            this.loadFailed = true;
-        })
-    }
-
-    protected onChargeCreated(event: ChargeCreatedEvent) {
-        this.charges.unshift(event.charge)
-        this.$root.$emit('bv::toggle::collapse', 'charge-create')
+    protected onChargeCreated() {
         this.loadTotal()
     }
 
-    protected onChargeUpdated(event: ChargeUpdatedEvent) {
-        const charges = Array.from<ChargeInterface>(this.charges)
-        const index = charges.findIndex(charge => charge.id === event.id)
-
-        if (index === -1) {
-            console.warn('Unable to find charge in the list. Charge ID:', event.id)
-            return
-        }
-
-        charges[index] = event.charge
-
-        this.charges = charges
-
+    protected onChargeUpdated() {
         this.loadTotal()
     }
 
-    protected onChargeDeleted(event: ChargeDeletedEvent) {
-        const index = this.charges.findIndex(charge => charge.id === event.id)
-
-        if (index === -1) {
-            console.warn('Unable to find charge in the list. Charge ID:', event.id)
-            return
-        }
-
-        this.charges.splice(index, 1)
-
+    protected onChargeDeleted() {
         this.loadTotal()
     }
 
@@ -304,92 +257,6 @@ h3 .badge {
     .text-success, .text-danger, .text-info {
         font-size: 40px;
         line-height: 40px;
-    }
-}
-
-.charge-date-container {
-    padding-top: 10px;
-    position: relative;
-
-    .charge-date {
-        font-size: 14px;
-    }
-
-    .charge-avatar {
-        margin: 0 6px 0 35px;
-    }
-}
-
-.wallet-charge-item {
-    border-left: 1px solid #eee;
-    padding: 18px 45px 20px;
-    position: relative;
-
-    .charge-type {
-        position: absolute;
-        left: -12px;
-        top: 18px;
-        background: #fff;
-        padding: 6px;
-        height: 24px;
-        width: 24px;
-        text-align: center;
-        font-size: 20px;
-        line-height: 20px;
-        border-radius: 40px;
-    }
-
-    .charge-pointer {
-        display: block;
-        position: absolute;
-        top: 30px;
-        left: 12px;
-        width: 30px;
-        height: 0;
-        border-top: 1px solid #eee;
-    }
-
-    .charge-header {
-        cursor: pointer;
-
-        .charge-amount {
-            font-weight: 700;
-            display: inline-block;
-            width: 110px;
-            padding: 0 10px 0 0;
-        }
-
-        .charge-title {
-            overflow: hidden;
-            white-space: pre;
-            text-overflow: ellipsis;
-            max-width: calc(100% - 200px);
-            display: inline-block;
-            vertical-align: top;
-        }
-    }
-
-    .charge-body {
-        padding-top: 10px;
-
-        &>span {
-            white-space: pre;
-        }
-    }
-
-    &:hover .charge-type {
-        cursor: pointer;
-        background-color: #eee!important;
-    }
-}
-
-.wallet-charge-create {
-    padding-top: 10px;
-    padding-bottom: 35px;
-    margin-top: 10px;
-
-    .charge-create {
-        padding-top: 20px;
     }
 }
 </style>
