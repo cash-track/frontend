@@ -40,6 +40,7 @@ export interface WalletInterface {
     updatedAt: string;
     defaultCurrencyCode: string;
     defaultCurrency: CurrencyInterface;
+    users: Array<UserInterface>;
 }
 
 export interface WalletTotalInterface {
@@ -61,6 +62,7 @@ export function emptyWallet(): WalletInterface {
         updatedAt: '',
         defaultCurrencyCode: '',
         defaultCurrency: emptyCurrency(),
+        users: [],
     }
 }
 
