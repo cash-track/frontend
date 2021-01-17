@@ -29,7 +29,7 @@
         <template v-slot:footer>
             <div class="d-flex justify-content-between">
                 <span class="text-muted">
-                    {{ wallet.updatedAt }}
+                    {{ wallet.updatedAt | moment("from") }}
                     <b-icon-clock></b-icon-clock>
                 </span>
             </div>

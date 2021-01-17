@@ -1,7 +1,11 @@
 <template>
     <b-row class="charge-item" :class="{'active': isActive}">
         <b-col sm="4" class="text-right charge-date-container">
-            <span class="text-muted charge-date">{{ charge.createdAt }}</span>
+            <span class="text-muted charge-date"
+                  :title="dateTime"
+                  v-b-tooltip.left>
+                {{ charge.createdAt | moment("from") }}
+            </span>
             <profile-avatar class="charge-avatar" :user="charge.user"></profile-avatar>
         </b-col>
         <b-col sm="8" class="charge-main-container">
@@ -66,6 +70,10 @@ export default class ChargeItem extends Vue {
 
     isActive = false
     isEdit = false
+
+    get dateTime(): string {
+        return this.$moment(this.charge.createdAt).format('Y-MM-DD HH:mm:ss')
+    }
 
     toggleActive(event: Event) {
         event.preventDefault()
