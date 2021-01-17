@@ -1,6 +1,7 @@
 import { AxiosResponse } from 'axios';
 import { client } from '@/api/client';
 import { ProfileInterface } from '@/api/profile';
+import { PaginatedResponseInterface } from '@/api/pagination';
 
 export const TypeIncome = '+';
 export const TypeExpense = '-';
@@ -18,7 +19,7 @@ export interface ChargeInterface {
     updatedAt: string;
 }
 
-export interface ChargesResponseInterface {
+export interface ChargesResponseInterface extends PaginatedResponseInterface{
     data: Array<ChargeInterface>;
 }
 
@@ -42,6 +43,10 @@ export interface ChargeUpdateRequestInterface {
 
 export function walletChargesGet(walletId: number): Promise<AxiosResponse<ChargesResponseInterface>> {
     return client().get<ChargesResponseInterface>(`/api/wallets/${walletId}/charges`)
+}
+
+export function walletChargesGetPaginated(walletId: number, page: number): Promise<AxiosResponse<ChargesResponseInterface>> {
+    return client().get<ChargesResponseInterface>(`/api/wallets/${walletId}/charges?page=${page}`)
 }
 
 export function walletChargeCreate(walletId: number, request: ChargeCreateRequestInterface): Promise<AxiosResponse<ChargeResponseInterface>> {

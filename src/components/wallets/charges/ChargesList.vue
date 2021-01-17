@@ -48,7 +48,8 @@ import { Component, Mixins, Prop } from 'vue-property-decorator'
 import { AxiosResponse } from 'axios';
 import Loader from '@/shared/Loader';
 import { WalletInterface } from '@/api/wallets';
-import { ChargeInterface, ChargesResponseInterface, walletChargesGet } from '@/api/charges';
+import { ChargeInterface, ChargesResponseInterface, walletChargesGet, walletChargesGetPaginated } from '@/api/charges';
+import { emptyPagination, PaginationInterface } from '@/api/pagination';
 import WarningMessage from '@/components/shared/WarningMessage.vue';
 import { ChargeUpdatedEvent } from '@/components/wallets/ChargeEdit.vue';
 import ChargeItem, { ChargeDeletedEvent } from '@/components/wallets/ChargeItem.vue';
@@ -64,6 +65,8 @@ export default class ChargesList extends Mixins(Loader) {
     wallet!: WalletInterface
 
     charges: Array<ChargeInterface> = []
+
+    pagination: PaginationInterface = emptyPagination()
 
     get isLoadingPagination(): boolean {
         return this.isLoadingFor(PAGINATION)
@@ -83,17 +86,25 @@ export default class ChargesList extends Mixins(Loader) {
     }
 
     protected onChargesLoaded(response: AxiosResponse<ChargesResponseInterface>) {
-        this.charges = response.data.data
+        this.charges.push(...response.data.data)
+        this.pagination = response.data.pagination
     }
 
     protected onLoadMoreCharges(event: boolean) {
-        if (!event || this.isLoadingFor(PAGINATION)) {
+        if (!event || this.isLoadingFor(PAGINATION) || this.pagination.nextPage === null) {
             return
         }
 
-        console.log('load more charges')
-
+        this.resetLoadingFailedMessageFor(PAGINATION)
         this.setLoadingFor(PAGINATION)
+
+        walletChargesGetPaginated(this.wallet.id, this.pagination.nextPage)
+            .then(this.onChargesLoaded)
+            .catch(() => {
+                this.setLoadingFailedMessageFor(PAGINATION, 'Unable to load more charges. Please try again later')
+            }).finally(() => {
+                this.setLoadedFor(PAGINATION)
+            })
     }
 
     // forward event
