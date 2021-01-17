@@ -21,7 +21,7 @@
                     {{ wallet.defaultCurrency.name }} ({{ wallet.defaultCurrency.code }})
                 </span>
                 <span class="text-primary">
-                    <b>{{ wallet.totalAmount }} {{ wallet.defaultCurrency.char }}</b>
+                    <b>{{ wallet.totalAmount | money(wallet.defaultCurrency) }}</b>
                 </span>
             </b-list-group-item>
         </b-list-group>
@@ -63,6 +63,12 @@ export default class WalletCard extends Vue {
         cursor: pointer;
         background-color: #f5f5f5;
         margin-bottom: 15px;
+
+        .card-title {
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            overflow: hidden;
+        }
 
         .list-group-item {
             background-color: #f5f5f5;

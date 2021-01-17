@@ -47,19 +47,19 @@
                     <span class="text-muted">Income</span><br>
                     <span class="text-success">
                         <b-icon-arrow-up variant="success" scale="1.5"></b-icon-arrow-up>
-                        {{ walletTotal.totalIncomeAmount }} {{ wallet.defaultCurrency.char }}
+                        {{ walletTotal.totalIncomeAmount | money(wallet.defaultCurrency) }}
                     </span>
                 </span>
                 <span class="text-center">
                     <span class="text-muted">Available</span><br>
                     <span class="text-info">
-                        {{ walletTotal.totalAmount }} {{ wallet.defaultCurrency.char }}
+                        {{ walletTotal.totalAmount | money(wallet.defaultCurrency) }}
                     </span>
                 </span>
                 <span class="text-right">
                     <span class="text-muted">Expense</span><br>
                     <span class="text-danger">
-                        {{ walletTotal.totalExpenseAmount }} {{ wallet.defaultCurrency.char }}
+                        {{ walletTotal.totalExpenseAmount | money(wallet.defaultCurrency) }}
                         <b-icon-arrow-down variant="danger" scale="1.5"></b-icon-arrow-down>
                     </span>
                 </span>

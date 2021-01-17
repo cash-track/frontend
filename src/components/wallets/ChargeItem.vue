@@ -24,7 +24,7 @@
             </div>
 
             <div class="charge-header" v-if="!isEdit" @click="toggleActive">
-                <span class="charge-amount">{{ charge.amount }} {{ wallet.defaultCurrency.char }}</span>
+                <span class="charge-amount">{{ charge.amount | money(wallet.defaultCurrency) }}</span>
                 <span class="charge-title">{{ charge.title }}</span>
             </div>
             <div class="charge-body" v-if="!isEdit" v-show="isActive && charge.description">
@@ -174,7 +174,7 @@ export default class ChargeItem extends Vue {
             .charge-amount {
                 font-weight: 700;
                 display: inline-block;
-                width: 110px;
+                min-width: 110px;
                 padding: 0 10px 0 0;
             }
 

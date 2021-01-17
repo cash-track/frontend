@@ -10,6 +10,7 @@ import App from './App.vue'
 import './registerServiceWorker'
 import router from './router'
 import store from './store'
+import { money } from './shared/numbers'
 
 Vue.config.productionTip = false
 
@@ -18,6 +19,8 @@ Vue.use(BootstrapVueIcons)
 Vue.use(VueMoment);
 
 Vue.component('vue-visibility-trigger', VueVisibilityTrigger)
+
+Vue.filter('money', money)
 
 new Vue({
   router,
