@@ -21,15 +21,40 @@
                     {{ wallet.defaultCurrency.name }} ({{ wallet.defaultCurrency.code }})
                 </span>
                 <span class="text-primary">
-                    <b>{{ wallet.totalAmount }} {{ wallet.defaultCurrency.char }}</b>
+                    <b>{{ wallet.totalAmount | money(wallet.defaultCurrency) }}</b>
                 </span>
             </b-list-group-item>
         </b-list-group>
 
         <template v-slot:footer>
             <div class="d-flex justify-content-between">
+                <div class="wallet-card-members">
+                    <b-avatar-group size="2em" v-if="!hasOneMember">
+                        <profile-avatar
+                            v-for="user of members"
+                            :user="user"
+                            v-bind:key="user.id"
+                            :title="`${user.name} ${user.lastName}`"
+                            v-b-tooltip.top
+                        ></profile-avatar>
+                        <b-avatar
+                            text="..."
+                            v-if="hasMoreMembers"
+                            title="and more members.."
+                            v-b-tooltip.top
+                        ></b-avatar>
+                    </b-avatar-group>
+                    <div v-else>
+                        <profile-avatar
+                            :user="members[0]"
+                            size="2em"
+                            :title="`${members[0].name} ${members[0].lastName}`"
+                            v-b-tooltip.top
+                        ></profile-avatar>
+                    </div>
+                </div>
                 <span class="text-muted">
-                    {{ wallet.updatedAt }}
+                    {{ wallet.updatedAt | moment("from") }}
                     <b-icon-clock></b-icon-clock>
                 </span>
             </div>
@@ -40,14 +65,48 @@
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator'
 import { emptyWallet, WalletInterface } from '@/api/wallets';
+import { UserInterface } from '@/api/users';
+import ProfileAvatar from '@/components/profile/ProfileAvatar.vue';
 
-@Component
+const USERS_LIMIT = 4
+
+@Component({
+    components: {ProfileAvatar}
+})
 export default class WalletCard extends Vue {
     @Prop({
         required: true,
         default: emptyWallet(),
     })
     wallet!: WalletInterface
+
+    get members(): Array<UserInterface> {
+        const users: Array<UserInterface> = []
+
+        users.push(this.$store.state.profile)
+
+        for (const user of this.wallet.users) {
+            if (user.id === this.$store.state.profile.id) {
+                continue
+            }
+
+            users.push(user)
+
+            if (users.length >= USERS_LIMIT) {
+                break
+            }
+        }
+
+        return users
+    }
+
+    get hasOneMember(): boolean {
+        return this.wallet.users.length === 1
+    }
+
+    get hasMoreMembers(): boolean {
+        return this.wallet.users.length > USERS_LIMIT
+    }
 
     onWalletClick() {
         this.$router.push({
@@ -63,6 +122,12 @@ export default class WalletCard extends Vue {
         cursor: pointer;
         background-color: #f5f5f5;
         margin-bottom: 15px;
+
+        .card-title {
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            overflow: hidden;
+        }
 
         .list-group-item {
             background-color: #f5f5f5;

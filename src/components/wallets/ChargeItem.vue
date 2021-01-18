@@ -1,7 +1,11 @@
 <template>
     <b-row class="charge-item" :class="{'active': isActive}">
         <b-col sm="4" class="text-right charge-date-container">
-            <span class="text-muted charge-date">{{ charge.createdAt }}</span>
+            <span class="text-muted charge-date"
+                  :title="dateTime"
+                  v-b-tooltip.left>
+                {{ charge.createdAt | moment("from") }}
+            </span>
             <profile-avatar class="charge-avatar" :user="charge.user"></profile-avatar>
         </b-col>
         <b-col sm="8" class="charge-main-container">
@@ -20,7 +24,7 @@
             </div>
 
             <div class="charge-header" v-if="!isEdit" @click="toggleActive">
-                <span class="charge-amount">{{ charge.amount }} {{ wallet.defaultCurrency.char }}</span>
+                <span class="charge-amount">{{ charge.amount | money(wallet.defaultCurrency) }}</span>
                 <span class="charge-title">{{ charge.title }}</span>
             </div>
             <div class="charge-body" v-if="!isEdit" v-show="isActive && charge.description">
@@ -66,6 +70,10 @@ export default class ChargeItem extends Vue {
 
     isActive = false
     isEdit = false
+
+    get dateTime(): string {
+        return this.$moment(this.charge.createdAt).format('Y-MM-DD HH:mm:ss')
+    }
 
     toggleActive(event: Event) {
         event.preventDefault()
@@ -166,7 +174,7 @@ export default class ChargeItem extends Vue {
             .charge-amount {
                 font-weight: 700;
                 display: inline-block;
-                width: 110px;
+                min-width: 110px;
                 padding: 0 10px 0 0;
             }
 

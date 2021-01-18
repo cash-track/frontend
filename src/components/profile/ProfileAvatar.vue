@@ -1,5 +1,5 @@
 <template>
-    <b-avatar :src="user.photoUrl" :text="text" :alt="alt"></b-avatar>
+    <b-avatar :src="user.photoUrl" :text="text" :alt="alt" :size="size"></b-avatar>
 </template>
 
 <script lang="ts">
@@ -10,6 +10,9 @@ import { UserInterface } from '@/api/users';
 export default class ProfileAvatar extends Vue {
     @Prop({required: true})
     user!: UserInterface
+
+    @Prop()
+    size!: string
 
     get alt(): string {
         return `${this.user.name} ${this.user.lastName}`
