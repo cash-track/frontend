@@ -1,4 +1,5 @@
+import getEnv from '@/shared/env';
 
 export function webSiteLink(path: string): string {
-    return process.env.VUE_APP_WEBSITE_URL + path
+    return getEnv('VUE_APP_WEBSITE_URL') + path
 }

@@ -22,7 +22,7 @@ import { webSiteLink } from './shared/links';
 export default class App extends Vue {
     mounted() {
         this.$store.dispatch('loadProfile').finally(() => {
-            this.validateIsLogged()
+            // this.validateIsLogged()
         })
 
         // TODO. Add same checking once browser tab gets activated (receive focus)
@@ -32,7 +32,7 @@ export default class App extends Vue {
         console.log("is logged:", this.$store.state.isLogged)
 
         if (! this.$store.state.isLogged) {
-            this.redirectToLogin()
+            // this.redirectToLogin()
         }
     }
 

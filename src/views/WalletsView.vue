@@ -8,10 +8,17 @@
             </b-col>
         </b-row>
 
+        <b-alert variant="success" :show="!normalWallets.length">
+            <h2>No Wallets</h2>
+            You don't have any wallets yet. Good time to create one.
+            <b-button variant="success" size="sm" :to="{name: 'wallets.create'}">Create</b-button>
+        </b-alert>
+
         <br>
         <br>
+
         <p class="lead" v-if="archivedWallets.length">Archived</p>
-        <hr>
+        <hr v-if="archivedWallets.length">
         <b-row v-if="archivedWallets.length">
             <b-col sm="6" md="4" v-for="wallet of archivedWallets" v-bind:key="wallet.ID">
                 <wallet-card :wallet="wallet"></wallet-card>

@@ -5,7 +5,7 @@
                 <profile-title></profile-title>
             </b-col>
         </b-row>
-        <b-row>
+        <b-row v-show="false">
             <b-col md="6">
                 <p class="lead chapter">Last Charges</p>
                 <last-charges></last-charges>

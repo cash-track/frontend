@@ -1,9 +1,10 @@
 import axios, { AxiosInstance } from 'axios';
 import { webSiteLink } from '@/shared/links';
+import getEnv from '@/shared/env';
 
 export function client(): AxiosInstance {
     const instance = axios.create({
-        baseURL: process.env.VUE_APP_WEBSITE_URL,
+        baseURL: getEnv('VUE_APP_WEBSITE_URL'),
         withCredentials: true,
     })
 
