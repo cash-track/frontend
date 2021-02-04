@@ -91,6 +91,10 @@ export default class ChargesList extends Mixins(Loader) {
     }
 
     protected onLoadMoreCharges(event: boolean) {
+        if (typeof this.pagination === 'undefined') {
+            return
+        }
+
         if (!event || this.isLoadingFor(PAGINATION) || this.pagination.nextPage === null) {
             return
         }

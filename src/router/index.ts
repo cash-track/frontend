@@ -15,32 +15,50 @@ Vue.use(VueRouter)
 const routes: Array<RouteConfig> = [
     {
         path: '/',
-        redirect: '/wallets'
+        redirect: '/wallets',
+        meta: {
+            title: 'Dashboard | Cash Track',
+        },
     },
     {
         path: '/wallets',
         name: 'wallets',
         component: WalletsView,
+        meta: {
+            title: 'Wallets | Cash Track',
+        },
     },
     {
         path: '/profile',
         name: 'profile',
         component: ProfileView,
+        meta: {
+            title: 'Profile | Cash Track',
+        },
     },
     {
         path: '/settings',
         name: 'settings',
         component: SettingsView,
+        meta: {
+            title: 'Settings | Cash Track',
+        },
         children: [
             {
                 path: 'profile',
                 name: 'settings.profile',
-                component: ProfileSettingsView
+                component: ProfileSettingsView,
+                meta: {
+                    title: 'Profile Settings | Cash Track',
+                },
             },
             {
                 path: 'security',
                 name: 'settings.security',
-                component: SecuritySettingsView
+                component: SecuritySettingsView,
+                meta: {
+                    title: 'Security Settings | Cash Track',
+                },
             },
         ],
     },
@@ -48,24 +66,39 @@ const routes: Array<RouteConfig> = [
         path: '/wallets/create',
         name: 'wallets.create',
         component: WalletCreateView,
+        meta: {
+            title: 'Create Wallet | Cash Track',
+        },
     },
     {
         path: '/wallets/:walletID',
         name: 'wallets.show',
         component: WalletView,
         props: true,
+        meta: {
+            title: 'Wallet | Cash Track',
+            namedTitle: '{name} | Cash Track',
+        },
     },
     {
         path: '/wallets/:walletID/edit',
         name: 'wallets.edit',
         component: WalletEditView,
         props: true,
+        meta: {
+            title: 'Edit Wallet | Cash Track',
+            namedTitle: 'Edit {name} | Cash Track',
+        },
     },
     {
         path: '/wallets/:walletID/share',
         name: 'wallets.share',
         component: WalletShareView,
         props: true,
+        meta: {
+            title: 'Share Wallet | Cash Track',
+            namedTitle: 'Share {name} | Cash Track',
+        },
     },
 ]
 
@@ -73,6 +106,20 @@ const router = new VueRouter({
     mode: 'history',
     base: process.env.BASE_URL,
     routes
+})
+
+router.beforeEach((to, from, next) => {
+    const nearestWithTitle = to.matched.slice().reverse().find(r => r.meta && r.meta.title);
+
+    if (nearestWithTitle) {
+        if (to.params.nameForTitle && nearestWithTitle.meta.namedTitle) {
+            document.title = nearestWithTitle.meta.namedTitle.replaceAll('{name}', to.params.nameForTitle)
+        } else {
+            document.title = nearestWithTitle.meta.title;
+        }
+    }
+
+    return next();
 })
 
 export default router

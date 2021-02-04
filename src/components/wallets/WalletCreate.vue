@@ -4,8 +4,8 @@
             <template v-slot:header>Create Wallet</template>
 
             <b-form-group
-                label-align-md="right"
-                label-cols-md="2"
+                label-align-lg="right"
+                label-cols-lg="2"
                 label-for="name"
                 :invalid-feedback="validationMessage('name')"
                 :state="validationState('name')"
@@ -24,8 +24,8 @@
             </b-form-group>
 
             <b-form-group
-                label-align-sm="right"
-                label-cols-sm="2"
+                label-align-lg="right"
+                label-cols-lg="2"
                 label-for="defaultCurrencyCode"
                 :invalid-feedback="validationMessage('defaultCurrencyCode')"
                 :state="validationState('defaultCurrencyCode')"
@@ -148,6 +148,7 @@ export default class WalletCreate extends Mixins(Loader, Messager, Validator) {
             name: 'wallets.show',
             params: {
                 walletID: response.data.data.id.toString(),
+                nameForTitle: this.form.name
             }
         })
     }

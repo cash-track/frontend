@@ -159,7 +159,10 @@ export default class WalletShare extends Mixins(Loader, Messager, Validator) {
     protected onClose() {
         this.$router.push({
             name: 'wallets.show',
-            params: {walletID: this.wallet.id.toString()}
+            params: {
+                walletID: this.wallet.id.toString(),
+                nameForTitle: this.wallet.name,
+            }
         })
     }
 }

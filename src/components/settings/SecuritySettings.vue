@@ -2,14 +2,14 @@
     <b-form novalidate @submit="onSubmit">
         <b-card footer-tag="footer" header-tag="header">
             <template v-slot:header>
-                <div class="text-sm-center">
+                <div class="text-md-center">
                     <b>Change Password</b>
                 </div>
             </template>
 
             <b-form-group
-                label-align-sm="right"
-                label-cols-sm="4"
+                label-align-lg="right"
+                label-cols-lg="4"
                 label-for="currentPassword"
                 :invalid-feedback="validationMessage('currentPassword')"
                 :state="validationState('currentPassword')"
@@ -27,8 +27,8 @@
             </b-form-group>
 
             <b-form-group
-                label-align-sm="right"
-                label-cols-sm="4"
+                label-align-lg="right"
+                label-cols-lg="4"
                 label-for="newPassword"
                 :invalid-feedback="validationMessage('newPassword')"
                 :state="validationState('newPassword')"
@@ -47,8 +47,8 @@
             </b-form-group>
 
             <b-form-group
-                label-align-sm="right"
-                label-cols-sm="4"
+                label-align-lg="right"
+                label-cols-lg="4"
                 label-for="newPasswordConfirmation"
                 :invalid-feedback="validationMessage('newPasswordConfirmation')"
                 :state="validationState('newPasswordConfirmation')"
@@ -89,7 +89,7 @@
             </b-alert>
 
             <template v-slot:footer>
-                <div class="text-sm-center">
+                <div class="text-center">
                     <b-button variant="primary" type="submit" :disabled="isLoading">
                         Update Password
                         <b-spinner v-show="isLoading" small></b-spinner>

@@ -17,10 +17,10 @@
 
         <b-list-group flush>
             <b-list-group-item class="d-flex justify-content-between">
-                <span class="text-muted">
+                <span class="text-muted wallet-card-currency">
                     {{ wallet.defaultCurrency.name }} ({{ wallet.defaultCurrency.code }})
                 </span>
-                <span class="text-primary">
+                <span class="text-primary wallet-card-price">
                     <b>{{ wallet.totalAmount | money(wallet.defaultCurrency) }}</b>
                 </span>
             </b-list-group-item>
@@ -53,7 +53,7 @@
                         ></profile-avatar>
                     </div>
                 </div>
-                <span class="text-muted">
+                <span class="text-muted wallet-card-last-activity">
                     {{ wallet.updatedAt | moment("from") }}
                     <b-icon-clock></b-icon-clock>
                 </span>
@@ -111,7 +111,10 @@ export default class WalletCard extends Vue {
     onWalletClick() {
         this.$router.push({
             name: 'wallets.show',
-            params: {walletID: this.wallet.id.toString()}
+            params: {
+                walletID: this.wallet.id.toString(),
+                nameForTitle: this.wallet.name,
+            }
         })
     }
 }
@@ -129,6 +132,11 @@ export default class WalletCard extends Vue {
             overflow: hidden;
         }
 
+        .card-footer {
+            padding-top: 0.5rem;
+            padding-bottom: 0.5rem;
+        }
+
         .list-group-item {
             background-color: #f5f5f5;
         }
@@ -144,6 +152,20 @@ export default class WalletCard extends Vue {
 
         .badge {
             margin-left: 5px;
+        }
+
+        .wallet-card-currency {
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+        .wallet-card-price {
+            white-space: nowrap;
+        }
+
+        .wallet-card-last-activity {
+            line-height: 30px;
         }
     }
 

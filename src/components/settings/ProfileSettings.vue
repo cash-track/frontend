@@ -2,14 +2,14 @@
     <b-form novalidate @submit="onSubmit">
         <b-card footer-tag="footer" header-tag="header">
             <template v-slot:header>
-                <div class="text-sm-center">
+                <div class="text-md-center">
                     <b>Profile Settings</b>
                 </div>
             </template>
 
             <b-form-group
-                label-align-sm="right"
-                label-cols-sm="4"
+                label-align-lg="right"
+                label-cols-lg="4"
                 label-for="name"
                 :invalid-feedback="validationMessage('name')"
                 :state="validationState('name')"
@@ -28,8 +28,8 @@
             </b-form-group>
 
             <b-form-group
-                label-align-sm="right"
-                label-cols-sm="4"
+                label-align-lg="right"
+                label-cols-lg="4"
                 label-for="lastName"
                 :invalid-feedback="validationMessage('lastName')"
                 :state="validationState('lastName')"
@@ -48,8 +48,8 @@
             </b-form-group>
 
             <b-form-group
-                label-align-sm="right"
-                label-cols-sm="4"
+                label-align-lg="right"
+                label-cols-lg="4"
                 label-for="nickName"
                 :invalid-feedback="validationMessage('nickName')"
                 :state="nickNameValidationState"
@@ -69,8 +69,8 @@
             </b-form-group>
 
             <b-form-group
-                label-align-sm="right"
-                label-cols-sm="4"
+                label-align-lg="right"
+                label-cols-lg="4"
                 label-for="defaultCurrencyCode"
                 :invalid-feedback="validationMessage('defaultCurrencyCode')"
                 :state="validationState('defaultCurrencyCode')"
@@ -119,7 +119,7 @@
             </b-alert>
 
             <template v-slot:footer>
-                <div class="text-sm-center">
+                <div class="text-center">
                     <b-button variant="primary" type="submit" :disabled="isLoading">
                         Update Profile
                         <b-spinner v-show="isLoading" small></b-spinner>

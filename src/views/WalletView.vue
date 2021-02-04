@@ -13,14 +13,14 @@
 
                 <div>
                     <b-btn-group>
-                        <b-button variant="primary" :to="{name: 'wallets.edit', params: {walletID: wallet.id.toString()}}">
+                        <b-button variant="primary" :to="{name: 'wallets.edit', params: {walletID: wallet.id.toString(), nameForTitle: wallet.name}}">
                             <b-icon-pencil></b-icon-pencil>
                             Edit
                         </b-button>
                         <b-dropdown right variant="primary">
                             <b-dropdown-header>More actions</b-dropdown-header>
 
-                            <b-dropdown-item :to="{name: 'wallets.share', params: {walletID: wallet.id.toString()}}">Share</b-dropdown-item>
+                            <b-dropdown-item :to="{name: 'wallets.share', params: {walletID: wallet.id.toString(), nameForTitle: wallet.name}}">Share</b-dropdown-item>
 
                             <b-dropdown-item v-if="!wallet.isActive" @click="onActivate">Activate</b-dropdown-item>
                             <b-dropdown-item v-if="wallet.isActive" @click="onDisable">Disable</b-dropdown-item>
