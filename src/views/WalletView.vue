@@ -241,11 +241,12 @@ h3 .badge {
 
 .wallet-owners {
     border-top: 1px solid #eee;
-    padding: 20px 0;
+    padding: 16px 0;
 
     &>span {
         white-space: nowrap;
-        padding: 4px 0 8px;
+        padding: 4px 0;
+        display: inline-block;
     }
 }
 
