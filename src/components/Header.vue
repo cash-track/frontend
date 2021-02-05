@@ -40,6 +40,7 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
+import { logout } from '@/api/auth';
 import { webSiteLink } from '@/shared/links';
 import {ProfileInterface} from '@/api/profile';
 import ProfileAvatar from '@/components/profile/ProfileAvatar.vue';
@@ -72,9 +73,11 @@ export default class Header extends Vue {
         event.preventDefault()
         event.stopPropagation()
 
-        this.$store.commit('logout')
+        logout().then(res => {
+            this.$store.commit('logout')
 
-        window.location.href = webSiteLink('/login')
+            window.location.href = res.data.redirectUrl ? res.data.redirectUrl : webSiteLink('/login');
+        })
     }
 }
 </script>
