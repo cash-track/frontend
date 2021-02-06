@@ -1,6 +1,6 @@
 <template>
     <b-row class="charge-item" :class="{'active': isActive}">
-        <b-col sm="4" class="text-right charge-date-container">
+        <b-col md="4" class="text-md-right charge-date-container">
             <span class="text-muted charge-date"
                   :title="dateTime"
                   v-b-tooltip.left>
@@ -8,9 +8,9 @@
             </span>
             <profile-avatar class="charge-avatar" :user="charge.user"></profile-avatar>
         </b-col>
-        <b-col sm="8" class="charge-main-container">
-            <b-icon-arrow-up class="charge-type" variant="success" scale="2" v-if="charge.operation === '+'"></b-icon-arrow-up>
-            <b-icon-arrow-down class="charge-type" variant="danger" scale="2" v-if="charge.operation === '-'"></b-icon-arrow-down>
+        <b-col md="8" class="charge-main-container">
+            <b-icon-arrow-up class="charge-type" variant="success" scale="2" v-show="!isEdit" v-if="charge.operation === '+'"></b-icon-arrow-up>
+            <b-icon-arrow-down class="charge-type" variant="danger" scale="2" v-show="!isEdit" v-if="charge.operation === '-'"></b-icon-arrow-down>
             <div class="charge-pointer"></div>
 
             <div class="charge-action float-right" v-if="!isEdit">
@@ -111,6 +111,10 @@ export default class ChargeItem extends Vue {
 </script>
 
 <style lang="scss">
+@import "node_modules/bootstrap/scss/functions";
+@import "node_modules/bootstrap/scss/variables";
+@import "node_modules/bootstrap/scss/mixins/_breakpoints";
+
 .charge-item {
     .charge-date-container {
         padding-top: 10px;
@@ -210,6 +214,70 @@ export default class ChargeItem extends Vue {
     &:hover {
         .charge-action {
             //display: block;
+        }
+    }
+}
+
+@include media-breakpoint-down(sm) {
+    .charge-item {
+        .charge-date-container {
+            display: flex;
+
+            &>:nth-child(1) {
+                order: 2;
+                padding: 10px 6px;
+            }
+
+            &>:nth-child(2) {
+                order: 1;
+            }
+
+            .charge-avatar {
+                margin: 0 6px 0 -2px;
+            }
+        }
+
+        .charge-date-container + .charge-main-container {
+            padding-top: 6px
+        }
+
+        .charge-main-container {
+            border-left: 0;
+            padding: 18px 20px 20px;
+
+            .charge-header {
+                display: inline;
+
+                .charge-title {
+                    display: block;
+                    max-width: none;
+                    padding: 0 0 0 45px;
+                }
+
+                .charge-amount {
+                    min-width: initial;
+                }
+            }
+
+            .charge-pointer {
+                display: none;
+            }
+
+            .charge-type {
+                position: initial;
+                vertical-align: middle;
+                margin-right: 20px;
+            }
+
+            .charge-body {
+                padding-left: 45px;
+            }
+        }
+
+        &.active {
+            .charge-main-container .charge-title {
+                white-space: normal;
+            }
         }
     }
 }

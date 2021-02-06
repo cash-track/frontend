@@ -1,6 +1,6 @@
 <template>
     <b-row class="personal-settings">
-        <b-col md="4">
+        <b-col md="4" class="mb-3">
             <b-card no-body header="Personal Settings">
                 <b-list-group flush>
                     <b-list-group-item :to="{name: 'settings.profile'}" exact-active-class="active">Profile</b-list-group-item>

@@ -30,6 +30,7 @@
                     <b-form-radio-group
                         buttons
                         button-variant="primary"
+                        class="btn-block"
                         v-model="form.type"
                         :options="typeOptions"
                         :disabled="isLoading"

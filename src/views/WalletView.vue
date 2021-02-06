@@ -13,14 +13,14 @@
 
                 <div>
                     <b-btn-group>
-                        <b-button variant="primary" :to="{name: 'wallets.edit', params: {walletID: wallet.id.toString()}}">
+                        <b-button variant="primary" :to="{name: 'wallets.edit', params: {walletID: wallet.id.toString(), nameForTitle: wallet.name}}">
                             <b-icon-pencil></b-icon-pencil>
                             Edit
                         </b-button>
                         <b-dropdown right variant="primary">
                             <b-dropdown-header>More actions</b-dropdown-header>
 
-                            <b-dropdown-item :to="{name: 'wallets.share', params: {walletID: wallet.id.toString()}}">Share</b-dropdown-item>
+                            <b-dropdown-item :to="{name: 'wallets.share', params: {walletID: wallet.id.toString(), nameForTitle: wallet.name}}">Share</b-dropdown-item>
 
                             <b-dropdown-item v-if="!wallet.isActive" @click="onActivate">Activate</b-dropdown-item>
                             <b-dropdown-item v-if="wallet.isActive" @click="onDisable">Disable</b-dropdown-item>
@@ -43,24 +43,24 @@
             </div>
 
             <div class="wallet-details d-flex justify-content-between">
-                <span class="text-left">
+                <span class="text-center text-sm-left">
                     <span class="text-muted">Income</span><br>
-                    <span class="text-success">
-                        <b-icon-arrow-up variant="success" scale="1.5"></b-icon-arrow-up>
+                    <span class="text-success wallet-total">
+                        <b-icon-arrow-up variant="success" scale="1.5" class="d-none d-sm-inline"></b-icon-arrow-up>
                         {{ walletTotal.totalIncomeAmount | money(wallet.defaultCurrency) }}
                     </span>
                 </span>
                 <span class="text-center">
                     <span class="text-muted">Available</span><br>
-                    <span class="text-info">
+                    <span class="text-info wallet-total">
                         {{ walletTotal.totalAmount | money(wallet.defaultCurrency) }}
                     </span>
                 </span>
-                <span class="text-right">
+                <span class="text-center text-sm-right">
                     <span class="text-muted">Expense</span><br>
-                    <span class="text-danger">
+                    <span class="text-danger wallet-total">
                         {{ walletTotal.totalExpenseAmount | money(wallet.defaultCurrency) }}
-                        <b-icon-arrow-down variant="danger" scale="1.5"></b-icon-arrow-down>
+                        <b-icon-arrow-down variant="danger" scale="1.5" class="d-none d-sm-inline"></b-icon-arrow-down>
                     </span>
                 </span>
             </div>
@@ -223,6 +223,10 @@ export default class WalletView extends Vue {
 </script>
 
 <style lang="scss" scoped>
+@import "node_modules/bootstrap/scss/functions";
+@import "node_modules/bootstrap/scss/variables";
+@import "node_modules/bootstrap/scss/mixins/_breakpoints";
+
 h3 .badge {
     font-size: 12px;
     font-weight: 400;
@@ -237,11 +241,12 @@ h3 .badge {
 
 .wallet-owners {
     border-top: 1px solid #eee;
-    padding: 20px 0;
+    padding: 16px 0;
 
     &>span {
         white-space: nowrap;
-        padding: 4px 0 8px;
+        padding: 4px 0;
+        display: inline-block;
     }
 }
 
@@ -250,6 +255,18 @@ h3 .badge {
     border-top: 1px solid #eee;
     border-bottom: 1px solid #eee;
 
+    &>:nth-child(1) {
+        order: 1;
+    }
+
+    &>:nth-child(2) {
+        order: 2;
+    }
+
+    &>:nth-child(3) {
+        order: 3;
+    }
+
     .text-muted {
         font-size: 12px;
     }
@@ -257,6 +274,48 @@ h3 .badge {
     .text-success, .text-danger, .text-info {
         font-size: 40px;
         line-height: 40px;
+    }
+
+    .wallet-total {
+        white-space: nowrap;
+    }
+}
+
+@include media-breakpoint-down(sm) {
+    .wallet-header {
+        flex-wrap: wrap;
+    }
+
+    .wallet-details {
+        flex-wrap: wrap;
+
+        &>* {
+            display: block;
+        }
+
+        &>:nth-child(1) {
+            width: 50%;
+            order: 1;
+        }
+
+        &>:nth-child(2) {
+            width: 100%;
+            order: 3;
+        }
+
+        &>:nth-child(3) {
+            width: 50%;
+            order: 2;
+        }
+    }
+}
+
+@include media-breakpoint-down(xs) {
+    .wallet-details {
+        &>:nth-child(1), &>:nth-child(2), &>:nth-child(3) {
+            width: 100%;
+            padding: 10px 0;
+        }
     }
 }
 </style>

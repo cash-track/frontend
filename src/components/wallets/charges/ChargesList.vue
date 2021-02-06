@@ -10,7 +10,7 @@
         <warning-message message="Unable to load charges. Please try again later" :show="isLoadingFailed" class="mt-3"></warning-message>
 
         <b-row class="charge-item" v-if="!isLoadingFailed && wallet.isActive">
-            <b-col offset-sm="4" sm="8" class="charge-main-container wallet-charge-create">
+            <b-col offset-md="4" md="8" class="charge-main-container wallet-charge-create">
                 <b-icon-plus class="charge-type" variant="muted" scale="2"></b-icon-plus>
 
                 <b-button variant="outline-primary" v-b-toggle.charge-create>New Charge</b-button>
@@ -91,6 +91,10 @@ export default class ChargesList extends Mixins(Loader) {
     }
 
     protected onLoadMoreCharges(event: boolean) {
+        if (typeof this.pagination === 'undefined') {
+            return
+        }
+
         if (!event || this.isLoadingFor(PAGINATION) || this.pagination.nextPage === null) {
             return
         }
@@ -149,6 +153,10 @@ export default class ChargesList extends Mixins(Loader) {
 </script>
 
 <style lang="scss" scoped>
+@import "node_modules/bootstrap/scss/functions";
+@import "node_modules/bootstrap/scss/variables";
+@import "node_modules/bootstrap/scss/mixins/_breakpoints";
+
 .charges-list-container {
     position: relative;
 
@@ -270,6 +278,18 @@ export default class ChargesList extends Mixins(Loader) {
     &:hover .charge-type {
         cursor: pointer;
         background-color: #eee!important;
+    }
+}
+
+@include media-breakpoint-down(sm) {
+    .charge-item .charge-main-container {
+        border-left: 0;
+
+        .charge-type {
+            position: initial;
+            vertical-align: middle;
+            margin: 7px 20px 7px 0;
+        }
     }
 }
 </style>

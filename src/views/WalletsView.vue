@@ -3,7 +3,7 @@
         <warning-message message="Unable to load your wallets. Please try again later" :show="loadFailed"></warning-message>
 
         <b-row>
-            <b-col sm="6" md="4" v-for="wallet of normalWallets" v-bind:key="wallet.ID">
+            <b-col md="6" lg="4" v-for="wallet of normalWallets" v-bind:key="wallet.ID">
                 <wallet-card :wallet="wallet"></wallet-card>
             </b-col>
         </b-row>
@@ -20,7 +20,7 @@
         <p class="lead" v-if="archivedWallets.length">Archived</p>
         <hr v-if="archivedWallets.length">
         <b-row v-if="archivedWallets.length">
-            <b-col sm="6" md="4" v-for="wallet of archivedWallets" v-bind:key="wallet.ID">
+            <b-col md="6" lg="4" v-for="wallet of archivedWallets" v-bind:key="wallet.ID">
                 <wallet-card :wallet="wallet"></wallet-card>
             </b-col>
         </b-row>
