@@ -18,7 +18,11 @@ export default new Vuex.Store({
         login(state, profile: ProfileInterface) {
             state.isLogged = true;
             state.profile = profile;
-        }
+        },
+
+        profilePhotoUpdated(state, photoUrl: string) {
+            state.profile.photoUrl = photoUrl;
+        },
     },
     actions: {
         loadProfile() {
