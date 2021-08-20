@@ -121,7 +121,7 @@
             <template v-slot:footer>
                 <div class="text-center">
                     <b-button variant="primary" type="submit" :disabled="isLoading">
-                        Update Profile
+                        Save
                         <b-spinner v-show="isLoading" small></b-spinner>
                     </b-button>
                 </div>
