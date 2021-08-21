@@ -30,3 +30,7 @@ export function emptyUser(): UserInterface {
 export function userFindByEmail(email: string): Promise<AxiosResponse<UserResponseInterface>> {
     return client().get<UserResponseInterface>(`/api/users/find/by-email/${email}`)
 }
+
+export function usersFindByCommonWallets(): Promise<AxiosResponse<UsersResponseInterface>> {
+    return client().get<UsersResponseInterface>('/api/users/find/by-common-wallets')
+}

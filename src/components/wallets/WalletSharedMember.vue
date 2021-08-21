@@ -4,7 +4,7 @@
             {{ user.name }} {{ user.lastName }}
         </profile-avatar-badge>
         <b-button-close
-            v-if="!isDeleted"
+            v-if="isAllowedToRemove && !isDeleted"
             v-show="!isLoading && !hasMessage"
             :title="tooltip"
             v-b-tooltip.right
@@ -45,6 +45,9 @@ export default class WalletSharedMember extends Mixins(Loader, Messager) {
 
     @Prop({required: true})
     wallet!: WalletInterface
+
+    @Prop({required: true})
+    isAllowedToRemove!: false
 
     errorMessage = {
         id: `wallet-shared-member-message-${this.wallet.id}-${this.user.id}`,

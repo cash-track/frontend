@@ -10,7 +10,25 @@
         <div class="wallet-owners">
             <b-list-group>
                 <b-list-group-item v-for="user of users" v-bind:key="user.id">
-                    <wallet-shared-member :wallet="wallet" :user="user" @deleted="onDeleted"></wallet-shared-member>
+                    <wallet-shared-member :wallet="wallet" :user="user" @deleted="onDeleted" :is-allowed-to-remove="users.length > 1"></wallet-shared-member>
+                </b-list-group-item>
+            </b-list-group>
+        </div>
+
+        <hr v-if="commonUsersFiltered.length">
+
+        <div class="wallet-owners" v-if="commonUsersFiltered.length">
+            <small class="form-text text-muted mb-2">Users you may know as you have common wallets</small>
+            <b-list-group>
+                <b-list-group-item v-for="user of commonUsersFiltered" v-bind:key="user.id">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <profile-avatar-badge :user="user">
+                            {{ user.name }} {{ user.lastName }} ({{ user.email }})
+                        </profile-avatar-badge>
+                        <b-button variant="primary" :disabled="isLoading" @click="onSelect(user)">
+                            Select
+                        </b-button>
+                    </div>
                 </b-list-group-item>
             </b-list-group>
         </div>
@@ -24,7 +42,7 @@
                 label-for="email"
                 :invalid-feedback="validationMessage('email')"
                 :state="validationState('email')"
-                description="Type name or email of user you want to invite"
+                description="Type email of user you want to invite"
             >
                 <b-input-group>
                     <b-form-input
@@ -49,7 +67,7 @@
 
         <b-list-group v-if="inviteUser !== null">
             <b-list-group-item class="d-flex justify-content-between">
-                <profile-avatar-badge :user="inviteUser">{{ inviteUser.name }} {{ inviteUser.lastName }} ({{ inviteUserEmail }})</profile-avatar-badge>
+                <profile-avatar-badge :user="inviteUser">{{ inviteUser.name }} {{ inviteUser.lastName }} ({{ inviteUser.email }})</profile-avatar-badge>
                 <b-button variant="primary" :disabled="isLoading" @click="onInvite">
                     <b-spinner v-show="isLoading" small></b-spinner>
                     Invite
@@ -65,7 +83,7 @@ import Loader from '@/shared/Loader';
 import Messager from '@/shared/Messager';
 import Validator from '@/shared/Validator';
 import { WalletInterface, walletUsersGet, walletUsersAdd } from '@/api/wallets';
-import { userFindByEmail, UserInterface } from '@/api/users'
+import { userFindByEmail, usersFindByCommonWallets, UserInterface } from '@/api/users'
 import WarningMessage from '@/components/shared/WarningMessage.vue';
 import ProfileAvatarBadge from '@/components/profile/ProfileAvatarBadge.vue';
 import WalletSharedMember, { WalletSharedMemberDeletedEvent } from '@/components/wallets/WalletSharedMember.vue';
@@ -86,8 +104,31 @@ export default class WalletShare extends Mixins(Loader, Messager, Validator) {
     inviteUserEmail = ''
     inviteUser: UserInterface|null = null
 
+    commonUsers: Array<UserInterface> = []
+
     mounted() {
         this.onWalletLoaded()
+    }
+
+    get commonUsersFiltered() {
+        const list = new Array<UserInterface>()
+        const ignored = []
+
+        ignored.push(...this.users.map(user => user.id))
+
+        if (this.inviteUser !== null) {
+            ignored.push(this.inviteUser.id)
+        }
+
+        for (const user of this.commonUsers) {
+            if (ignored.indexOf(user.id) !== -1) {
+                continue
+            }
+
+            list.push(user)
+        }
+
+        return list
     }
 
     @Watch('wallet')
@@ -96,6 +137,7 @@ export default class WalletShare extends Mixins(Loader, Messager, Validator) {
 
         if (this.isWalletLoaded) {
             this.loadUsers()
+            this.loadCommonUsers()
         }
     }
 
@@ -106,6 +148,14 @@ export default class WalletShare extends Mixins(Loader, Messager, Validator) {
             this.users = response.data.data
         }).catch(() => {
             this.loadUsersFailed = true;
+        })
+    }
+
+    protected loadCommonUsers() {
+        usersFindByCommonWallets().then(response => {
+            this.commonUsers = response.data.data
+        }).catch(() => {
+            //
         })
     }
 
@@ -122,6 +172,10 @@ export default class WalletShare extends Mixins(Loader, Messager, Validator) {
         }).catch(() => {
             this.setValidationMessage('email', 'User not found')
         }).finally(this.setLoaded)
+    }
+
+    protected onSelect(user: UserInterface) {
+        this.inviteUser = user;
     }
 
     protected onInvite(event: Event) {
