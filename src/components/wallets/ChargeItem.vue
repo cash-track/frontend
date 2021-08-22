@@ -150,6 +150,7 @@ export default class ChargeItem extends Vue {
             line-height: 20px;
             border-radius: 40px;
             overflow: visible;
+            display: inline;
         }
 
         .charge-pointer {
