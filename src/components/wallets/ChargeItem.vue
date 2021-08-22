@@ -271,7 +271,8 @@ export default class ChargeItem extends Vue {
             .charge-type {
                 position: initial;
                 vertical-align: middle;
-                margin-right: 20px;
+                margin-right: 16px;
+                padding: 2px 4px;
             }
 
             .charge-body {
