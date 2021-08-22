@@ -70,6 +70,14 @@ export function walletsGet(): Promise<AxiosResponse<WalletsResponseInterface>> {
     return client().get<WalletsResponseInterface>('/api/wallets')
 }
 
+export function walletsUnArchivedGet(): Promise<AxiosResponse<WalletsResponseInterface>> {
+    return client().get<WalletsResponseInterface>('/api/wallets/unarchived')
+}
+
+export function walletsArchivedGet(): Promise<AxiosResponse<WalletsResponseInterface>> {
+    return client().get<WalletsResponseInterface>('/api/wallets/archived')
+}
+
 export function walletGet(walletId: number): Promise<AxiosResponse<WalletResponseInterface>> {
     return client().get<WalletResponseInterface>(`/api/wallets/${walletId}`)
 }
