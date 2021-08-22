@@ -11,7 +11,9 @@
 
         <b-row class="charge-item" v-if="!isLoadingFailed && wallet.isActive">
             <b-col offset-md="4" md="8" class="charge-main-container wallet-charge-create">
-                <b-icon-plus class="charge-type" variant="muted" scale="2"></b-icon-plus>
+                <div class="charge-type">
+                    <b-icon-plus variant="muted" scale="1.5"></b-icon-plus>
+                </div>
 
                 <b-button variant="outline-primary" v-b-toggle.charge-create>New Charge</b-button>
 
@@ -228,13 +230,15 @@ export default class ChargesList extends Mixins(Loader) {
         left: -12px;
         top: 18px;
         background: #fff;
-        padding: 6px;
+        padding: 2px;
         height: 24px;
         width: 24px;
         text-align: center;
         font-size: 20px;
         line-height: 20px;
         border-radius: 40px;
+        overflow: visible;
+        display: inline;
     }
 
     .charge-pointer {

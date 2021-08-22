@@ -9,8 +9,11 @@
             <profile-avatar class="charge-avatar" :user="charge.user"></profile-avatar>
         </b-col>
         <b-col md="8" class="charge-main-container">
-            <b-icon-arrow-up class="charge-type" variant="success" scale="2" v-show="!isEdit" v-if="charge.operation === '+'"></b-icon-arrow-up>
-            <b-icon-arrow-down class="charge-type" variant="danger" scale="2" v-show="!isEdit" v-if="charge.operation === '-'"></b-icon-arrow-down>
+            <div class="charge-type">
+                <b-icon-arrow-up variant="success" v-show="!isEdit" v-if="charge.operation === '+'"></b-icon-arrow-up>
+                <b-icon-arrow-down variant="danger" v-show="!isEdit" v-if="charge.operation === '-'"></b-icon-arrow-down>
+            </div>
+
             <div class="charge-pointer"></div>
 
             <div class="charge-action float-right" v-if="!isEdit">
@@ -139,13 +142,15 @@ export default class ChargeItem extends Vue {
             left: -12px;
             top: 18px;
             background: #fff;
-            padding: 6px;
+            padding: 2px;
             height: 24px;
             width: 24px;
             text-align: center;
             font-size: 20px;
             line-height: 20px;
             border-radius: 40px;
+            overflow: visible;
+            display: inline;
         }
 
         .charge-pointer {
@@ -266,7 +271,8 @@ export default class ChargeItem extends Vue {
             .charge-type {
                 position: initial;
                 vertical-align: middle;
-                margin-right: 20px;
+                margin-right: 16px;
+                padding: 2px 4px;
             }
 
             .charge-body {

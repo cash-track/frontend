@@ -46,7 +46,7 @@
                 <span class="text-center text-sm-left">
                     <span class="text-muted">Income</span><br>
                     <span class="text-success wallet-total">
-                        <b-icon-arrow-up variant="success" scale="1.5" class="d-none d-sm-inline"></b-icon-arrow-up>
+                        <b-icon-arrow-up variant="success" scale="1" class="d-none d-sm-inline"></b-icon-arrow-up>
                         {{ walletTotal.totalIncomeAmount | money(wallet.defaultCurrency) }}
                     </span>
                 </span>
@@ -60,7 +60,7 @@
                     <span class="text-muted">Expense</span><br>
                     <span class="text-danger wallet-total">
                         {{ walletTotal.totalExpenseAmount | money(wallet.defaultCurrency) }}
-                        <b-icon-arrow-down variant="danger" scale="1.5" class="d-none d-sm-inline"></b-icon-arrow-down>
+                        <b-icon-arrow-down variant="danger" scale="1" class="d-none d-sm-inline"></b-icon-arrow-down>
                     </span>
                 </span>
             </div>
