@@ -2,8 +2,7 @@ name: Deploy
 
 on:
   release:
-    types:
-      - published
+    types: [ published ]
 
 env:
   REPO: cashtrack/frontend
@@ -11,7 +10,7 @@ env:
   WORKDIR: /var/www/cash-track.app/frontend
 
 jobs:
-  build:
+  deploy:
 
     runs-on: ubuntu-latest
     permissions:
@@ -35,7 +34,7 @@ jobs:
       - name: Deploy
         uses: appleboy/ssh-action@master
         env:
-          IMAGE: ${{ env.REPO }}:${{ steps.meta.outputs.json.tags[0] }}
+          IMAGE: ${{ env.REPO }}:${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }}
         with:
           host: ${{ secrets.PRODUCTION_SSH_HOST }}
           username: ${{ secrets.PRODUCTION_SSH_USER }}
