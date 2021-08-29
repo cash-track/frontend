@@ -1,0 +1,46 @@
+name: Deploy
+
+on:
+  release:
+    types:
+      - published
+
+env:
+  REPO: cashtrack/frontend
+  CONTAINER_NAME: cashtrack_frontend
+  WORKDIR: /var/www/cash-track.app/frontend
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      # Extract metadata (tags, labels) for Docker
+      # https://github.com/docker/metadata-action
+      - name: Extract Docker metadata
+        if: github.event_name != 'pull_request'
+        id: meta
+        uses: docker/metadata-action@v3
+        with:
+          images: ${{ env.REPO }}
+          tags: |
+            type=semver,pattern={{version}}
+
+      # Execute deployment script on the server
+      # https://github.com/appleboy/ssh-action
+      - name: Deploy
+        uses: appleboy/ssh-action@master
+        env:
+          IMAGE: ${{ env.REPO }}:${{ steps.meta.outputs.json.tags[0] }}
+        with:
+          host: ${{ secrets.PRODUCTION_SSH_HOST }}
+          username: ${{ secrets.PRODUCTION_SSH_USER }}
+          key: ${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}
+          script: |
+            echo ${{ env.IMAGE }}
+            docker ps
+            ls -la
