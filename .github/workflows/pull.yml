@@ -3,9 +3,7 @@ name: Check
 on:
   pull_request:
     branches:
-      - feature/**
-      - bugfix/**
-      - release/**
+      - master
 
 jobs:
   build:
