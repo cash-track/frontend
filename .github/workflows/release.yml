@@ -52,6 +52,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
 
   deploy:
+    needs: [ build ]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -75,13 +76,22 @@ jobs:
         uses: appleboy/ssh-action@master
         env:
           IMAGE: ${{ env.REPO }}:${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }}
+          VUE_APP_BASE_URL: ${{ secrets.VUE_APP_BASE_URL }}
+          VUE_APP_API_URL: ${{ secrets.VUE_APP_API_URL }}
+          VUE_APP_WEBSITE_URL: ${{ secrets.VUE_APP_WEBSITE_URL }}
         with:
           host: ${{ secrets.PRODUCTION_SSH_HOST }}
           username: ${{ secrets.PRODUCTION_SSH_USER }}
           key: ${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}
           script: |
-            docker pull ${{ env.IMAGE }}
-            echo ${{ env.IMAGE }}
-            docker ps
             cd ${{ env.WORKDIR }}
-            ls -la
+            docker pull ${{ env.IMAGE }}
+            docker stop ${{ env.CONTAINER_NAME }}
+            docker run -d \
+              --rm \
+              --name ${{ env.CONTAINER_NAME }} \
+              -p 3001:80 \
+              -e VUE_APP_BASE_URL="${{ env.VUE_APP_BASE_URL }}" \
+              -e VUE_APP_API_URL="${{ env.VUE_APP_API_URL }}" \
+              -e VUE_APP_WEBSITE_URL="${{ env.VUE_APP_WEBSITE_URL }}" \
+              ${{ env.IMAGE }}
