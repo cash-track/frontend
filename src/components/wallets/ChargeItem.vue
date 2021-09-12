@@ -201,7 +201,7 @@ export default class ChargeItem extends Vue {
             padding-top: 10px;
 
             &>span {
-                white-space: pre;
+                white-space: pre-wrap;
             }
         }
 

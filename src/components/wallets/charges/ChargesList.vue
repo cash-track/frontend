@@ -275,7 +275,7 @@ export default class ChargesList extends Mixins(Loader) {
         padding-top: 10px;
 
         &>span {
-            white-space: pre;
+            white-space: pre-wrap;
         }
     }
 
