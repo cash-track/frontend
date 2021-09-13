@@ -1,0 +1,24 @@
+import { CurrencyInterface } from '@/api/currency';
+import { AxiosResponse } from 'axios';
+import { client } from '@/api/client';
+import { TypeExpense, TypeIncome } from '@/api/charges';
+
+export interface ChargesFlowStatisticsResponseInterface {
+    data: {
+        currency: CurrencyInterface;
+        [TypeIncome]: ChargesFlowTypeStatisticsInterface;
+        [TypeExpense]: ChargesFlowTypeStatisticsInterface;
+    };
+}
+
+export interface ChargesFlowTypeStatisticsInterface {
+    type: string;
+    total: number;
+    lastYear: number;
+    lastQuarter: number;
+    lastMonth: number;
+}
+
+export function profileStatisticsChargesFlowGet(): Promise<AxiosResponse<ChargesFlowStatisticsResponseInterface>> {
+    return client().get<ChargesFlowStatisticsResponseInterface>(`/api/profile/statistics/charges-flow`)
+}

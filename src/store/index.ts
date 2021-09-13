@@ -8,16 +8,19 @@ export default new Vuex.Store({
     state: {
         isLogged: false,
         profile: emptyProfile(),
+        isEmailConfirmed: true,
     },
     mutations: {
         logout(state) {
             state.isLogged = false;
             state.profile = emptyProfile();
+            state.isEmailConfirmed = true;
         },
 
         login(state, profile: ProfileInterface) {
             state.isLogged = true;
             state.profile = profile;
+            state.isEmailConfirmed = profile.isEmailConfirmed;
         },
 
         profilePhotoUpdated(state, photoUrl: string) {

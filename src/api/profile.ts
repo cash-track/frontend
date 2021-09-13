@@ -30,7 +30,7 @@ export function emptyProfile(): ProfileInterface {
         lastName: '',
         nickName: '',
         email: '',
-        isEmailConfirmed: false,
+        isEmailConfirmed: true,
         photoUrl: '',
         defaultCurrencyCode: '',
     };
