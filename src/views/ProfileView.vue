@@ -3,6 +3,12 @@
         <b-row>
             <b-col md="4">
                 <profile-title></profile-title>
+
+                <hr>
+
+                <counters-statistics></counters-statistics>
+
+                <hr>
             </b-col>
             <b-col md="8">
                 <email-is-not-confirmed-alert></email-is-not-confirmed-alert>
@@ -28,9 +34,16 @@ import ProfileTitle from '@/components/profile/ProfileTitle.vue';
 import LastCharges from '@/components/profile/LastCharges.vue';
 import EmailIsNotConfirmedAlert from '@/components/profile/EmailIsNotConfirmedAlert.vue';
 import ChargesFlowStatistics from '@/components/profile/ChargesFlowStatistics.vue';
+import CountersStatistics from '@/components/profile/CountersStatistics.vue';
 
 @Component({
-    components: {ChargesFlowStatistics, LastCharges, ProfileTitle, EmailIsNotConfirmedAlert}
+    components: {
+        CountersStatistics,
+        ChargesFlowStatistics,
+        LastCharges,
+        ProfileTitle,
+        EmailIsNotConfirmedAlert,
+    }
 })
 export default class ProfileView extends Vue {}
 </script>

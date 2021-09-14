@@ -72,7 +72,7 @@ export default class ChargesStatsCard extends Vue {
             return value === TypeIncome || value === TypeExpense;
         }
     })
-    type = '';
+    type!: string;
 
     @Prop({required: true})
     currency!: CurrencyInterface

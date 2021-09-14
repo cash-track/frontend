@@ -22,3 +22,18 @@ export interface ChargesFlowTypeStatisticsInterface {
 export function profileStatisticsChargesFlowGet(): Promise<AxiosResponse<ChargesFlowStatisticsResponseInterface>> {
     return client().get<ChargesFlowStatisticsResponseInterface>(`/api/profile/statistics/charges-flow`)
 }
+
+export interface CountersStatisticsResponseInterface {
+    data: CountersStatisticsInterface;
+}
+
+export interface CountersStatisticsInterface {
+    wallets: number;
+    walletsArchived: number;
+    charges: number;
+    chargesIncome: number;
+}
+
+export function profileStatisticsCountersGet(): Promise<AxiosResponse<CountersStatisticsResponseInterface>> {
+    return client().get<CountersStatisticsResponseInterface>(`/api/profile/statistics/counters`)
+}
