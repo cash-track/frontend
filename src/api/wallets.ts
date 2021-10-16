@@ -2,6 +2,7 @@ import { AxiosResponse } from 'axios';
 import { client } from '@/api/client';
 import { CurrencyInterface, emptyCurrency } from '@/api/currency';
 import { UserInterface, UsersResponseInterface } from '@/api/users';
+import { ChargeInterface } from '@/api/charges';
 
 export interface WalletsResponseInterface {
     data: Array<WalletInterface>;
@@ -41,6 +42,7 @@ export interface WalletInterface {
     defaultCurrencyCode: string;
     defaultCurrency: CurrencyInterface;
     users: Array<UserInterface>;
+    latestCharges: Array<ChargeInterface>;
 }
 
 export interface WalletTotalInterface {
@@ -63,6 +65,7 @@ export function emptyWallet(): WalletInterface {
         defaultCurrencyCode: '',
         defaultCurrency: emptyCurrency(),
         users: [],
+        latestCharges: [],
     }
 }
 

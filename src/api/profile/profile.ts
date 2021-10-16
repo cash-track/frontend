@@ -2,6 +2,7 @@ import { CurrencyInterface } from '@/api/currency';
 import { AxiosResponse } from 'axios';
 import { client } from '@/api/client';
 import { TypeExpense, TypeIncome } from '@/api/charges';
+import { WalletsResponseInterface } from '@/api/wallets';
 
 export interface ChargesFlowStatisticsResponseInterface {
     data: {
@@ -36,4 +37,8 @@ export interface CountersStatisticsInterface {
 
 export function profileStatisticsCountersGet(): Promise<AxiosResponse<CountersStatisticsResponseInterface>> {
     return client().get<CountersStatisticsResponseInterface>(`/api/profile/statistics/counters`)
+}
+
+export function profileWalletsLatestGet(): Promise<AxiosResponse<WalletsResponseInterface>> {
+    return client().get<WalletsResponseInterface>(`/api/profile/wallets/latest`)
 }

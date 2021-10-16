@@ -26,39 +26,63 @@
             </b-list-group-item>
         </b-list-group>
 
-        <template v-slot:footer>
-            <div class="d-flex justify-content-between">
-                <div class="wallet-card-members">
-                    <b-avatar-group size="2em" v-if="!hasOneMember">
-                        <profile-avatar
-                            v-for="user of members"
-                            :user="user"
-                            v-bind:key="user.id"
-                            :title="`${user.name} ${user.lastName}`"
-                            v-b-tooltip.top
-                        ></profile-avatar>
-                        <b-avatar
-                            text="..."
-                            v-if="hasMoreMembers"
-                            title="and more members.."
-                            v-b-tooltip.top
-                        ></b-avatar>
-                    </b-avatar-group>
-                    <div v-else>
-                        <profile-avatar
-                            :user="members[0]"
-                            size="2em"
-                            :title="`${members[0].name} ${members[0].lastName}`"
-                            v-b-tooltip.top
-                        ></profile-avatar>
+        <b-list-group flush>
+            <b-list-group-item class="card-footer">
+                <div class="d-flex justify-content-between">
+                    <div class="wallet-card-members">
+                        <b-avatar-group size="2em" v-if="!hasOneMember">
+                            <profile-avatar
+                                v-for="user of members"
+                                :user="user"
+                                v-bind:key="user.id"
+                                :title="`${user.name} ${user.lastName}`"
+                                v-b-tooltip.top
+                            ></profile-avatar>
+                            <b-avatar
+                                text="..."
+                                v-if="hasMoreMembers"
+                                title="and more members.."
+                                v-b-tooltip.top
+                            ></b-avatar>
+                        </b-avatar-group>
+                        <div v-else>
+                            <profile-avatar
+                                :user="members[0]"
+                                size="2em"
+                                :title="`${members[0].name} ${members[0].lastName}`"
+                                v-b-tooltip.top
+                            ></profile-avatar>
+                        </div>
+                    </div>
+                    <span class="text-muted wallet-card-last-activity">
+                        {{ wallet.updatedAt | moment("from") }}
+                        <b-icon-clock></b-icon-clock>
+                    </span>
+                </div>
+            </b-list-group-item>
+        </b-list-group>
+
+
+        <b-list-group flush v-if="hasLatestCharges" class="charges-list">
+            <b-list-group-item v-for="charge of wallet.latestCharges" :key="charge.id">
+                <div class="row">
+                    <div class="col-md-8">
+                        <span class="text-muted charge-title">
+                            <span class="pr-2">
+                                <b-icon-arrow-up variant="success" v-if="charge.operation === '+'"></b-icon-arrow-up>
+                                <b-icon-arrow-down variant="danger" v-if="charge.operation === '-'"></b-icon-arrow-down>
+                            </span>
+                            {{ charge.title }}
+                        </span>
+                    </div>
+                    <div class="col-md-4 text-right text-muted">
+                        <b>
+                            {{ charge.amount | money(wallet.defaultCurrency) }}
+                        </b>
                     </div>
                 </div>
-                <span class="text-muted wallet-card-last-activity">
-                    {{ wallet.updatedAt | moment("from") }}
-                    <b-icon-clock></b-icon-clock>
-                </span>
-            </div>
-        </template>
+            </b-list-group-item>
+        </b-list-group>
     </b-card>
 </template>
 
@@ -108,6 +132,10 @@ export default class WalletCard extends Vue {
         return this.wallet.users.length > USERS_LIMIT
     }
 
+    get hasLatestCharges(): boolean {
+        return this.wallet.latestCharges.length > 0
+    }
+
     onWalletClick() {
         this.$router.push({
             name: 'wallets.show',
@@ -124,7 +152,7 @@ export default class WalletCard extends Vue {
     .wallet-card {
         cursor: pointer;
         background-color: #f5f5f5;
-        margin-bottom: 15px;
+        margin-bottom: 30px;
 
         .card-title {
             text-overflow: ellipsis;
@@ -135,9 +163,10 @@ export default class WalletCard extends Vue {
         .card-footer {
             padding-top: 0.5rem;
             padding-bottom: 0.5rem;
+            background-color: rgba(0, 0, 0, 0.03);
         }
 
-        .list-group-item {
+        .list-group-item:not(.card-footer) {
             background-color: #f5f5f5;
         }
 
@@ -147,7 +176,27 @@ export default class WalletCard extends Vue {
 
         .list-group {
             border-top: 1px solid rgba(0, 0, 0, 0.125);
-            border-bottom: none;
+        }
+
+        .list-group.charges-list {
+            border-top-width: 1px;
+
+            .list-group-item:first-child {
+                box-shadow: inset 0 7px 7px -7px rgb(0 0 0 / 20%)
+            }
+
+            .charge-title {
+                overflow: hidden;
+                white-space: nowrap;
+                text-overflow: ellipsis;
+                display: inline-block;
+                vertical-align: top;
+                max-width: 100%;
+            }
+        }
+
+        .list-group-flush {
+            border-bottom: 0;
         }
 
         .badge {
@@ -172,7 +221,7 @@ export default class WalletCard extends Vue {
     .wallet-card-active {
         background-color: #fff;
 
-        .list-group-item {
+        .list-group-item:not(.card-footer) {
             background-color: #fff;
         }
     }
