@@ -1,5 +1,5 @@
 <template>
-    <b-card no-body :border-variant="isIncome ? 'success' : 'danger'" class="mb-2">
+    <b-card no-body :border-variant="isIncome ? 'success' : 'danger'" class="mb-4">
         <b-card-body>
             <b-card-title class="mb-0 d-flex justify-content-between align-items-center">
                 {{ isIncome ? 'Income' : 'Expense' }}

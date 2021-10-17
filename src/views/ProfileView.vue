@@ -7,6 +7,8 @@
                 <hr>
 
                 <counters-statistics></counters-statistics>
+
+                <hr>
             </b-col>
             <b-col md="8">
                 <email-is-not-confirmed-alert></email-is-not-confirmed-alert>
