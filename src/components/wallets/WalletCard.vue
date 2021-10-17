@@ -62,7 +62,6 @@
             </b-list-group-item>
         </b-list-group>
 
-
         <b-list-group flush v-if="hasLatestCharges" class="charges-list">
             <b-list-group-item v-for="charge of wallet.latestCharges" :key="charge.id">
                 <div class="row">
@@ -75,7 +74,7 @@
                             {{ charge.title }}
                         </span>
                     </div>
-                    <div class="col-md-4 text-right text-muted">
+                    <div class="col-md-4 text-sm-right text-muted">
                         <b>
                             {{ charge.amount | money(wallet.defaultCurrency) }}
                         </b>
