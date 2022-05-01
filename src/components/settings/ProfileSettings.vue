@@ -68,6 +68,8 @@
                 ></b-form-input>
             </b-form-group>
 
+            <email-form-input></email-form-input>
+
             <b-form-group
                 label-align-lg="right"
                 label-cols-lg="4"
@@ -136,10 +138,13 @@ import { MutationPayload } from "vuex";
 import Loader from '@/shared/Loader';
 import Messager from '@/shared/Messager';
 import Validator from '@/shared/Validator';
+import EmailFormInput from '@/components/settings/EmailFormInput.vue';
 import { currenciesGet, CurrencyInterface } from '@/api/currency';
 import { profilePut, profileCheckNickName, UpdateProfileRequestInterface} from '@/api/profile';
 
-@Component
+@Component({
+    components: {EmailFormInput}
+})
 export default class ProfileSettings extends Mixins(Loader, Messager, Validator) {
     form: UpdateProfileRequestInterface = {
         name: '',
