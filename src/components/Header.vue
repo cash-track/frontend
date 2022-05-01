@@ -2,7 +2,7 @@
     <div>
         <b-navbar toggleable="lg" type="light">
             <b-container>
-                <b-navbar-brand :href="getWebSiteLink('/')">Cash Track</b-navbar-brand>
+                <b-navbar-brand :href="getWebSiteLink('/')">Cash Track 🇺🇦</b-navbar-brand>
 
                 <b-navbar-toggle target="nav-collapse"></b-navbar-toggle>
 
