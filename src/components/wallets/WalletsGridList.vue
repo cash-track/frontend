@@ -6,6 +6,8 @@
                    :list="wallets"
                    class="row"
                    group="wallets"
+                   delay="250"
+                   delay-on-touch-only="true"
                    @end="drag = false"
                    @start="drag = true">
                 <b-col md="6" lg="4" v-for="wallet of wallets" :key="wallet.id">
