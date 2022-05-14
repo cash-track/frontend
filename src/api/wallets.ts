@@ -16,6 +16,10 @@ export interface WalletTotalResponseInterface {
     data: WalletTotalInterface;
 }
 
+export interface WalletSortSetRequestInterface {
+    sort: Array<number>;
+}
+
 export interface WalletCreateRequestInterface {
     name: string;
     slug: string;
@@ -75,6 +79,12 @@ export function walletsGet(): Promise<AxiosResponse<WalletsResponseInterface>> {
 
 export function walletsUnArchivedGet(): Promise<AxiosResponse<WalletsResponseInterface>> {
     return client().get<WalletsResponseInterface>('/api/wallets/unarchived')
+}
+
+export function walletsUnArchivedSort(request: WalletSortSetRequestInterface): Promise<AxiosResponse> {
+    return client().post('/api/wallets/unarchived/sort', {
+        sort: request.sort,
+    })
 }
 
 export function walletsArchivedGet(): Promise<AxiosResponse<WalletsResponseInterface>> {

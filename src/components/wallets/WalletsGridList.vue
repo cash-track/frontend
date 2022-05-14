@@ -2,11 +2,16 @@
     <div>
         <warning-message message="Unable to load your wallets. Please try again later" :show="loadFailed"></warning-message>
 
-        <b-row v-show="!loadFailed">
-            <b-col md="6" lg="4" v-for="wallet of walletsOrdered" v-bind:key="wallet.ID">
-                <wallet-card :wallet="wallet"></wallet-card>
-            </b-col>
-        </b-row>
+        <draggable v-show="!loadFailed"
+                   :list="wallets"
+                   class="row"
+                   group="wallets"
+                   @end="drag = false"
+                   @start="drag = true">
+                <b-col md="6" lg="4" v-for="wallet of wallets" :key="wallet.id">
+                    <wallet-card :wallet="wallet"></wallet-card>
+                </b-col>
+        </draggable>
 
         <b-alert variant="success" :show="displayNoWallets">
             <h2>No Wallets</h2>
@@ -17,21 +22,31 @@
 </template>
 
 <script lang="ts">
-import { Vue, Component, Prop } from 'vue-property-decorator';
-import { walletsGet, walletsArchivedGet, walletsUnArchivedGet, WalletInterface } from '@/api/wallets';
+import { Component, Prop, Watch, Mixins } from 'vue-property-decorator';
+import draggable from 'vuedraggable';
+import Loader from '@/shared/Loader';
+import {
+    walletsGet,
+    walletsArchivedGet,
+    walletsUnArchivedGet,
+    walletsUnArchivedSort,
+    WalletInterface
+} from '@/api/wallets';
 import WarningMessage from '@/components/shared/WarningMessage.vue';
 import WalletCard from '@/components/wallets/WalletCard.vue';
 
 @Component({
-    components: {WalletCard, WarningMessage}
+    components: {draggable, WalletCard, WarningMessage}
 })
-export default class WalletsGridList extends Vue {
+export default class WalletsGridList extends Mixins(Loader) {
     @Prop()
     byArchived!: boolean
 
     wallets: Array<WalletInterface> = []
 
     loadFailed = false
+
+    drag = false
 
     mounted() {
         this.load()
@@ -45,19 +60,33 @@ export default class WalletsGridList extends Vue {
         return !this.loadFailed && this.wallets.length === 0
     }
 
-    get walletsOrdered(): Array<WalletInterface> {
-        return this.wallets.sort((a: WalletInterface, b: WalletInterface) => {
-            return a.isActive === b.isActive ? 0 : (a.isActive ? -1 : 1)
-        })
+    @Watch('wallets')
+    protected onOrderChanged() {
+        if (this.isLoading) {
+            return;
+        }
+
+        const sorter = this.sorter();
+
+        if (sorter === null || this.wallets.length === 0) {
+            return;
+        }
+
+        sorter({
+            sort: this.wallets.map(wallet => wallet.id),
+        });
     }
 
     protected load() {
+        this.setLoading();
         this.loadFailed = false;
 
         this.loader()().then(response => {
             this.wallets = response.data.data
         }).catch(() => {
             this.loadFailed = true;
+        }).finally(() => {
+            this.setLoaded();
         })
     }
 
@@ -67,6 +96,14 @@ export default class WalletsGridList extends Vue {
         }
 
         return walletsGet;
+    }
+
+    protected sorter() {
+        if (typeof this.byArchived !== 'undefined') {
+            return this.byArchived ? null : walletsUnArchivedSort;
+        }
+
+        return null;
     }
 }
 </script>
