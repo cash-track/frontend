@@ -4,15 +4,17 @@
 
         <draggable v-show="!loadFailed"
                    :list="wallets"
-                   class="row"
+                   v-bind="dragOptions"
                    group="wallets"
                    delay="250"
                    delay-on-touch-only="true"
                    @end="drag = false"
                    @start="drag = true">
+            <transition-group type="transition" :name="!drag ? 'flip-list' : null" class="row">
                 <b-col md="6" lg="4" v-for="wallet of wallets" :key="wallet.id">
                     <wallet-card :wallet="wallet"></wallet-card>
                 </b-col>
+            </transition-group>
         </draggable>
 
         <b-alert variant="success" :show="displayNoWallets">
@@ -60,6 +62,21 @@ export default class WalletsGridList extends Mixins(Loader) {
         }
 
         return !this.loadFailed && this.wallets.length === 0
+    }
+
+    get dragOptions() {
+        let isDisabled = true;
+
+        if (typeof this.byArchived !== 'undefined' && !this.byArchived) {
+            isDisabled = false;
+        }
+
+        return {
+            animation: 200,
+            group: "description",
+            disabled: isDisabled,
+            ghostClass: "ghost"
+        };
     }
 
     @Watch('wallets')
@@ -111,5 +128,13 @@ export default class WalletsGridList extends Mixins(Loader) {
 </script>
 
 <style lang="scss" scoped>
-
+.flip-list-move {
+    transition: transform 0.5s;
+}
+.no-move {
+    transition: transform 0s;
+}
+.ghost {
+    opacity: 0.5;
+}
 </style>
