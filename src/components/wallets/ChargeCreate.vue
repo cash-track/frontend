@@ -122,6 +122,7 @@ export default class ChargeCreate extends Mixins(Loader, Messager, Validator) {
         amount: null,
         title: '',
         description: '',
+        tags: [],
     }
 
     get typeOptions() {
@@ -161,6 +162,7 @@ export default class ChargeCreate extends Mixins(Loader, Messager, Validator) {
             amount: null,
             title: '',
             description: '',
+            tags: [],
         }
     }
 }

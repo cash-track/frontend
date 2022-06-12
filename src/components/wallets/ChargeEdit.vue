@@ -125,6 +125,7 @@ export default class ChargeEdit extends Mixins(Loader, Messager, Validator) {
         amount: null,
         title: '',
         description: '',
+        tags: [],
     }
 
     mounted() {
@@ -133,6 +134,7 @@ export default class ChargeEdit extends Mixins(Loader, Messager, Validator) {
             amount: this.charge.amount,
             title: this.charge.title,
             description: this.charge.description,
+            tags: this.charge.tags,
         }
     }
 
@@ -174,6 +176,7 @@ export default class ChargeEdit extends Mixins(Loader, Messager, Validator) {
             amount: response.data.data.amount,
             title: response.data.data.title,
             description: response.data.data.description,
+            tags: response.data.data.tags,
         }
     }
 
