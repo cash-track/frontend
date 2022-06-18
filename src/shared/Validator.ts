@@ -36,16 +36,38 @@ export default class Validator extends Vue {
     /**
      * Used on bootstrap validation state
      */
-    public validationState(field: string): boolean | null {
-        return this.hasValidationMessage(field) ? false : null
-    }
-
-    public validationMessage(field: string): string {
-        if (this.hasValidationMessage(field)) {
-            return this.validationMessages[field]
+    public validationState(fields: string | Array<string>): boolean | null {
+        if (typeof fields === 'string') {
+            fields = [fields]
         }
 
-        return ''
+        for (const field of fields) {
+            if (! this.hasValidationMessage(field)) {
+                continue
+            }
+
+            return false
+        }
+
+        return null
+    }
+
+    public validationMessage(fields: string | Array<string>, separator = ','): string {
+        const message = []
+
+        if (typeof fields === 'string') {
+            fields = [fields]
+        }
+
+        for (const field of fields) {
+            if (! this.hasValidationMessage(field)) {
+                continue
+            }
+
+            message.push(this.validationMessages[field])
+        }
+
+        return message.join(separator)
     }
 
     public setValidationMessages(msgs: Record<string, string>) {

@@ -4,8 +4,8 @@ import { client } from '@/api/client';
 export interface TagInterface {
     id: number;
     name: string;
-    icon: string;
-    color: string;
+    icon: string|null;
+    color: string|null;
     userId: number;
     createdAt: string;
     updatedAt: string;

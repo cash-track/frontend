@@ -2,10 +2,23 @@
     <b-badge
         href="#"
         variant="secondary"
-        class="badge-tag text-secondary border border-secondary"
+        class="badge-tag border border-secondary"
         v-if="tag"
+        @click="onSelected"
     >
-        {{ tag.icon }} {{ tag.name }}
+        <span class="icon">{{ tag.icon }}</span> {{ tag.name }}
+        <b-button v-if="isClosable && !hasError">
+            <b-icon icon="x"></b-icon>
+        </b-button>
+        <b-button v-if="isCreatable && !hasError">
+            <b-icon icon="plus"></b-icon>
+        </b-button>
+        <b-button class="loading" v-if="isLoading && !hasError">
+            <b-spinner small></b-spinner>
+        </b-button>
+        <b-button v-if="hasError">
+            <b-icon icon="exclamation-triangle" v-b-popover.hover.left="{ title: 'Error', content: errorMessage, html: true }"></b-icon>
+        </b-button>
     </b-badge>
 </template>
 
@@ -14,11 +27,52 @@ import { Vue, Component, Prop } from 'vue-property-decorator';
 import { TagInterface } from '@/api/tags';
 
 @Component({})
-export default class WalletEdit extends Vue {
+export default class Tag extends Vue {
     @Prop({
         required: true
     })
     tag!: TagInterface
+
+    @Prop({
+        required: false,
+        type: String,
+        validator(value: string): boolean {
+            return ['closable', 'creatable', 'loading'].includes(value)
+        }
+    })
+    state!: string
+
+    @Prop({
+        type: String
+    })
+    errorMessage!: string
+
+    get isClosable(): boolean {
+        return !this.hasError && this.state === 'closable'
+    }
+
+    get isCreatable(): boolean {
+        return !this.hasError && this.state === 'creatable'
+    }
+
+    get isLoading(): boolean {
+        return !this.hasError && this.state === 'loading'
+    }
+
+    get hasError(): boolean {
+        if (this.errorMessage === undefined) {
+            return false
+        }
+
+        return this.errorMessage.length > 0
+    }
+
+    onSelected(event: Event) {
+        event.preventDefault()
+        event.stopPropagation()
+
+        this.$emit('selected', this.tag)
+    }
 }
 </script>
 
@@ -27,22 +81,59 @@ export default class WalletEdit extends Vue {
 @import "node_modules/bootstrap/scss/variables";
 @import "node_modules/bootstrap/scss/mixins/_breakpoints";
 
+.form-group {
+    .badge-tag {
+        margin-left: 0;
+        margin-right: 5px;
+
+        & + .badge-tag {
+            margin-left: 0;
+            margin-right: 5px;
+        }
+    }
+}
+
 .badge-tag {
     background-color: transparent;
     font-size: 14px;
     font-weight: 400;
-    padding-top: 0.2em;
+    border-color: #ced4da!important;
+    padding: 6px 10px;
+    color: #495057;
 
     & + .badge-tag {
         margin-left: 5px;
+        margin-bottom: 5px;
     }
 
-    &:hover {
-        color: #fff !important;
-        background-color: rgba(73, 79, 84, 0.75);
+    .icon {
+        font-size: 13px;
     }
 
-    &:active, &:focus {
+    button {
+        font-size: 16px;
+        margin: -10px -10px -10px 5px;
+        line-height: 26px;
+        padding: 1px 6px 0;
+        background: none;
+        color: inherit;
+        border-radius: 0;
+        border: 0;
+
+        &.loading {
+            font-size: 12px;
+        }
+
+        &:hover {
+            background-color: rgb(108 117 125 / 50%);
+
+        }
+    }
+
+    &:hover, &:active, &:focus {
+        color: #2a2c2f !important;
+        background-color: rgb(108 117 125 / 10%);
+        border-color: rgb(81 87 93 / 32%) !important;
         box-shadow: none;
     }
 }

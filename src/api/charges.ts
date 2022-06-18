@@ -67,7 +67,7 @@ export function walletChargeCreate(walletId: number, request: ChargeCreateReques
         amount: request.amount,
         title: request.title,
         description: request.description,
-        tags: request.tags.map(tag => tag.id),
+        tags: request.tags.length ? request.tags.map(tag => tag.id) : null,
     })
 }
 
@@ -81,7 +81,7 @@ export function walletChargeUpdate(
         amount: request.amount,
         title: request.title,
         description: request.description,
-        tags: request.tags.map(tag => tag.id),
+        tags: request.tags.length ? request.tags.map(tag => tag.id) : null,
     })
 }
 

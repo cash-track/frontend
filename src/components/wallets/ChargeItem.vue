@@ -20,8 +20,8 @@
         </b-col>
         <b-col md="8" cols="12" class="charge-main-container">
             <div class="charge-type">
-                <b-icon-arrow-up variant="success" v-show="!isEdit" v-if="charge.operation === '+'"></b-icon-arrow-up>
-                <b-icon-arrow-down variant="danger" v-show="!isEdit" v-if="charge.operation === '-'"></b-icon-arrow-down>
+                <b-icon-arrow-up variant="success" v-if="charge.operation === '+'"></b-icon-arrow-up>
+                <b-icon-arrow-down variant="danger" v-if="charge.operation === '-'"></b-icon-arrow-down>
             </div>
 
             <div class="charge-pointer"></div>
@@ -152,6 +152,7 @@ export default class ChargeItem extends Vue {
                 position: relative;
                 width: calc(100% + 28px);
                 padding-right: 28px;
+                margin-top: 5px;
             }
 
             .charge-tags:before {
@@ -172,7 +173,7 @@ export default class ChargeItem extends Vue {
 
     .charge-main-container {
         border-left: 1px solid #eee;
-        padding: 18px 45px 20px;
+        padding: 18px 45px 30px;
         position: relative;
 
         .charge-type {
@@ -252,6 +253,12 @@ export default class ChargeItem extends Vue {
     &.active {
         background: #f5f5f5;
         border-bottom: 1px solid #eee;
+
+        .charge-main-container .charge-header .charge-title {
+            overflow: visible;
+            white-space: normal;
+            text-overflow: initial;
+        }
 
         .charge-date-container .charge-meta .charge-tags {
             overflow: inherit;
