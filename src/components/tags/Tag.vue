@@ -3,6 +3,7 @@
         href="#"
         variant="secondary"
         class="badge-tag border border-secondary"
+        :class="{'active': active}"
         v-if="tag"
         @click="onSelected"
     >
@@ -46,6 +47,12 @@ export default class Tag extends Vue {
         type: String
     })
     errorMessage!: string
+
+    @Prop({
+        type: Boolean,
+        default: false,
+    })
+    active!: boolean
 
     get isClosable(): boolean {
         return !this.hasError && this.state === 'closable'
@@ -107,6 +114,10 @@ export default class Tag extends Vue {
     padding: 6px 10px;
     color: #495057;
 
+    &.active:not(:hover, :active, :focus) {
+        box-shadow: 0 0 0 0.2rem rgb(73 80 87 / 25%);
+    }
+
     & + .badge-tag {
         margin-left: 5px;
         margin-bottom: 5px;
@@ -131,12 +142,12 @@ export default class Tag extends Vue {
         }
 
         &:hover {
-            background-color: rgb(108 117 125 / 50%);
+            background-color: rgb(108 117 125 / 25%);
 
         }
     }
 
-    &:hover, &:active, &:focus {
+    &:hover, &:active, &:focus, &.active {
         color: #2a2c2f !important;
         background-color: rgb(108 117 125 / 10%);
         border-color: rgb(81 87 93 / 32%) !important;
