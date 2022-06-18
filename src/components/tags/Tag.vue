@@ -93,6 +93,12 @@ export default class Tag extends Vue {
     }
 }
 
+.text-md-right {
+    .badge-tag {
+        margin-bottom: 5px;
+    }
+}
+
 .badge-tag {
     background-color: transparent;
     font-size: 14px;

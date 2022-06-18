@@ -19,7 +19,7 @@
 
         </b-col>
         <b-col md="8" cols="12" class="charge-main-container">
-            <div class="charge-type">
+            <div class="charge-type" v-show="!isEdit">
                 <b-icon-arrow-up variant="success" v-if="charge.operation === '+'"></b-icon-arrow-up>
                 <b-icon-arrow-down variant="danger" v-if="charge.operation === '-'"></b-icon-arrow-down>
             </div>
