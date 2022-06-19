@@ -76,7 +76,7 @@
                 </span>
             </div>
 
-            <div class="wallet-tags">
+            <div class="wallet-tags" v-show="tags.length">
                 <tag v-for="tag of tags"
                      :tag="tag"
                      :key="tag.id"
