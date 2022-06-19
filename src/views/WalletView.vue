@@ -42,25 +42,36 @@
                 </span>
             </div>
 
-            <div class="wallet-details d-flex justify-content-between">
-                <span class="text-center text-sm-left">
-                    <span class="text-muted">Income</span><br>
-                    <span class="text-success wallet-total">
+            <div class="wallet-details d-flex justify-content-center align-items-end">
+                 <span class="wallet-total" v-if="!hasTag">
+                    <span class="text-muted wallet-total-title">Available</span>
+                    <span class="text-success wallet-total-value">
+                        {{ walletTotal.totalAmount | money(wallet.defaultCurrency) }}
+                    </span>
+                </span>
+                <span class="wallet-total" :class="{'wallet-total-small': !hasTag || !isIncomeGreaterThanExpense}" v-if="hasIncome && isIncomeGreaterThanExpense">
+                    <span class="text-muted wallet-total-title">
+                        Income
+                    </span>
+                    <span class="text-success wallet-total-value">
                         <b-icon-arrow-up variant="success" scale="1" class="d-none d-sm-inline"></b-icon-arrow-up>
                         {{ walletTotal.totalIncomeAmount | money(wallet.defaultCurrency) }}
                     </span>
                 </span>
-                <span class="text-center">
-                    <span class="text-muted">Available</span><br>
-                    <span class="text-info wallet-total">
-                        {{ walletTotal.totalAmount | money(wallet.defaultCurrency) }}
+                <span class="wallet-total" :class="{'wallet-total-small': !hasTag || isIncomeGreaterThanExpense}" v-if="hasExpense">
+                    <span class="text-muted wallet-total-title">Expense</span>
+                    <span class="text-danger wallet-total-value">
+                        <b-icon-arrow-down variant="danger" scale="1" class="d-none d-sm-inline"></b-icon-arrow-down>
+                        {{ walletTotal.totalExpenseAmount | money(wallet.defaultCurrency) }}
                     </span>
                 </span>
-                <span class="text-center text-sm-right">
-                    <span class="text-muted">Expense</span><br>
-                    <span class="text-danger wallet-total">
-                        {{ walletTotal.totalExpenseAmount | money(wallet.defaultCurrency) }}
-                        <b-icon-arrow-down variant="danger" scale="1" class="d-none d-sm-inline"></b-icon-arrow-down>
+                <span class="wallet-total" :class="{'wallet-total-small': !hasTag}" v-if="hasIncome && !isIncomeGreaterThanExpense">
+                    <span class="text-muted wallet-total-title">
+                        Income
+                    </span>
+                    <span class="text-success wallet-total-value">
+                        <b-icon-arrow-up variant="success" scale="1" class="d-none d-sm-inline"></b-icon-arrow-up>
+                        {{ walletTotal.totalIncomeAmount | money(wallet.defaultCurrency) }}
                     </span>
                 </span>
             </div>
@@ -152,6 +163,18 @@ export default class WalletView extends Vue {
 
     get hasTag(): boolean {
         return this.tagID !== undefined
+    }
+
+    get isIncomeGreaterThanExpense(): boolean {
+        return this.walletTotal.totalIncomeAmount > this.walletTotal.totalExpenseAmount
+    }
+
+    get hasIncome(): boolean {
+        return this.walletTotal.totalIncomeAmount !== 0
+    }
+
+    get hasExpense(): boolean {
+        return this.walletTotal.totalExpenseAmount !== 0
     }
 
     protected load() {
@@ -336,33 +359,32 @@ h3 .badge {
 }
 
 .wallet-details {
-    padding: 20px 0 30px;
+    padding: 15px 0 15px;
     border-top: 1px solid #eee;
     border-bottom: 1px solid #eee;
 
-    &>:nth-child(1) {
-        order: 1;
-    }
-
-    &>:nth-child(2) {
-        order: 2;
-    }
-
-    &>:nth-child(3) {
-        order: 3;
-    }
-
-    .text-muted {
-        font-size: 12px;
-    }
-
-    .text-success, .text-danger, .text-info {
-        font-size: 40px;
-        line-height: 40px;
-    }
-
     .wallet-total {
-        white-space: nowrap;
+        display: inline-block;
+        margin: 0 10px;
+        text-align: left;
+
+        .wallet-total-title {
+            font-size: 12px;
+            display: block;
+        }
+
+        .wallet-total-value {
+            white-space: nowrap;
+            font-size: 40px;
+            line-height: 40px;
+        }
+
+        &.wallet-total-small {
+            .wallet-total-value {
+                font-size: 20px;
+                line-height: 20px;
+            }
+        }
     }
 }
 
@@ -383,32 +405,13 @@ h3 .badge {
     .wallet-details {
         flex-wrap: wrap;
 
-        &>* {
+        .wallet-total {
+            text-align: center;
+        }
+
+        .wallet-total:not(.wallet-total-small) {
             display: block;
-        }
-
-        &>:nth-child(1) {
-            width: 50%;
-            order: 1;
-        }
-
-        &>:nth-child(2) {
             width: 100%;
-            order: 3;
-        }
-
-        &>:nth-child(3) {
-            width: 50%;
-            order: 2;
-        }
-    }
-}
-
-@include media-breakpoint-down(xs) {
-    .wallet-details {
-        &>:nth-child(1), &>:nth-child(2), &>:nth-child(3) {
-            width: 100%;
-            padding: 10px 0;
         }
     }
 }
