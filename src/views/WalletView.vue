@@ -53,8 +53,8 @@
                     <span class="text-muted wallet-total-title">
                         Income
                     </span>
-                    <span class="text-success wallet-total-value">
-                        <b-icon-arrow-up variant="success" scale="1" class="d-none d-sm-inline"></b-icon-arrow-up>
+                    <span class="text-primary wallet-total-value">
+                        <b-icon-arrow-up variant="primary" scale="1" class="d-none d-sm-inline"></b-icon-arrow-up>
                         {{ walletTotal.totalIncomeAmount | money(wallet.defaultCurrency) }}
                     </span>
                 </span>
@@ -69,8 +69,8 @@
                     <span class="text-muted wallet-total-title">
                         Income
                     </span>
-                    <span class="text-success wallet-total-value">
-                        <b-icon-arrow-up variant="success" scale="1" class="d-none d-sm-inline"></b-icon-arrow-up>
+                    <span class="text-primary wallet-total-value">
+                        <b-icon-arrow-up variant="primary" scale="1" class="d-none d-sm-inline"></b-icon-arrow-up>
                         {{ walletTotal.totalIncomeAmount | money(wallet.defaultCurrency) }}
                     </span>
                 </span>
