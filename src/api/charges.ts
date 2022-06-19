@@ -2,6 +2,7 @@ import { AxiosResponse } from 'axios';
 import { client } from '@/api/client';
 import { ProfileInterface } from '@/api/profile';
 import { PaginatedResponseInterface } from '@/api/pagination';
+import { TagInterface } from '@/api/tags';
 
 export const TypeIncome = '+';
 export const TypeExpense = '-';
@@ -14,6 +15,7 @@ export interface ChargeInterface {
     description: string;
     userId: number;
     user: ProfileInterface;
+    tags: Array<TagInterface>;
     walletId: number;
     createdAt: string;
     updatedAt: string;
@@ -32,6 +34,7 @@ export interface ChargeCreateRequestInterface {
     amount: number|null;
     title: string;
     description: string;
+    tags: Array<TagInterface>;
 }
 
 export interface ChargeUpdateRequestInterface {
@@ -39,6 +42,7 @@ export interface ChargeUpdateRequestInterface {
     amount: number|null;
     title: string;
     description: string;
+    tags: Array<TagInterface>;
 }
 
 export function walletChargesGet(walletId: number): Promise<AxiosResponse<ChargesResponseInterface>> {
@@ -49,12 +53,21 @@ export function walletChargesGetPaginated(walletId: number, page: number): Promi
     return client().get<ChargesResponseInterface>(`/api/wallets/${walletId}/charges?page=${page}`)
 }
 
+export function walletTagChargesGet(walletId: number, tagId: number): Promise<AxiosResponse<ChargesResponseInterface>> {
+    return client().get<ChargesResponseInterface>(`/api/wallets/${walletId}/tags/${tagId}/charges`)
+}
+
+export function walletTagChargesGetPaginated(walletId: number, tagId: number, page: number): Promise<AxiosResponse<ChargesResponseInterface>> {
+    return client().get<ChargesResponseInterface>(`/api/wallets/${walletId}/tags/${tagId}/charges?page=${page}`)
+}
+
 export function walletChargeCreate(walletId: number, request: ChargeCreateRequestInterface): Promise<AxiosResponse<ChargeResponseInterface>> {
     return client().post<ChargeResponseInterface>(`/api/wallets/${walletId}/charges`, {
         type: request.type,
         amount: request.amount,
         title: request.title,
         description: request.description,
+        tags: request.tags.length ? request.tags.map(tag => tag.id) : null,
     })
 }
 
@@ -68,6 +81,7 @@ export function walletChargeUpdate(
         amount: request.amount,
         title: request.title,
         description: request.description,
+        tags: request.tags.length ? request.tags.map(tag => tag.id) : null,
     })
 }
 

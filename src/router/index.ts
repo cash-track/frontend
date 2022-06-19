@@ -100,6 +100,16 @@ const routes: Array<RouteConfig> = [
             namedTitle: 'Share {name} | Cash Track',
         },
     },
+    {
+        path: '/wallets/:walletID/tags/:tagID',
+        name: 'wallets.tags.show',
+        component: WalletView,
+        props: true,
+        meta: {
+            title: 'Wallet | Cash Track',
+            namedTitle: '{name} | Cash Track',
+        },
+    },
 ]
 
 const router = new VueRouter({

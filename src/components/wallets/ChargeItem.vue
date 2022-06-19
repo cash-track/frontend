@@ -1,17 +1,27 @@
 <template>
     <b-row class="charge-item" :class="{'active': isActive}">
-        <b-col md="4" class="text-md-right charge-date-container">
-            <span class="text-muted charge-date"
-                  :title="dateTime"
-                  v-b-tooltip.left>
-                {{ charge.createdAt | moment("from") }}
-            </span>
-            <profile-avatar class="charge-avatar" :user="charge.user"></profile-avatar>
+        <b-col md="4" cols="12" class="charge-date-container">
+            <b-row>
+                <b-col lg="9" md="8" order="2" order-md="1" class="charge-meta text-md-right" :class="{'has-tags': charge.tags.length > 0}">
+                    <span class="text-muted charge-date"
+                          :title="dateTime"
+                          v-b-tooltip.left>
+                        {{ charge.createdAt | moment("from") }}
+                    </span>
+                    <div class="charge-tags">
+                        <tag v-for="tag of charge.tags" :key="tag.id" :tag="tag"></tag>
+                    </div>
+                </b-col>
+                <b-col lg="3" md="4" order="1" order-md="2" class="charge-avatar-container">
+                    <profile-avatar class="charge-avatar" :user="charge.user"></profile-avatar>
+                </b-col>
+            </b-row>
+
         </b-col>
-        <b-col md="8" class="charge-main-container">
-            <div class="charge-type">
-                <b-icon-arrow-up variant="success" v-show="!isEdit" v-if="charge.operation === '+'"></b-icon-arrow-up>
-                <b-icon-arrow-down variant="danger" v-show="!isEdit" v-if="charge.operation === '-'"></b-icon-arrow-down>
+        <b-col md="8" cols="12" class="charge-main-container">
+            <div class="charge-type" v-show="!isEdit">
+                <b-icon-arrow-up variant="success" v-if="charge.operation === '+'"></b-icon-arrow-up>
+                <b-icon-arrow-down variant="danger" v-if="charge.operation === '-'"></b-icon-arrow-down>
             </div>
 
             <div class="charge-pointer"></div>
@@ -51,6 +61,7 @@ import { walletChargeDelete, ChargeInterface } from '@/api/charges';
 import { WalletInterface } from '@/api/wallets';
 import ProfileAvatar from '../profile/ProfileAvatar.vue';
 import ChargeEdit, { ChargeUpdatedEvent } from '@/components/wallets/ChargeEdit.vue';
+import Tag from '@/components/tags/Tag.vue';
 
 export interface ChargeDeletedEvent {
     id: string;
@@ -58,7 +69,7 @@ export interface ChargeDeletedEvent {
 }
 
 @Component({
-    components: {ChargeEdit, ProfileAvatar}
+    components: {ChargeEdit, ProfileAvatar, Tag}
 })
 export default class ChargeItem extends Vue {
     @Prop({
@@ -120,21 +131,49 @@ export default class ChargeItem extends Vue {
 
 .charge-item {
     .charge-date-container {
-        padding-top: 10px;
         position: relative;
 
-        .charge-date {
-            font-size: 14px;
+        .charge-meta {
+            margin-top: 15px;
+
+            &.has-tags {
+                margin-top: 4px;
+            }
+
+            .charge-date {
+                font-size: 14px;
+            }
+
+            .charge-tags {
+                overflow: hidden;
+                white-space: pre;
+                vertical-align: top;
+                text-align: right;
+                position: relative;
+                width: calc(100% + 28px);
+                padding-right: 28px;
+                margin-top: 5px;
+            }
+
+            .charge-tags:before {
+                content: "";
+                width: 28px;
+                height: 100%;
+                position: absolute;
+                right: 0;
+                top: 0;
+                background: linear-gradient(to right, transparent 0px, #ffffff);
+            }
         }
 
         .charge-avatar {
-            margin: 0 6px 0 35px;
+            margin: 10px 5px;
         }
     }
 
     .charge-main-container {
         border-left: 1px solid #eee;
-        padding: 18px 45px 20px;
+        padding: 18px 45px 30px;
         position: relative;
 
         .charge-type {
@@ -214,6 +253,25 @@ export default class ChargeItem extends Vue {
     &.active {
         background: #f5f5f5;
         border-bottom: 1px solid #eee;
+
+        .charge-main-container .charge-header .charge-title {
+            overflow: visible;
+            white-space: normal;
+            text-overflow: initial;
+        }
+
+        .charge-date-container .charge-meta .charge-tags {
+            overflow: inherit;
+            white-space: normal;
+            text-overflow: inherit;
+
+            width: 100%;
+            padding-right: 0;
+
+            &:before {
+                display: none;
+            }
+        }
     }
 
     &:hover {
@@ -226,19 +284,30 @@ export default class ChargeItem extends Vue {
 @include media-breakpoint-down(sm) {
     .charge-item {
         .charge-date-container {
-            display: flex;
-
             &>:nth-child(1) {
-                order: 2;
                 padding: 10px 6px;
             }
 
-            &>:nth-child(2) {
-                order: 1;
+            .charge-avatar-container {
+                display: inline;
+                width: auto;
+                padding: 0 2px;
             }
 
-            .charge-avatar {
-                margin: 0 6px 0 -2px;
+            .charge-meta {
+                display: inline;
+                width: auto;
+                margin-top: 18px;
+                padding-left: 4px;
+
+                max-width: 85%;
+                padding-right: 0;
+
+                .charge-tags {
+                    text-align: left;
+                    max-width: 100%;
+                    width: auto;
+                }
             }
         }
 

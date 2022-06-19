@@ -42,32 +42,54 @@
                 </span>
             </div>
 
-            <div class="wallet-details d-flex justify-content-between">
-                <span class="text-center text-sm-left">
-                    <span class="text-muted">Income</span><br>
-                    <span class="text-success wallet-total">
+            <div class="wallet-details d-flex justify-content-center align-items-end">
+                 <span class="wallet-total" v-if="!hasTag">
+                    <span class="text-muted wallet-total-title">Available</span>
+                    <span class="text-success wallet-total-value">
+                        {{ walletTotal.totalAmount | money(wallet.defaultCurrency) }}
+                    </span>
+                </span>
+                <span class="wallet-total" :class="{'wallet-total-small': !hasTag || !isIncomeGreaterThanExpense}" v-if="hasIncome && isIncomeGreaterThanExpense">
+                    <span class="text-muted wallet-total-title">
+                        Income
+                    </span>
+                    <span class="text-success wallet-total-value">
                         <b-icon-arrow-up variant="success" scale="1" class="d-none d-sm-inline"></b-icon-arrow-up>
                         {{ walletTotal.totalIncomeAmount | money(wallet.defaultCurrency) }}
                     </span>
                 </span>
-                <span class="text-center">
-                    <span class="text-muted">Available</span><br>
-                    <span class="text-info wallet-total">
-                        {{ walletTotal.totalAmount | money(wallet.defaultCurrency) }}
-                    </span>
-                </span>
-                <span class="text-center text-sm-right">
-                    <span class="text-muted">Expense</span><br>
-                    <span class="text-danger wallet-total">
-                        {{ walletTotal.totalExpenseAmount | money(wallet.defaultCurrency) }}
+                <span class="wallet-total" :class="{'wallet-total-small': !hasTag || isIncomeGreaterThanExpense}" v-if="hasExpense">
+                    <span class="text-muted wallet-total-title">Expense</span>
+                    <span class="text-danger wallet-total-value">
                         <b-icon-arrow-down variant="danger" scale="1" class="d-none d-sm-inline"></b-icon-arrow-down>
+                        {{ walletTotal.totalExpenseAmount | money(wallet.defaultCurrency) }}
                     </span>
                 </span>
+                <span class="wallet-total" :class="{'wallet-total-small': !hasTag}" v-if="hasIncome && !isIncomeGreaterThanExpense">
+                    <span class="text-muted wallet-total-title">
+                        Income
+                    </span>
+                    <span class="text-success wallet-total-value">
+                        <b-icon-arrow-up variant="success" scale="1" class="d-none d-sm-inline"></b-icon-arrow-up>
+                        {{ walletTotal.totalIncomeAmount | money(wallet.defaultCurrency) }}
+                    </span>
+                </span>
+            </div>
+
+            <div class="wallet-tags">
+                <tag v-for="tag of tags"
+                     :tag="tag"
+                     :key="tag.id"
+                     @selected="onTagSelected"
+                     :state="tag.id === tagIDParsed ? 'closable' : null"
+                     :active="tag.id === tagIDParsed"
+                ></tag>
             </div>
 
             <div class="wallet-charges">
                 <charges-list
                     :wallet="wallet"
+                    :tag="tag"
                     @created="onChargeCreated"
                     @updated="onChargeUpdated"
                     @deleted="onChargeDeleted"
@@ -78,7 +100,7 @@
 </template>
 
 <script lang="ts">
-import { Vue, Component, Prop } from 'vue-property-decorator'
+import { Vue, Component, Prop, Watch } from 'vue-property-decorator'
 import {
     emptyWallet,
     walletGet,
@@ -90,7 +112,7 @@ import {
     walletArchive,
     walletUnArchive,
     WalletInterface,
-    WalletTotalInterface
+    WalletTotalInterface, walletTagsGet, walletTagTotalGet
 } from '@/api/wallets';
 import { UserInterface } from '@/api/users';
 import WarningMessage from '@/components/shared/WarningMessage.vue';
@@ -99,13 +121,18 @@ import ProfileAvatar from '@/components/profile/ProfileAvatar.vue';
 import ChargeItem from '@/components/wallets/ChargeItem.vue';
 import ChargeCreate from '@/components/wallets/ChargeCreate.vue';
 import ChargesList from "@/components/wallets/charges/ChargesList.vue";
+import Tag from '@/components/tags/Tag.vue';
+import { TagInterface } from '@/api/tags';
 
 @Component({
-    components: {ChargesList, ChargeCreate, ChargeItem, ProfileAvatar, ProfileAvatarBadge, WarningMessage}
+    components: {ChargesList, ChargeCreate, ChargeItem, ProfileAvatar, ProfileAvatarBadge, WarningMessage, Tag}
 })
 export default class WalletView extends Vue {
     @Prop()
     walletID!: number
+
+    @Prop()
+    tagID!: string
 
     wallet: WalletInterface = emptyWallet()
 
@@ -119,10 +146,35 @@ export default class WalletView extends Vue {
 
     users: Array<UserInterface> = []
 
+    tags: Array<TagInterface> = []
+
+    tag: TagInterface|null = null
+
     mounted() {
         this.load()
         this.loadTotal()
         this.loadUsers()
+        this.loadTags()
+    }
+
+    get tagIDParsed(): number {
+        return parseInt(this.tagID, 10)
+    }
+
+    get hasTag(): boolean {
+        return this.tagID !== undefined
+    }
+
+    get isIncomeGreaterThanExpense(): boolean {
+        return this.walletTotal.totalIncomeAmount > this.walletTotal.totalExpenseAmount
+    }
+
+    get hasIncome(): boolean {
+        return this.walletTotal.totalIncomeAmount !== 0
+    }
+
+    get hasExpense(): boolean {
+        return this.walletTotal.totalExpenseAmount !== 0
     }
 
     protected load() {
@@ -136,7 +188,11 @@ export default class WalletView extends Vue {
     }
 
     protected loadTotal() {
-        walletTotalGet(this.walletID).then(response => {
+        (
+            this.hasTag ?
+                walletTagTotalGet(this.walletID, this.tagIDParsed) :
+                walletTotalGet(this.walletID)
+        ).then(response => {
             this.walletTotal = response.data.data
         }).catch(() => {
             this.loadFailed = true;
@@ -151,16 +207,42 @@ export default class WalletView extends Vue {
         })
     }
 
+    protected loadTags() {
+        walletTagsGet(this.walletID).then(response => {
+            this.tags = response.data.data
+            this.setByTagIfPresent()
+        })
+    }
+
+    protected setByTagIfPresent() {
+        if (!this.hasTag) {
+            this.tag = null
+            return
+        }
+
+        for(const tag of this.tags) {
+            if (tag.id === this.tagIDParsed) {
+                this.tag = tag
+                return
+            }
+        }
+
+        this.loadFailed = true
+    }
+
     protected onChargeCreated() {
         this.loadTotal()
+        this.loadTags()
     }
 
     protected onChargeUpdated() {
         this.loadTotal()
+        this.loadTags()
     }
 
     protected onChargeDeleted() {
         this.loadTotal()
+        this.loadTags()
     }
 
     protected onDelete(event: Event) {
@@ -219,6 +301,32 @@ export default class WalletView extends Vue {
             console.log('Unable to un-archive wallet', err)
         })
     }
+
+    @Watch('tagID')
+    protected onTagChange() {
+        this.setByTagIfPresent()
+        this.loadTotal()
+    }
+
+    protected onTagSelected(tag: TagInterface) {
+        if (this.hasTag && this.tag?.id === tag.id) {
+            this.$router.push({
+                name: 'wallets.show',
+                params: {
+                    'walletID': this.walletID.toString(),
+                }
+            })
+            return
+        }
+
+        this.$router.push({
+            name: 'wallets.tags.show',
+            params: {
+                'walletID': this.walletID.toString(),
+                'tagID': tag.id.toString(),
+            }
+        })
+    }
 }
 </script>
 
@@ -251,33 +359,41 @@ h3 .badge {
 }
 
 .wallet-details {
-    padding: 20px 0 30px;
+    padding: 15px 0 15px;
     border-top: 1px solid #eee;
     border-bottom: 1px solid #eee;
 
-    &>:nth-child(1) {
-        order: 1;
-    }
-
-    &>:nth-child(2) {
-        order: 2;
-    }
-
-    &>:nth-child(3) {
-        order: 3;
-    }
-
-    .text-muted {
-        font-size: 12px;
-    }
-
-    .text-success, .text-danger, .text-info {
-        font-size: 40px;
-        line-height: 40px;
-    }
-
     .wallet-total {
-        white-space: nowrap;
+        display: inline-block;
+        margin: 0 10px;
+        text-align: left;
+
+        .wallet-total-title {
+            font-size: 12px;
+            display: block;
+        }
+
+        .wallet-total-value {
+            white-space: nowrap;
+            font-size: 40px;
+            line-height: 40px;
+        }
+
+        &.wallet-total-small {
+            .wallet-total-value {
+                font-size: 20px;
+                line-height: 20px;
+            }
+        }
+    }
+}
+
+.wallet-tags {
+    padding: 20px 0 15px;
+    border-bottom: 1px solid #eee;
+
+    .wallet-tags-label {
+        font-size: 12px;
     }
 }
 
@@ -289,32 +405,13 @@ h3 .badge {
     .wallet-details {
         flex-wrap: wrap;
 
-        &>* {
+        .wallet-total {
+            text-align: center;
+        }
+
+        .wallet-total:not(.wallet-total-small) {
             display: block;
-        }
-
-        &>:nth-child(1) {
-            width: 50%;
-            order: 1;
-        }
-
-        &>:nth-child(2) {
             width: 100%;
-            order: 3;
-        }
-
-        &>:nth-child(3) {
-            width: 50%;
-            order: 2;
-        }
-    }
-}
-
-@include media-breakpoint-down(xs) {
-    .wallet-details {
-        &>:nth-child(1), &>:nth-child(2), &>:nth-child(3) {
-            width: 100%;
-            padding: 10px 0;
         }
     }
 }

@@ -3,6 +3,7 @@ import { client } from '@/api/client';
 import { CurrencyInterface, emptyCurrency } from '@/api/currency';
 import { UserInterface, UsersResponseInterface } from '@/api/users';
 import { ChargeInterface } from '@/api/charges';
+import { TagsResponseInterface } from '@/api/tags';
 
 export interface WalletsResponseInterface {
     data: Array<WalletInterface>;
@@ -146,4 +147,16 @@ export function walletUsersAdd(walletId: number, user: UserInterface): Promise<A
 
 export function walletUsersDelete(walletId: number, user: UserInterface): Promise<AxiosResponse> {
     return client().delete(`/api/wallets/${walletId}/users/${user.id.toString()}`)
+}
+
+export function walletTagsGet(walletId: number): Promise<AxiosResponse<TagsResponseInterface>> {
+    return client().get<TagsResponseInterface>(`/api/wallets/${walletId}/tags`)
+}
+
+export function walletTagTotalGet(walletId: number, tagId: number): Promise<AxiosResponse<WalletTotalResponseInterface>> {
+    return client().get<WalletTotalResponseInterface>(`/api/wallets/${walletId}/tags/${tagId}/total`)
+}
+
+export function walletTagSearch(walletId: number, query: string): Promise<AxiosResponse<TagsResponseInterface>> {
+    return client().get<TagsResponseInterface>(`/api/wallets/${walletId}/tags/find/${query}`)
 }

@@ -1,68 +1,60 @@
 <template>
     <b-form novalidate @submit="onSubmit">
         <b-row>
-            <b-col md="4">
-                <b-form-group
-                    label="Amount"
-                    label-for="amount"
-                    description="Set the amount of charge. Can be with decimal part"
-                    :invalid-feedback="validationMessage('amount')"
-                    :state="validationState('amount')"
-                >
-                    <b-input type="number"
-                             id="amount"
-                             required
-                             min="0"
-                             v-model="form.amount"
-                             :disabled="isLoading"
-                             :state="validationState('amount')"
-                             @change="resetValidationMessage('amount')"
-                    ></b-input>
+            <b-col xl="5" lg="6">
+                <b-form-group :invalid-feedback="validationMessage(['type', 'amount'])"
+                              :state="validationState(['type', 'amount'])">
+                    <b-input-group>
+                        <b-input-group-prepend>
+                            <b-button variant="outline-danger"
+                                      @click="onTypeChangedExpense"
+                                      :disabled="isLoading"
+                                      :class="{'active': isTypeExpense}">
+                                <b-icon icon="arrow-down" />
+                            </b-button>
+                            <b-button variant="outline-success"
+                                      @click="onTypeChangedIncome"
+                                      :disabled="isLoading"
+                                      :class="{'active': isTypeIncome}">
+                                <b-icon icon="arrow-up" />
+                            </b-button>
+                        </b-input-group-prepend>
+                        <b-input type="number"
+                                 id="amount"
+                                 required
+                                 no-wheel
+                                 min="0"
+                                 v-model="form.amount"
+                                 :disabled="isLoading"
+                                 :state="validationState('amount')"
+                                 @change="resetValidationMessage('amount')"
+                                 placeholder="Amount"
+                        ></b-input>
+                    </b-input-group>
                 </b-form-group>
             </b-col>
-            <b-col md="8">
-                <b-form-group
-                    label="Type"
-                    description="Set type of charge, this is income or expense"
-                    :invalid-feedback="validationMessage('type')"
-                    :state="validationState('type')"
-                >
-                    <b-form-radio-group
-                        buttons
-                        button-variant="primary"
-                        class="btn-block"
-                        v-model="form.type"
-                        :options="typeOptions"
-                        :disabled="isLoading"
-                        :state="validationState('type')"
-                        @change="resetValidationMessage('type')"
-                    ></b-form-radio-group>
+            <b-col xl="7">
+                <tag-form-input v-model="form.title"
+                                :wallet-id="wallet.id"
+                                :tags="form.tags"
+                                :validation-state="validationState(['title', 'tags'])"
+                                :validation-message="validationMessage(['title', 'tags'])"
+                                @selected="onTagSelected"
+                ></tag-form-input>
+            </b-col>
+            <b-col md="12">
+                <b-form-group v-if="form.tags.length">
+                    <tag v-for="tag of form.tags"
+                         :tag="tag"
+                         :key="tag.id"
+                         state="closable"
+                         @selected="onTagRemoved"
+                    ></tag>
                 </b-form-group>
             </b-col>
             <b-col md="12">
                 <b-form-group
-                    label="Title"
-                    label-for="title"
-                    description="Short description of operation"
-                    :invalid-feedback="validationMessage('title')"
-                    :state="validationState('title')"
-                >
-                    <b-input
-                        type="text"
-                        id="title"
-                        required
-                        v-model="form.title"
-                        :disabled="isLoading"
-                        :state="validationState('title')"
-                        @change="resetValidationMessage('title')"
-                    ></b-input>
-                </b-form-group>
-            </b-col>
-            <b-col md="12">
-                <b-form-group
-                    label="Description"
                     label-for="description"
-                    description="Put here some notes for remember for what you lost this money or leave empty"
                     :invalid-feedback="validationMessage('description')"
                     :state="validationState('description')"
                 >
@@ -70,6 +62,7 @@
                         id="description"
                         v-model="form.description"
                         :disabled="isLoading"
+                        placeholder="Description"
                         :state="validationState('description')"
                         @change="resetValidationMessage('description')"
                     ></b-textarea>
@@ -104,14 +97,18 @@ import {
     ChargeResponseInterface,
     ChargeInterface
 } from '@/api/charges';
+import { TagInterface } from '@/api/tags';
 import WarningMessage from '@/components/shared/WarningMessage.vue';
+import Tag from '@/components/tags/Tag.vue';
+import CreateTag from '@/components/tags/CreateTag.vue';
+import TagFormInput from '@/components/tags/TagFormInput.vue';
 
 export interface ChargeCreatedEvent {
     charge: ChargeInterface;
 }
 
 @Component({
-    components: {WarningMessage}
+    components: {WarningMessage, Tag, CreateTag, TagFormInput}
 })
 export default class ChargeCreate extends Mixins(Loader, Messager, Validator) {
     @Prop()
@@ -122,19 +119,54 @@ export default class ChargeCreate extends Mixins(Loader, Messager, Validator) {
         amount: null,
         title: '',
         description: '',
+        tags: [],
     }
 
-    get typeOptions() {
-        return [
-            {
-                text: 'Expense (-)',
-                value: TypeExpense,
-            },
-            {
-                text: 'Income (+)',
-                value: TypeIncome,
-            },
-        ]
+    get isTypeIncome(): boolean {
+        return this.form.type === TypeIncome
+    }
+
+    get isTypeExpense(): boolean {
+        return this.form.type === TypeExpense
+    }
+
+    protected onTypeChangedExpense(event: Event) {
+        event.preventDefault()
+        event.stopPropagation()
+
+        this.resetValidationMessage('type')
+        this.onTypeChanged(TypeExpense)
+    }
+
+    protected onTypeChangedIncome(event: Event) {
+        event.preventDefault()
+        event.stopPropagation()
+
+        this.resetValidationMessage('type')
+        this.onTypeChanged(TypeIncome)
+    }
+
+    protected onTypeChanged(type: string) {
+        if (type !== TypeIncome && type !== TypeExpense) {
+            return
+        }
+
+        this.form.type = type
+    }
+
+    protected onTagSelected(tag: TagInterface) {
+        this.form.tags.unshift(tag)
+        this.resetValidationMessage('tags')
+    }
+
+    protected onTagRemoved(tag: TagInterface) {
+        const index = this.form.tags.indexOf(tag)
+
+        if (index === -1) {
+            return
+        }
+
+        this.form.tags.splice(index, 1)
     }
 
     protected onSubmit(event: Event) {
@@ -161,11 +193,12 @@ export default class ChargeCreate extends Mixins(Loader, Messager, Validator) {
             amount: null,
             title: '',
             description: '',
+            tags: [],
         }
     }
 }
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 
 </style>
