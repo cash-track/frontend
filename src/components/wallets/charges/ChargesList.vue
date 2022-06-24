@@ -31,6 +31,7 @@
                 :charge="charge"
                 @updated="onChargeUpdated"
                 @deleted="onChargeDeleted"
+                @tag-selected="onTagSelected"
             ></charge-item>
 
             <div class="charge-loader-pagination" v-if="isLoadingPagination">
@@ -173,6 +174,10 @@ export default class ChargesList extends Mixins(Loader) {
         this.charges.splice(index, 1)
 
         this.$emit('deleted', event)
+    }
+
+    protected onTagSelected(tag: TagInterface) {
+        this.$emit('tag-selected', tag)
     }
 }
 </script>

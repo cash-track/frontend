@@ -9,7 +9,7 @@
                         {{ charge.createdAt | moment("from") }}
                     </span>
                     <div class="charge-tags">
-                        <tag v-for="tag of charge.tags" :key="tag.id" :tag="tag"></tag>
+                        <tag v-for="tag of charge.tags" :key="tag.id" :tag="tag" @selected="onTagSelected"></tag>
                     </div>
                 </b-col>
                 <b-col lg="3" md="4" order="1" order-md="2" class="charge-avatar-container">
@@ -62,6 +62,7 @@ import { WalletInterface } from '@/api/wallets';
 import ProfileAvatar from '../profile/ProfileAvatar.vue';
 import ChargeEdit, { ChargeUpdatedEvent } from '@/components/wallets/ChargeEdit.vue';
 import Tag from '@/components/tags/Tag.vue';
+import { TagInterface } from '@/api/tags';
 
 export interface ChargeDeletedEvent {
     id: string;
@@ -120,6 +121,10 @@ export default class ChargeItem extends Vue {
         }).catch(error => {
             console.log('unable to delete charge', error)
         })
+    }
+
+    protected onTagSelected(tag: TagInterface) {
+        this.$emit('tag-selected', tag)
     }
 }
 </script>

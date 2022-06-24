@@ -88,7 +88,7 @@ export default class Tag extends Vue {
 @import "node_modules/bootstrap/scss/variables";
 @import "node_modules/bootstrap/scss/mixins/_breakpoints";
 
-.form-group {
+.form-group, .list-ltr {
     .badge-tag {
         margin-left: 0;
         margin-right: 5px;

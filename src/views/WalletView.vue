@@ -93,6 +93,7 @@
                     @created="onChargeCreated"
                     @updated="onChargeUpdated"
                     @deleted="onChargeDeleted"
+                    @tag-selected="onTagSelected"
                 ></charges-list>
             </div>
         </div>
