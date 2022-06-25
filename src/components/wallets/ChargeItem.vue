@@ -9,7 +9,7 @@
                         {{ charge.createdAt | moment("from") }}
                     </span>
                     <div class="charge-tags">
-                        <tag v-for="tag of charge.tags" :key="tag.id" :tag="tag"></tag>
+                        <tag v-for="tag of charge.tags" :key="tag.id" :tag="tag" @selected="onTagSelected"></tag>
                     </div>
                 </b-col>
                 <b-col lg="3" md="4" order="1" order-md="2" class="charge-avatar-container">
@@ -26,7 +26,7 @@
 
             <div class="charge-pointer"></div>
 
-            <div class="charge-action float-right" v-if="!isEdit">
+            <div class="charge-action float-right" v-if="!readOnly && !isEdit">
                 <b-dropdown size="sm" no-caret right>
                     <template v-slot:button-content>
                         <b-icon-three-dots></b-icon-three-dots>
@@ -37,13 +37,13 @@
             </div>
 
             <div class="charge-header" v-if="!isEdit" @click="toggleActive">
-                <span class="charge-amount">{{ charge.amount | money(wallet.defaultCurrency) }}</span>
+                <span class="charge-amount">{{ charge.amount | money(currency) }}</span>
                 <span class="charge-title">{{ charge.title }}</span>
             </div>
             <div class="charge-body" v-if="!isEdit" v-show="isActive && charge.description">
                 <span>{{ charge.description }}</span>
             </div>
-            <div class="charge-edit" v-if="isEdit">
+            <div class="charge-edit" v-if="!readOnly && isEdit">
                 <charge-edit
                     :wallet="wallet"
                     :charge="charge"
@@ -62,6 +62,8 @@ import { WalletInterface } from '@/api/wallets';
 import ProfileAvatar from '../profile/ProfileAvatar.vue';
 import ChargeEdit, { ChargeUpdatedEvent } from '@/components/wallets/ChargeEdit.vue';
 import Tag from '@/components/tags/Tag.vue';
+import { TagInterface } from '@/api/tags';
+import { CurrencyInterface } from '@/api/currency';
 
 export interface ChargeDeletedEvent {
     id: string;
@@ -73,7 +75,7 @@ export interface ChargeDeletedEvent {
 })
 export default class ChargeItem extends Vue {
     @Prop({
-        required: true
+        required: false
     })
     wallet!: WalletInterface
 
@@ -82,11 +84,20 @@ export default class ChargeItem extends Vue {
     })
     charge!: ChargeInterface
 
+    @Prop({
+        default: false
+    })
+    readOnly!: boolean
+
     isActive = false
     isEdit = false
 
     get dateTime(): string {
         return this.$moment(this.charge.createdAt).format('Y-MM-DD HH:mm:ss')
+    }
+
+    get currency(): CurrencyInterface {
+        return this.wallet !== undefined ? this.wallet.defaultCurrency : this.$store.state.profile.defaultCurrency
     }
 
     toggleActive(event: Event) {
@@ -120,6 +131,10 @@ export default class ChargeItem extends Vue {
         }).catch(error => {
             console.log('unable to delete charge', error)
         })
+    }
+
+    protected onTagSelected(tag: TagInterface) {
+        this.$emit('tag-selected', tag)
     }
 }
 </script>

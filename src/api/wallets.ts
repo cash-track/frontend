@@ -13,10 +13,6 @@ export interface WalletResponseInterface {
     data: WalletInterface;
 }
 
-export interface WalletTotalResponseInterface {
-    data: WalletTotalInterface;
-}
-
 export interface WalletSortSetRequestInterface {
     sort: Array<number>;
 }
@@ -48,12 +44,6 @@ export interface WalletInterface {
     defaultCurrency: CurrencyInterface;
     users: Array<UserInterface>;
     latestCharges: Array<ChargeInterface>;
-}
-
-export interface WalletTotalInterface {
-    totalAmount: number;
-    totalIncomeAmount: number;
-    totalExpenseAmount: number;
 }
 
 export function emptyWallet(): WalletInterface {
@@ -94,10 +84,6 @@ export function walletsArchivedGet(): Promise<AxiosResponse<WalletsResponseInter
 
 export function walletGet(walletId: number): Promise<AxiosResponse<WalletResponseInterface>> {
     return client().get<WalletResponseInterface>(`/api/wallets/${walletId}`)
-}
-
-export function walletTotalGet(walletId: number): Promise<AxiosResponse<WalletTotalResponseInterface>> {
-    return client().get<WalletTotalResponseInterface>(`/api/wallets/${walletId}/total`)
 }
 
 export function walletCreate(request: WalletCreateRequestInterface): Promise<AxiosResponse<WalletResponseInterface>> {
@@ -151,10 +137,6 @@ export function walletUsersDelete(walletId: number, user: UserInterface): Promis
 
 export function walletTagsGet(walletId: number): Promise<AxiosResponse<TagsResponseInterface>> {
     return client().get<TagsResponseInterface>(`/api/wallets/${walletId}/tags`)
-}
-
-export function walletTagTotalGet(walletId: number, tagId: number): Promise<AxiosResponse<WalletTotalResponseInterface>> {
-    return client().get<WalletTotalResponseInterface>(`/api/wallets/${walletId}/tags/${tagId}/total`)
 }
 
 export function walletTagSearch(walletId: number, query: string): Promise<AxiosResponse<TagsResponseInterface>> {

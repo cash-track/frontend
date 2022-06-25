@@ -14,6 +14,8 @@
                 <email-is-not-confirmed-alert></email-is-not-confirmed-alert>
 
                 <charges-flow-statistics></charges-flow-statistics>
+
+                <common-tags></common-tags>
             </b-col>
             <b-col md="12">
                 <latest-wallets></latest-wallets>
@@ -39,6 +41,7 @@ import EmailIsNotConfirmedAlert from '@/components/profile/EmailIsNotConfirmedAl
 import ChargesFlowStatistics from '@/components/profile/ChargesFlowStatistics.vue';
 import CountersStatistics from '@/components/profile/CountersStatistics.vue';
 import LatestWallets from '@/components/profile/LatestWallets.vue';
+import CommonTags from '@/components/profile/CommonTags.vue';
 
 @Component({
     components: {
@@ -48,6 +51,7 @@ import LatestWallets from '@/components/profile/LatestWallets.vue';
         ProfileTitle,
         EmailIsNotConfirmedAlert,
         LatestWallets,
+        CommonTags,
     }
 })
 export default class ProfileView extends Vue {}

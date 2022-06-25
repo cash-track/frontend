@@ -9,7 +9,7 @@
 
         <warning-message message="Unable to load charges. Please try again later" :show="isLoadingFailed" class="mt-3"></warning-message>
 
-        <b-row class="charge-item" v-if="!isLoadingFailed && wallet.isActive">
+        <b-row class="charge-item" v-if="hasWallet && !isLoadingFailed && isWalletActive">
             <b-col offset-md="4" md="8" class="charge-main-container wallet-charge-create">
                 <div class="charge-type">
                     <b-icon-plus variant="muted" scale="1.5"></b-icon-plus>
@@ -29,8 +29,10 @@
                 v-bind:key="charge.id"
                 :wallet="wallet"
                 :charge="charge"
+                :read-only="!hasWallet"
                 @updated="onChargeUpdated"
                 @deleted="onChargeDeleted"
+                @tag-selected="onTagSelected"
             ></charge-item>
 
             <div class="charge-loader-pagination" v-if="isLoadingPagination">
@@ -52,7 +54,7 @@ import Loader from '@/shared/Loader';
 import { WalletInterface } from '@/api/wallets';
 import {
     ChargeInterface,
-    ChargesResponseInterface,
+    ChargesResponseInterface, tagChargesGet, tagChargesGetPaginated,
     walletChargesGet,
     walletChargesGetPaginated,
     walletTagChargesGet, walletTagChargesGetPaginated
@@ -70,7 +72,7 @@ const PAGINATION = 'pagination'
     components: {ChargeCreate, WarningMessage, ChargeItem}
 })
 export default class ChargesList extends Mixins(Loader) {
-    @Prop({required: true})
+    @Prop()
     wallet!: WalletInterface
 
     @Prop()
@@ -84,6 +86,14 @@ export default class ChargesList extends Mixins(Loader) {
         return this.isLoadingFor(PAGINATION)
     }
 
+    get hasWallet(): boolean {
+        return this.wallet !== undefined
+    }
+
+    get isWalletActive(): boolean {
+        return this.hasWallet && this.wallet?.isActive
+    }
+
     mounted() {
         this.initiallyLoadCharges()
     }
@@ -94,15 +104,33 @@ export default class ChargesList extends Mixins(Loader) {
         this.initiallyLoadCharges()
     }
 
+    private buildLoader(page: number|null): Promise<AxiosResponse<ChargesResponseInterface>>|null {
+        if (this.wallet !== undefined && this.tag !== null) {
+            return page === null ?
+                walletTagChargesGet(this.wallet.id, this.tag.id) :
+                walletTagChargesGetPaginated(this.wallet.id, this.tag.id, page)
+        }
+
+        if (this.wallet !== undefined) {
+            return page === null ?
+                walletChargesGet(this.wallet.id) :
+                walletChargesGetPaginated(this.wallet.id, page)
+        }
+
+        if (this.tag !== null) {
+            return page === null ?
+                tagChargesGet(this.tag.id) :
+                tagChargesGetPaginated(this.tag.id, page)
+        }
+
+        return null;
+    }
+
     protected initiallyLoadCharges() {
         this.setLoading()
         this.resetLoadingFailedMessage();
 
-        (
-            this.tag !== null ?
-                walletTagChargesGet(this.wallet.id, this.tag.id) :
-                walletChargesGet(this.wallet.id)
-        ).then(this.onChargesLoaded).catch(() => {
+        this.buildLoader(null)?.then(this.onChargesLoaded).catch(() => {
             this.setLoadingFailedMessage('Unable to load charges. Please try again later')
         }).finally(this.setLoaded)
     }
@@ -124,11 +152,8 @@ export default class ChargesList extends Mixins(Loader) {
         this.resetLoadingFailedMessageFor(PAGINATION)
         this.setLoadingFor(PAGINATION);
 
-        (
-            this.tag !== null ?
-                walletTagChargesGetPaginated(this.wallet.id, this.tag.id, this.pagination.nextPage) :
-                walletChargesGetPaginated(this.wallet.id, this.pagination.nextPage)
-        ).then(this.onChargesLoaded)
+        this.buildLoader(this.pagination.nextPage)
+            ?.then(this.onChargesLoaded)
             .catch(() => {
                 this.setLoadingFailedMessageFor(PAGINATION, 'Unable to load more charges. Please try again later')
             }).finally(() => {
@@ -173,6 +198,10 @@ export default class ChargesList extends Mixins(Loader) {
         this.charges.splice(index, 1)
 
         this.$emit('deleted', event)
+    }
+
+    protected onTagSelected(tag: TagInterface) {
+        this.$emit('tag-selected', tag)
     }
 }
 </script>
