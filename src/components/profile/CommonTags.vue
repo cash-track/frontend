@@ -12,7 +12,7 @@
         </h6>
 
         <div v-if="!isLoading && !loadFailed" class="list-ltr">
-            <tag v-for="tag of tags" :tag="tag" :key="tag.id"></tag>
+            <tag v-for="tag of tags" :tag="tag" :key="tag.id" @selected="onTagSelected"></tag>
         </div>
     </div>
 </template>
@@ -56,6 +56,15 @@ export default class CommonTags extends Vue {
 
     protected onError() {
         this.loadFailed = true;
+    }
+
+    protected onTagSelected(tag: TagInterface) {
+        this.$router.push({
+            name: 'tags.show',
+            params: {
+                'tagID': tag.id.toString(),
+            }
+        })
     }
 }
 </script>

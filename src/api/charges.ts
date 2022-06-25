@@ -53,6 +53,14 @@ export function walletChargesGetPaginated(walletId: number, page: number): Promi
     return client().get<ChargesResponseInterface>(`/api/wallets/${walletId}/charges?page=${page}`)
 }
 
+export function tagChargesGet(tagId: number): Promise<AxiosResponse<ChargesResponseInterface>> {
+    return client().get<ChargesResponseInterface>(`/api/tags/${tagId}/charges`)
+}
+
+export function tagChargesGetPaginated(tagId: number, page: number): Promise<AxiosResponse<ChargesResponseInterface>> {
+    return client().get<ChargesResponseInterface>(`/api/tags/${tagId}/charges?page=${page}`)
+}
+
 export function walletTagChargesGet(walletId: number, tagId: number): Promise<AxiosResponse<ChargesResponseInterface>> {
     return client().get<ChargesResponseInterface>(`/api/wallets/${walletId}/tags/${tagId}/charges`)
 }

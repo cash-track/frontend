@@ -9,6 +9,7 @@ import WalletView from '@/views/WalletView.vue';
 import WalletCreateView from '@/views/WalletCreateView.vue';
 import WalletEditView from '@/views/WalletEditView.vue';
 import WalletShareView from '@/views/WalletShareView.vue';
+import TagView from '@/views/TagView.vue';
 
 Vue.use(VueRouter)
 
@@ -107,6 +108,17 @@ const routes: Array<RouteConfig> = [
         props: true,
         meta: {
             title: 'Wallet | Cash Track',
+            namedTitle: '{name} | Cash Track',
+        },
+    },
+
+    {
+        path: '/tags/:tagID',
+        name: 'tags.show',
+        component: TagView,
+        props: true,
+        meta: {
+            title: 'Tag | Cash Track',
             namedTitle: '{name} | Cash Track',
         },
     },

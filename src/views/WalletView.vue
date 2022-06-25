@@ -105,15 +105,14 @@ import { Vue, Component, Prop, Watch } from 'vue-property-decorator'
 import {
     emptyWallet,
     walletGet,
-    walletTotalGet,
     walletUsersGet,
     walletDelete,
     walletActivate,
     walletDisable,
     walletArchive,
     walletUnArchive,
-    WalletInterface,
-    WalletTotalInterface, walletTagsGet, walletTagTotalGet
+    walletTagsGet,
+    WalletInterface
 } from '@/api/wallets';
 import { UserInterface } from '@/api/users';
 import WarningMessage from '@/components/shared/WarningMessage.vue';
@@ -124,6 +123,7 @@ import ChargeCreate from '@/components/wallets/ChargeCreate.vue';
 import ChargesList from "@/components/wallets/charges/ChargesList.vue";
 import Tag from '@/components/tags/Tag.vue';
 import { TagInterface } from '@/api/tags';
+import { TotalInterface, walletTagTotalGet, walletTotalGet } from '@/api/total';
 
 @Component({
     components: {ChargesList, ChargeCreate, ChargeItem, ProfileAvatar, ProfileAvatarBadge, WarningMessage, Tag}
@@ -137,10 +137,11 @@ export default class WalletView extends Vue {
 
     wallet: WalletInterface = emptyWallet()
 
-    walletTotal: WalletTotalInterface = {
+    walletTotal: TotalInterface = {
         totalAmount: 0,
         totalIncomeAmount: 0,
         totalExpenseAmount: 0,
+        currency: null,
     }
 
     loadFailed = false
@@ -331,7 +332,7 @@ export default class WalletView extends Vue {
 }
 </script>
 
-<style lang="scss" scoped>
+<style lang="scss">
 @import "node_modules/bootstrap/scss/functions";
 @import "node_modules/bootstrap/scss/variables";
 @import "node_modules/bootstrap/scss/mixins/_breakpoints";
