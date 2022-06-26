@@ -36,14 +36,14 @@
             </div>
 
             <div class="wallet-charges">
-                <charges-list :tag="tag"></charges-list>
+                <charges-list :tag="tag" @updated="onChargeUpdated" @deleted="onChargeDeleted"></charges-list>
             </div>
         </div>
     </div>
 </template>
 
 <script lang="ts">
-import { Vue, Component, Prop } from 'vue-property-decorator'
+import { Vue, Component, Prop, Watch } from 'vue-property-decorator'
 import WarningMessage from '@/components/shared/WarningMessage.vue';
 import ProfileAvatarBadge from '@/components/profile/ProfileAvatarBadge.vue';
 import ProfileAvatar from '@/components/profile/ProfileAvatar.vue';
@@ -51,7 +51,7 @@ import ChargeItem from '@/components/wallets/ChargeItem.vue';
 import ChargeCreate from '@/components/wallets/ChargeCreate.vue';
 import ChargesList from "@/components/wallets/charges/ChargesList.vue";
 import Tag from '@/components/tags/Tag.vue';
-import { TagInterface, tagsGetCommon } from '@/api/tags';
+import { tagGetCommon, TagInterface } from '@/api/tags';
 import { tagTotalGet, TotalInterface } from '@/api/total';
 
 @Component({
@@ -93,34 +93,44 @@ export default class TagView extends Vue {
         return this.total.totalExpenseAmount !== 0
     }
 
+    @Watch('tagID')
+    protected onTagChange() {
+        this.load()
+        this.loadTotal()
+    }
+
     protected load() {
+        if (this.tagIDParsed === 0) {
+            return
+        }
+
         this.loadFailed = false;
 
-        tagsGetCommon().then(response => {
-            const tagID = this.tagIDParsed;
-
-            for (const tag of response.data.data) {
-                if (tag.id !== tagID) {
-                    continue
-                }
-
-                this.tag = tag
-            }
-
-            if (this.tag === null) {
-                this.loadFailed = true;
-            }
+        tagGetCommon(this.tagIDParsed).then(response => {
+            this.tag = response.data.data
         }).catch(() => {
             this.loadFailed = true;
         })
     }
 
     protected loadTotal() {
+        if (this.tagIDParsed === 0) {
+            return
+        }
+
         tagTotalGet(this.tagIDParsed).then(response => {
             this.total = response.data.data
         }).catch(() => {
             this.loadFailed = true;
         })
+    }
+
+    protected onChargeUpdated() {
+        this.loadTotal()
+    }
+
+    protected onChargeDeleted() {
+        this.loadTotal()
     }
 }
 </script>

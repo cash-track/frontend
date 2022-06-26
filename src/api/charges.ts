@@ -1,8 +1,9 @@
 import { AxiosResponse } from 'axios';
 import { client } from '@/api/client';
-import { ProfileInterface } from '@/api/profile';
 import { PaginatedResponseInterface } from '@/api/pagination';
 import { TagInterface } from '@/api/tags';
+import { WalletInterface } from '@/api/wallets';
+import { UserInterface } from '@/api/users';
 
 export const TypeIncome = '+';
 export const TypeExpense = '-';
@@ -14,11 +15,13 @@ export interface ChargeInterface {
     title: string;
     description: string;
     userId: number;
-    user: ProfileInterface;
-    tags: Array<TagInterface>;
     walletId: number;
     createdAt: string;
     updatedAt: string;
+
+    user: UserInterface;
+    wallet: WalletInterface|null;
+    tags: Array<TagInterface>;
 }
 
 export interface ChargesResponseInterface extends PaginatedResponseInterface{

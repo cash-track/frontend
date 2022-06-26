@@ -15,18 +15,18 @@ import { Component, Vue } from 'vue-property-decorator'
 import WarningMessage from '@/components/shared/WarningMessage.vue';
 import WalletCard from '@/components/wallets/WalletCard.vue';
 import { profileWalletsLatestGet } from '@/api/profile/profile';
-import { WalletInterface, WalletsResponseInterface } from '@/api/wallets';
+import { WalletFullInterface, WalletsFullResponseInterface } from '@/api/wallets';
 
 @Component({
     components: {WalletCard, WarningMessage}
 })
 export default class LatestWallets extends Vue {
-    wallets: Array<WalletInterface> = []
+    wallets: Array<WalletFullInterface> = []
 
     loadFailed = false
 
-    get walletsOrdered(): Array<WalletInterface> {
-        return this.wallets.sort((a: WalletInterface, b: WalletInterface) => a.isActive === b.isActive ? 0 : (a.isActive ? -1 : 1))
+    get walletsOrdered(): Array<WalletFullInterface> {
+        return this.wallets.sort((a: WalletFullInterface, b: WalletFullInterface) => a.isActive === b.isActive ? 0 : (a.isActive ? -1 : 1))
     }
 
     mounted() {
@@ -45,7 +45,7 @@ export default class LatestWallets extends Vue {
             .catch(this.onError);
     }
 
-    protected onLoaded(response: WalletsResponseInterface) {
+    protected onLoaded(response: WalletsFullResponseInterface) {
         this.wallets = response.data;
     }
 
