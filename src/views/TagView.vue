@@ -3,8 +3,19 @@
         <warning-message message="Unable to load tag. Please try again later" :show="loadFailed"></warning-message>
 
         <div v-if="tag !== null">
-            <div class="wallet-header d-flex justify-content-center">
-                <tag :tag="tag"></tag>
+            <div class="wallet-header d-flex justify-content-between">
+                <h3>
+                    Analyse tags usage
+                </h3>
+            </div>
+
+            <div class="wallet-tags list-ltr" v-show="tags.length">
+                <tag v-for="item of tags"
+                     :tag="item"
+                     :key="item.id"
+                     @selected="onTagSelected"
+                     :active="item.id === tagIDParsed"
+                ></tag>
             </div>
 
             <div class="wallet-details d-flex justify-content-center align-items-end" v-if="total.currency !== null">
@@ -17,7 +28,7 @@
                         {{ total.totalIncomeAmount | money(total.currency) }}
                     </span>
                 </span>
-                <span class="wallet-total" :class="{'wallet-total-small': isIncomeGreaterThanExpense}" v-if="hasExpense">
+                <span class="wallet-total" :class="{'wallet-total-small': isIncomeGreaterThanExpense}" v-if="hasExpense || !hasIncome">
                     <span class="text-muted wallet-total-title">Expense</span>
                     <span class="text-danger wallet-total-value">
                         <b-icon-arrow-down variant="danger" scale="1" class="d-none d-sm-inline"></b-icon-arrow-down>
@@ -36,7 +47,13 @@
             </div>
 
             <div class="wallet-charges">
-                <charges-list :tag="tag" @updated="onChargeUpdated" @deleted="onChargeDeleted"></charges-list>
+                <charges-filter @change="onFilterChanged"></charges-filter>
+                <charges-list :tag="tag"
+                              :filter="filter"
+                              @updated="onChargeUpdated"
+                              @deleted="onChargeDeleted"
+                              @tag-selected="onTagSelected"
+                ></charges-list>
             </div>
         </div>
     </div>
@@ -50,12 +67,23 @@ import ProfileAvatar from '@/components/profile/ProfileAvatar.vue';
 import ChargeItem from '@/components/wallets/ChargeItem.vue';
 import ChargeCreate from '@/components/wallets/ChargeCreate.vue';
 import ChargesList from "@/components/wallets/charges/ChargesList.vue";
+import ChargesFilter, { FilterChangeEvent } from '@/components/wallets/charges/ChargesFilter.vue';
 import Tag from '@/components/tags/Tag.vue';
-import { tagGetCommon, TagInterface } from '@/api/tags';
+import { TagInterface, tagsGetCommon } from '@/api/tags';
 import { tagTotalGet, TotalInterface } from '@/api/total';
+import { Filter, FilterDataInterface } from '@/api/filters';
 
 @Component({
-    components: {ChargesList, ChargeCreate, ChargeItem, ProfileAvatar, ProfileAvatarBadge, WarningMessage, Tag}
+    components: {
+        ChargesList,
+        ChargeCreate,
+        ChargeItem,
+        ChargesFilter,
+        ProfileAvatar,
+        ProfileAvatarBadge,
+        WarningMessage,
+        Tag,
+    }
 })
 export default class TagView extends Vue {
     @Prop()
@@ -70,11 +98,17 @@ export default class TagView extends Vue {
 
     loadFailed = false
 
+    filter: FilterDataInterface = {
+        dateFrom: '',
+        dateTo: '',
+    }
+
     tag: TagInterface|null = null
 
+    tags: Array<TagInterface> = []
+
     mounted() {
-        this.load()
-        this.loadTotal()
+        this.loadTags()
     }
 
     get tagIDParsed(): number {
@@ -93,24 +127,35 @@ export default class TagView extends Vue {
         return this.total.totalExpenseAmount !== 0
     }
 
-    @Watch('tagID')
-    protected onTagChange() {
-        this.load()
-        this.loadTotal()
+    protected loadTags() {
+        this.loadFailed = false;
+
+        tagsGetCommon().then(response => {
+            this.tags = response.data.data
+            this.onTagChange();
+        }).catch(() => {
+            this.loadFailed = true;
+        })
     }
 
-    protected load() {
+    @Watch('tagID')
+    protected onTagChange() {
         if (this.tagIDParsed === 0) {
             return
         }
 
-        this.loadFailed = false;
+        for(const tag of this.tags) {
+            if (tag.id === this.tagIDParsed) {
+                this.tag = tag
+            }
+        }
 
-        tagGetCommon(this.tagIDParsed).then(response => {
-            this.tag = response.data.data
-        }).catch(() => {
+        if (this.tag === null) {
             this.loadFailed = true;
-        })
+            return
+        }
+
+        this.loadTotal()
     }
 
     protected loadTotal() {
@@ -118,10 +163,19 @@ export default class TagView extends Vue {
             return
         }
 
-        tagTotalGet(this.tagIDParsed).then(response => {
+        tagTotalGet(this.tagIDParsed, Filter.createFromData(this.filter)).then(response => {
             this.total = response.data.data
         }).catch(() => {
             this.loadFailed = true;
+        })
+    }
+
+    protected onTagSelected(tag: TagInterface) {
+        this.$router.push({
+            name: 'tags.show',
+            params: {
+                'tagID': tag.id.toString(),
+            }
         })
     }
 
@@ -132,9 +186,18 @@ export default class TagView extends Vue {
     protected onChargeDeleted() {
         this.loadTotal()
     }
+
+    protected onFilterChanged(event: FilterChangeEvent) {
+        this.filter.dateFrom = event.dateFrom
+        this.filter.dateTo = event.dateTo
+        this.loadTotal()
+    }
 }
 </script>
 
 <style lang="scss" scoped>
-
+.wallet-tags {
+    border-top: 1px solid #eee;
+    border-bottom: none;
+}
 </style>

@@ -4,6 +4,7 @@ import { PaginatedResponseInterface } from '@/api/pagination';
 import { TagInterface } from '@/api/tags';
 import { WalletInterface } from '@/api/wallets';
 import { UserInterface } from '@/api/users';
+import { FilterInterface } from '@/api/filters';
 
 export const TypeIncome = '+';
 export const TypeExpense = '-';
@@ -56,12 +57,18 @@ export function walletChargesGetPaginated(walletId: number, page: number): Promi
     return client().get<ChargesResponseInterface>(`/api/wallets/${walletId}/charges?page=${page}`)
 }
 
-export function tagChargesGet(tagId: number): Promise<AxiosResponse<ChargesResponseInterface>> {
-    return client().get<ChargesResponseInterface>(`/api/tags/${tagId}/charges`)
+export function tagChargesGet(tagId: number, filter?: FilterInterface): Promise<AxiosResponse<ChargesResponseInterface>> {
+    return client().get<ChargesResponseInterface>(`/api/tags/${tagId}/charges`, {
+        params: filter?.getQuery()
+    })
 }
 
-export function tagChargesGetPaginated(tagId: number, page: number): Promise<AxiosResponse<ChargesResponseInterface>> {
-    return client().get<ChargesResponseInterface>(`/api/tags/${tagId}/charges?page=${page}`)
+export function tagChargesGetPaginated(tagId: number, page: number, filter?: FilterInterface): Promise<AxiosResponse<ChargesResponseInterface>> {
+    return client().get<ChargesResponseInterface>(`/api/tags/${tagId}/charges`, {
+        params: filter?.getQuery({
+            'page': page
+        })
+    })
 }
 
 export function walletTagChargesGet(walletId: number, tagId: number): Promise<AxiosResponse<ChargesResponseInterface>> {

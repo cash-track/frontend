@@ -66,6 +66,7 @@ import { ChargeUpdatedEvent } from '@/components/wallets/ChargeEdit.vue';
 import ChargeItem, { ChargeDeletedEvent } from '@/components/wallets/ChargeItem.vue';
 import ChargeCreate, {ChargeCreatedEvent} from '@/components/wallets/ChargeCreate.vue';
 import { TagInterface } from '@/api/tags';
+import { Filter, FilterDataInterface } from '@/api/filters';
 
 const PAGINATION = 'pagination'
 
@@ -78,6 +79,9 @@ export default class ChargesList extends Mixins(Loader) {
 
     @Prop()
     tag!: TagInterface
+
+    @Prop()
+    filter!: FilterDataInterface
 
     charges: Array<ChargeInterface> = []
 
@@ -99,12 +103,6 @@ export default class ChargesList extends Mixins(Loader) {
         this.initiallyLoadCharges()
     }
 
-    @Watch('tag')
-    protected onTagChanged() {
-        this.charges = []
-        this.initiallyLoadCharges()
-    }
-
     private buildLoader(page: number|null): Promise<AxiosResponse<ChargesResponseInterface>>|null {
         if (this.wallet !== undefined && this.tag !== null) {
             return page === null ?
@@ -120,14 +118,20 @@ export default class ChargesList extends Mixins(Loader) {
 
         if (this.tag !== null) {
             return page === null ?
-                tagChargesGet(this.tag.id) :
-                tagChargesGetPaginated(this.tag.id, page)
+                tagChargesGet(this.tag.id, Filter.createFromData(this.filter)) :
+                tagChargesGetPaginated(this.tag.id, page, Filter.createFromData(this.filter))
         }
 
         return null;
     }
 
+    @Watch('tag')
+    @Watch('filter', {
+        deep: true
+    })
     protected initiallyLoadCharges() {
+        this.charges = []
+
         this.setLoading()
         this.resetLoadingFailedMessage();
 
