@@ -15,8 +15,6 @@ export interface TotalResponseInterface {
 }
 
 export function tagTotalGet(tagId: number, filter?: FilterInterface): Promise<AxiosResponse<TotalResponseInterface>> {
-    console.log(filter?.getQuery())
-
     return client().get<TotalResponseInterface>(`/api/tags/${tagId}/charges/total`, {
         params: filter?.getQuery()
     })

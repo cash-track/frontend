@@ -130,12 +130,14 @@ export default class ChargesList extends Mixins(Loader) {
         deep: true
     })
     protected initiallyLoadCharges() {
-        this.charges = []
-
         this.setLoading()
         this.resetLoadingFailedMessage();
 
-        this.buildLoader(null)?.then(this.onChargesLoaded).catch(() => {
+        this.buildLoader(null)?.then(response => {
+            this.charges = []
+            this.onChargesLoaded(response)
+        }).catch(() => {
+            this.charges = []
             this.setLoadingFailedMessage('Unable to load charges. Please try again later')
         }).finally(this.setLoaded)
     }

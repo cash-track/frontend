@@ -2,6 +2,15 @@
 export interface FilterDataInterface {
     dateFrom: string;
     dateTo: string;
+    groupBy: string;
+}
+
+export function emptyFilterData(): FilterDataInterface {
+    return {
+        dateFrom: '',
+        dateTo: '',
+        groupBy: '',
+    }
 }
 
 export interface FilterInterface extends FilterDataInterface {
@@ -11,6 +20,7 @@ export interface FilterInterface extends FilterDataInterface {
 export class Filter implements FilterInterface {
     dateFrom = '';
     dateTo = '';
+    groupBy = '';
 
     static createFromData(data?: FilterDataInterface): FilterInterface {
         const filter = new Filter()
@@ -21,6 +31,10 @@ export class Filter implements FilterInterface {
 
         if (data?.dateTo) {
             filter.dateTo = data.dateTo
+        }
+
+        if (data?.groupBy) {
+            filter.groupBy = data.groupBy
         }
 
         return filter
@@ -35,6 +49,10 @@ export class Filter implements FilterInterface {
 
         if (this.dateTo) {
             query.set('date-to', this.dateTo)
+        }
+
+        if (this.groupBy) {
+            query.set('group-by', this.groupBy)
         }
 
         return Object.fromEntries(Object.assign(query, params))

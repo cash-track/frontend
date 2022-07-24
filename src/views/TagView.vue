@@ -46,6 +46,28 @@
                 </span>
             </div>
 
+            <div class="wallet-chart">
+                <div class="charge-loader-main d-flex justify-content-center align-items-center" v-if="isLoadingFor('chart') || hasLoadingFailedMessageFor('chart')">
+                    <div class="d-flex align-items-center" v-if="isLoadingFor('chart')">
+                        <b-spinner variant="light"></b-spinner>
+                        <span class="loading-text ml-2">Loading Data..</span>
+                    </div>
+                    <div class="d-flex align-items-center" v-if="hasLoadingFailedMessageFor('chart')">
+                        <b-icon-exclamation-circle></b-icon-exclamation-circle>
+                        <span class="loading-text ml-2">{{ getLoadingFailedMessageFor('chart') }}</span>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-8"></div>
+                    <div class="col-md-4">
+                        <b-input-group prepend="Group By" class="mb-4">
+                            <b-form-select v-model="selectedGroupBy" :options="groupOptions"></b-form-select>
+                        </b-input-group>
+                    </div>
+                </div>
+                <charges-flow-chart :currency="total.currency" :dataset="graphData" :group="graphGroupBy"></charges-flow-chart>
+            </div>
+
             <div class="wallet-charges">
                 <charges-filter @change="onFilterChanged"></charges-filter>
                 <charges-list :tag="tag"
@@ -60,7 +82,7 @@
 </template>
 
 <script lang="ts">
-import { Vue, Component, Prop, Watch } from 'vue-property-decorator'
+import { Component, Prop, Watch, Mixins } from 'vue-property-decorator'
 import WarningMessage from '@/components/shared/WarningMessage.vue';
 import ProfileAvatarBadge from '@/components/profile/ProfileAvatarBadge.vue';
 import ProfileAvatar from '@/components/profile/ProfileAvatar.vue';
@@ -68,10 +90,13 @@ import ChargeItem from '@/components/wallets/ChargeItem.vue';
 import ChargeCreate from '@/components/wallets/ChargeCreate.vue';
 import ChargesList from "@/components/wallets/charges/ChargesList.vue";
 import ChargesFilter, { FilterChangeEvent } from '@/components/wallets/charges/ChargesFilter.vue';
+import ChargesFlowChart from '@/components/wallets/charges/ChargesFlowChart.vue';
 import Tag from '@/components/tags/Tag.vue';
+import Loader from '@/shared/Loader';
 import { TagInterface, tagsGetCommon } from '@/api/tags';
 import { tagTotalGet, TotalInterface } from '@/api/total';
-import { Filter, FilterDataInterface } from '@/api/filters';
+import { emptyFilterData, Filter, FilterDataInterface } from '@/api/filters';
+import { GraphDataEntry, GROUP_BY_DAY, GROUP_BY_MONTH, GROUP_BY_YEAR, tagGraphGet } from '@/api/graph';
 
 @Component({
     components: {
@@ -79,13 +104,14 @@ import { Filter, FilterDataInterface } from '@/api/filters';
         ChargeCreate,
         ChargeItem,
         ChargesFilter,
+        ChargesFlowChart,
         ProfileAvatar,
         ProfileAvatarBadge,
         WarningMessage,
         Tag,
     }
 })
-export default class TagView extends Vue {
+export default class TagView extends Mixins(Loader) {
     @Prop()
     tagID!: string
 
@@ -98,17 +124,27 @@ export default class TagView extends Vue {
 
     loadFailed = false
 
-    filter: FilterDataInterface = {
-        dateFrom: '',
-        dateTo: '',
-    }
+    filter: FilterDataInterface = emptyFilterData()
 
     tag: TagInterface|null = null
 
     tags: Array<TagInterface> = []
 
+    graphData: Array<GraphDataEntry> = []
+
+    selectedGroupBy = GROUP_BY_MONTH
+    graphGroupBy = GROUP_BY_MONTH
+
     mounted() {
         this.loadTags()
+    }
+
+    get groupOptions() {
+        return [
+            {value: GROUP_BY_DAY, text: 'Day'},
+            {value: GROUP_BY_MONTH, text: 'Month'},
+            {value: GROUP_BY_YEAR, text: 'Year'},
+        ]
     }
 
     get tagIDParsed(): number {
@@ -156,6 +192,7 @@ export default class TagView extends Vue {
         }
 
         this.loadTotal()
+        this.loadChart()
     }
 
     protected loadTotal() {
@@ -170,6 +207,29 @@ export default class TagView extends Vue {
         })
     }
 
+    @Watch('selectedGroupBy')
+    protected loadChart() {
+        if (this.tagIDParsed === 0) {
+            return
+        }
+
+        this.resetLoadingFailedMessageFor('chart')
+        this.setLoadingFor('chart')
+
+        const filter = Filter.createFromData(this.filter)
+        filter.groupBy = this.selectedGroupBy
+
+        tagGraphGet(this.tagIDParsed, filter).then(response => {
+            this.graphData = response.data.data
+            this.graphGroupBy = this.selectedGroupBy
+        }).catch((error) => {
+            this.setLoadingFailedMessageFor('chart', 'Unable to load chart data. Please try again later.')
+            console.error(error)
+        }).finally(() => {
+            this.setLoadedFor('chart')
+        })
+    }
+
     protected onTagSelected(tag: TagInterface) {
         this.$router.push({
             name: 'tags.show',
@@ -181,16 +241,19 @@ export default class TagView extends Vue {
 
     protected onChargeUpdated() {
         this.loadTotal()
+        this.loadChart()
     }
 
     protected onChargeDeleted() {
         this.loadTotal()
+        this.loadChart()
     }
 
     protected onFilterChanged(event: FilterChangeEvent) {
         this.filter.dateFrom = event.dateFrom
         this.filter.dateTo = event.dateTo
         this.loadTotal()
+        this.loadChart()
     }
 }
 </script>
@@ -199,5 +262,30 @@ export default class TagView extends Vue {
 .wallet-tags {
     border-top: 1px solid #eee;
     border-bottom: none;
+}
+
+.wallet-chart {
+    position: relative;
+    border-bottom: 1px solid #eee;
+    padding: 20px 0;
+
+    .charge-loader-main {
+        margin: -20px 0;
+        height: 100%;
+        position: absolute;
+        width: 100%;
+        background: rgb(255 255 255 / 77%);
+        z-index: 100;
+        cursor: wait;
+        backdrop-filter: blur(3px);
+
+        .spinner-border {
+            color: #d4d4d4 !important;
+        }
+
+        .loading-text {
+            color: #a9a9a9;
+        }
+    }
 }
 </style>
