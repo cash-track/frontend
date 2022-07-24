@@ -34,7 +34,7 @@ import {
     walletsArchivedGet,
     walletsUnArchivedGet,
     walletsUnArchivedSort,
-    WalletInterface
+    WalletFullInterface
 } from '@/api/wallets';
 import WarningMessage from '@/components/shared/WarningMessage.vue';
 import WalletCard from '@/components/wallets/WalletCard.vue';
@@ -46,7 +46,7 @@ export default class WalletsGridList extends Mixins(Loader) {
     @Prop()
     byArchived!: boolean
 
-    wallets: Array<WalletInterface> = []
+    wallets: Array<WalletFullInterface> = []
 
     loadFailed = false
 

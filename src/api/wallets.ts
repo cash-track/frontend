@@ -9,6 +9,10 @@ export interface WalletsResponseInterface {
     data: Array<WalletInterface>;
 }
 
+export interface WalletsFullResponseInterface {
+    data: Array<WalletFullInterface>;
+}
+
 export interface WalletResponseInterface {
     data: WalletInterface;
 }
@@ -42,6 +46,9 @@ export interface WalletInterface {
     updatedAt: string;
     defaultCurrencyCode: string;
     defaultCurrency: CurrencyInterface;
+}
+
+export interface WalletFullInterface extends WalletInterface {
     users: Array<UserInterface>;
     latestCharges: Array<ChargeInterface>;
 }
@@ -59,17 +66,22 @@ export function emptyWallet(): WalletInterface {
         updatedAt: '',
         defaultCurrencyCode: '',
         defaultCurrency: emptyCurrency(),
-        users: [],
-        latestCharges: [],
     }
 }
 
-export function walletsGet(): Promise<AxiosResponse<WalletsResponseInterface>> {
-    return client().get<WalletsResponseInterface>('/api/wallets')
+export function emptyWalletFull(): WalletFullInterface {
+    return Object.assign(emptyWallet(), {
+        users: [],
+        latestCharges: [],
+    })
 }
 
-export function walletsUnArchivedGet(): Promise<AxiosResponse<WalletsResponseInterface>> {
-    return client().get<WalletsResponseInterface>('/api/wallets/unarchived')
+export function walletsGet(): Promise<AxiosResponse<WalletsFullResponseInterface>> {
+    return client().get<WalletsFullResponseInterface>('/api/wallets')
+}
+
+export function walletsUnArchivedGet(): Promise<AxiosResponse<WalletsFullResponseInterface>> {
+    return client().get<WalletsFullResponseInterface>('/api/wallets/unarchived')
 }
 
 export function walletsUnArchivedSort(request: WalletSortSetRequestInterface): Promise<AxiosResponse> {
@@ -78,8 +90,8 @@ export function walletsUnArchivedSort(request: WalletSortSetRequestInterface): P
     })
 }
 
-export function walletsArchivedGet(): Promise<AxiosResponse<WalletsResponseInterface>> {
-    return client().get<WalletsResponseInterface>('/api/wallets/archived')
+export function walletsArchivedGet(): Promise<AxiosResponse<WalletsFullResponseInterface>> {
+    return client().get<WalletsFullResponseInterface>('/api/wallets/archived')
 }
 
 export function walletGet(walletId: number): Promise<AxiosResponse<WalletResponseInterface>> {

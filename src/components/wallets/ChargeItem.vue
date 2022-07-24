@@ -16,7 +16,6 @@
                     <profile-avatar class="charge-avatar" :user="charge.user"></profile-avatar>
                 </b-col>
             </b-row>
-
         </b-col>
         <b-col md="8" cols="12" class="charge-main-container">
             <div class="charge-type" v-show="!isEdit">
@@ -38,14 +37,24 @@
 
             <div class="charge-header" v-if="!isEdit" @click="toggleActive">
                 <span class="charge-amount">{{ charge.amount | money(currency) }}</span>
-                <span class="charge-title">{{ charge.title }}</span>
+                <span class="charge-title">{{ charge.title.trim() }}
+                    <span
+                        class="charge-wallet text-muted"
+                        v-if="showWallet && charge.wallet !== null"
+                    >@{{ charge.wallet.name }}
+                        <b-badge variant="primary" v-if="charge.wallet.isActive">active</b-badge>
+                        <b-badge variant="secondary" v-if="charge.wallet.isArchived">archived</b-badge>
+                    </span>
+                </span>
             </div>
+
             <div class="charge-body" v-if="!isEdit" v-show="isActive && charge.description">
                 <span>{{ charge.description }}</span>
             </div>
+
             <div class="charge-edit" v-if="!readOnly && isEdit">
                 <charge-edit
-                    :wallet="wallet"
+                    :wallet="wallet ? wallet : charge.wallet"
                     :charge="charge"
                     @updated="onUpdated"
                     @cancelled="toggleEdit"
@@ -74,9 +83,7 @@ export interface ChargeDeletedEvent {
     components: {ChargeEdit, ProfileAvatar, Tag}
 })
 export default class ChargeItem extends Vue {
-    @Prop({
-        required: false
-    })
+    @Prop()
     wallet!: WalletInterface
 
     @Prop({
@@ -85,9 +92,16 @@ export default class ChargeItem extends Vue {
     charge!: ChargeInterface
 
     @Prop({
-        default: false
+        default: false,
+        type: Boolean,
     })
     readOnly!: boolean
+
+    @Prop({
+        default: false,
+        type: Boolean,
+    })
+    showWallet!: boolean
 
     isActive = false
     isEdit = false
@@ -97,7 +111,15 @@ export default class ChargeItem extends Vue {
     }
 
     get currency(): CurrencyInterface {
-        return this.wallet !== undefined ? this.wallet.defaultCurrency : this.$store.state.profile.defaultCurrency
+        if (this.wallet !== undefined && this.wallet !== null) {
+            return this.wallet.defaultCurrency
+        }
+
+        if (this.charge.wallet !== null) {
+            return this.charge.wallet.defaultCurrency
+        }
+
+        return this.$store.state.profile.defaultCurrency
     }
 
     toggleActive(event: Event) {
@@ -121,6 +143,10 @@ export default class ChargeItem extends Vue {
     onDeleted(event: Event) {
         event.preventDefault()
         event.stopPropagation()
+
+        if (! confirm('Are you sure?')) {
+            return
+        }
 
         walletChargeDelete(this.wallet.id, this.charge.id).then(() => {
             this.toggleEdit()
@@ -215,6 +241,10 @@ export default class ChargeItem extends Vue {
             width: 30px;
             height: 0;
             border-top: 1px solid #eee;
+        }
+
+        .charge-wallet {
+            font-size: 14px;
         }
 
         .charge-action {

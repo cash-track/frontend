@@ -87,7 +87,7 @@
 
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator'
-import { emptyWallet, WalletInterface } from '@/api/wallets';
+import { emptyWalletFull, WalletFullInterface } from '@/api/wallets';
 import { UserInterface } from '@/api/users';
 import ProfileAvatar from '@/components/profile/ProfileAvatar.vue';
 
@@ -99,9 +99,9 @@ const USERS_LIMIT = 4
 export default class WalletCard extends Vue {
     @Prop({
         required: true,
-        default: emptyWallet(),
+        default: emptyWalletFull(),
     })
-    wallet!: WalletInterface
+    wallet!: WalletFullInterface
 
     get members(): Array<UserInterface> {
         const users: Array<UserInterface> = []
