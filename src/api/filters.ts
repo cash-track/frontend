@@ -41,7 +41,7 @@ export class Filter implements FilterInterface {
     }
 
     getQuery(params?: Record<string, number|string>): Record<string, number|string> {
-        const query: Map<string, string> = new Map<string, string>()
+        const query: Map<string, number|string> = new Map<string, number|string>()
 
         if (this.dateFrom) {
             query.set('date-from', this.dateFrom)
@@ -55,6 +55,10 @@ export class Filter implements FilterInterface {
             query.set('group-by', this.groupBy)
         }
 
-        return Object.fromEntries(Object.assign(query, params))
+        for (const key in params) {
+            query.set(key, params[key])
+        }
+
+        return Object.fromEntries(query.entries())
     }
 }
