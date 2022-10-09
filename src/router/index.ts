@@ -10,6 +10,7 @@ import WalletCreateView from '@/views/WalletCreateView.vue';
 import WalletEditView from '@/views/WalletEditView.vue';
 import WalletShareView from '@/views/WalletShareView.vue';
 import TagView from '@/views/TagView.vue';
+import TagsView from '@/views/TagsView.vue';
 
 Vue.use(VueRouter)
 
@@ -121,6 +122,15 @@ const routes: Array<RouteConfig> = [
             title: 'Tag | Cash Track',
             namedTitle: '{name} | Cash Track',
         },
+    },
+    {
+        path: '/tags',
+        name: 'tags',
+        component: TagsView,
+        meta: {
+            title: 'Tags | Cash Track',
+            namedTitle: '{name} | Cash Track',
+        }
     },
 ]
 
