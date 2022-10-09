@@ -9,6 +9,7 @@
                 <b-collapse id="nav-collapse" is-nav>
                     <b-navbar-nav>
                         <b-nav-item :to="{name: 'wallets'}" exact-active-class="active">Wallets</b-nav-item>
+                        <b-nav-item :to="{name: 'tags'}" exact-active-class="active">Tags</b-nav-item>
                         <b-nav-item :to="{name: 'profile'}" exact-active-class="active">Profile</b-nav-item>
                         <b-nav-item :href="helpLink">Help</b-nav-item>
                         <b-nav-item :href="aboutLink">About</b-nav-item>
@@ -26,6 +27,7 @@
                             </template>
                             <b-dropdown-item :to="{name: 'wallets'}">Wallets</b-dropdown-item>
                             <b-dropdown-item :to="{name: 'wallets.create'}">New Wallet</b-dropdown-item>
+                            <b-dropdown-item :to="{name: 'tags'}">Tags</b-dropdown-item>
                             <b-dropdown-divider></b-dropdown-divider>
                             <b-dropdown-item :to="{name: 'profile'}">Profile</b-dropdown-item>
                             <b-dropdown-item :to="{name: 'settings.profile'}">Settings</b-dropdown-item>

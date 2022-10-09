@@ -129,7 +129,7 @@ export default class Tag extends Vue {
 
     button {
         font-size: 16px;
-        margin: -10px -10px -10px 5px;
+        margin: -12px -10px -10px 5px;
         line-height: 26px;
         padding: 1px 6px 0;
         background: none;
