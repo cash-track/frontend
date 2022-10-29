@@ -8,6 +8,21 @@ import { tagCreate, TagInterface, TagResponseInterface } from '@/api/tags';
 import Tag from '@/components/tags/Tag.vue';
 import { AxiosError, AxiosResponse } from 'axios';
 
+export const EMOJI_REGEX = /[\p{Extended_Pictographic}\u{1F3FB}-\u{1F3FF}\u{1F9B0}-\u{1F9B3}]+/gu
+
+export function parseEmoji(data: string): Array<string> {
+    let name = data.trim()
+    const potentialIcon = name.substr(0, 2).match(EMOJI_REGEX)
+    let icon = ''
+
+    if (potentialIcon !== null && potentialIcon.length > 0) {
+        icon = potentialIcon[0]
+        name = name.replace(icon, '').trim()
+    }
+
+    return [name, icon]
+}
+
 @Component({
     components: { Tag }
 })
@@ -22,22 +37,13 @@ export default class CreateTag extends Vue {
 
     error = ''
 
-    emojiRegex = /[\p{Extended_Pictographic}\u{1F3FB}-\u{1F3FF}\u{1F9B0}-\u{1F9B3}]+/gu
-
     get tag(): TagInterface {
-        let name = this.name.trim()
-        const potentialIcon = name.substr(0, 2).match(this.emojiRegex)
-        let icon = null
-
-        if (potentialIcon !== null && potentialIcon.length > 0) {
-            icon = potentialIcon[0]
-            name = name.replace(icon, '')
-        }
+        const parsed = parseEmoji(this.name)
 
         return {
             id: 0,
-            name: name,
-            icon: icon,
+            name: parsed[0],
+            icon: parsed[1] === '' ? null : parsed[1],
             color: null,
             userId: 0,
             createdAt: '',
