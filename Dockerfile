@@ -9,6 +9,8 @@ RUN npm install
 
 COPY . .
 
+ENV NODE_OPTIONS=--openssl-legacy-provider
+
 RUN npm run build
 
 # production stage
