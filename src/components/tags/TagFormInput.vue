@@ -1,23 +1,23 @@
 <template>
     <b-form-group
-        label-for="title"
+        label-for="tags-autocomplete"
         class="autocomplete-root"
         :invalid-feedback="validationMessage"
         :state="validationState"
-        v-click-outside="onTitleInactive"
+        v-click-outside="onInputInactive"
     >
         <b-spinner small class="loader" v-if="autocompleteLoading"></b-spinner>
         <b-input
             type="text"
-            id="title"
+            id="tags-autocomplete"
             required
-            placeholder="Title"
+            placeholder="Tags"
             v-model="name"
             :disabled="disabled"
             :state="validationState"
             @keyup="onAutocomplete"
-            @focusin="onTitleActive"
-            @change="onTitleChanged"
+            @focusin="onInputActive"
+            autocomplete="off"
 
         ></b-input>
         <b-list-group class="autocomplete" v-show="suggestionActive">
@@ -35,7 +35,7 @@
                 ></create-tag>
                 <span v-else-if="!autocompleteFiltered.length"
                       class="text-notice text-muted"
-                >Find or create tags by starts by <code>#</code></span>
+                >Find or create tags by start typing..</span>
             </b-list-group-item>
             <b-list-group-item v-if="!autocompleteActive">
                 <div v-if="suggestionsFiltered.length">
@@ -45,7 +45,7 @@
                          @selected="onSelected"
                     ></tag>
                 </div>
-                <span v-else class="text-notice text-muted">Find or create tags by starts by <code>#</code></span>
+                <span v-else class="text-notice text-muted">Find or create tags by start typing..</span>
             </b-list-group-item>
         </b-list-group>
     </b-form-group>
@@ -57,7 +57,7 @@ import { AxiosResponse } from 'axios';
 import { walletTagSearch, walletTagsGet } from '@/api/wallets';
 import { TagInterface, TagsResponseInterface } from '@/api/tags';
 import Tag from '@/components/tags/Tag.vue';
-import CreateTag from '@/components/tags/CreateTag.vue';
+import CreateTag, { parseEmoji } from '@/components/tags/CreateTag.vue';
 
 @Component({
     components: {Tag, CreateTag}
@@ -75,12 +75,6 @@ export default class TagFormInput extends Vue {
         default: [],
     })
     tags!: Array<TagInterface>
-
-    @Prop({
-        required: true,
-        type: String,
-    })
-    value!: string
 
     @Prop({
         required: false,
@@ -141,19 +135,7 @@ export default class TagFormInput extends Vue {
     }
 
     get nameAutocomplete(): string {
-        const hashIndex = this.name.indexOf('#')
-
-        if (hashIndex === -1) {
-            return ''
-        }
-
-        let endIndex = this.name.indexOf(' ', hashIndex)
-
-        if (endIndex === -1) {
-            endIndex = this.name.length - 1
-        }
-
-        return this.name.substr(hashIndex + 1, endIndex - hashIndex)
+        return parseEmoji(this.name)[0]
     }
 
     mounted() {
@@ -174,18 +156,7 @@ export default class TagFormInput extends Vue {
         })
     }
 
-    @Watch('value')
-    protected updateName() {
-        if (this.value === undefined) {
-            return
-        }
-
-        this.name = this.value
-    }
-
     protected onAutocomplete() {
-        this.$emit('input', this.name)
-
         const query = this.nameAutocomplete
 
         if (query.trim() === '' || this.walletId === undefined) {
@@ -235,41 +206,19 @@ export default class TagFormInput extends Vue {
 
         this.$emit('selected', tag)
 
-        this.removeAddedTagNameFromTitle()
+        this.name = ''
 
         this.onAutocomplete()
 
         console.log(tag)
     }
 
-    private removeAddedTagNameFromTitle() {
-        const name = this.nameAutocomplete
-
-        if (name.trim() === '') {
-            return
-        }
-
-        const startIndex = this.name.indexOf(`#${name}`)
-
-        if (startIndex === -1) {
-            return
-        }
-
-        this.name = this.name.replace(`#${name}`, '')
-
-        this.$emit('input', this.name)
-    }
-
-    protected onTitleActive() {
+    protected onInputActive() {
         this.suggestionActive = true
     }
 
-    protected onTitleInactive() {
+    protected onInputInactive() {
         this.suggestionActive = false
-    }
-
-    protected onTitleChanged() {
-        this.$emit('input', this.name)
     }
 }
 </script>

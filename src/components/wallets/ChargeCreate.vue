@@ -24,6 +24,7 @@
                                  required
                                  no-wheel
                                  min="0"
+                                 autocomplete="off"
                                  v-model="form.amount"
                                  :disabled="isLoading"
                                  :state="validationState('amount')"
@@ -34,13 +35,18 @@
                 </b-form-group>
             </b-col>
             <b-col xl="7">
-                <tag-form-input v-model="form.title"
-                                :wallet-id="wallet.id"
-                                :tags="form.tags"
-                                :validation-state="validationState(['title', 'tags'])"
-                                :validation-message="validationMessage(['title', 'tags'])"
-                                @selected="onTagSelected"
-                ></tag-form-input>
+                <b-form-group :invalid-feedback="validationMessage('title')"
+                              :state="validationState('title')">
+                    <b-input type="text"
+                             id="title"
+                             placeholder="Title"
+                             required
+                             v-model="form.title"
+                             :disabled="isLoading"
+                             :state="validationState('title')"
+                             @change="resetValidationMessage('title')"
+                    ></b-input>
+                </b-form-group>
             </b-col>
             <b-col md="12">
                 <b-form-group v-if="form.tags.length">
@@ -51,6 +57,15 @@
                          @selected="onTagRemoved"
                     ></tag>
                 </b-form-group>
+            </b-col>
+            <b-col md="12">
+                <tag-form-input :wallet-id="wallet.id"
+                                :tags="form.tags"
+                                :disabled="isLoading"
+                                :validation-state="validationState(['tags'])"
+                                :validation-message="validationMessage(['tags'])"
+                                @selected="onTagSelected"
+                ></tag-form-input>
             </b-col>
             <b-col md="12">
                 <b-form-group
