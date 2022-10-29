@@ -61,6 +61,7 @@
             <b-col md="12">
                 <tag-form-input :wallet-id="wallet.id"
                                 :tags="form.tags"
+                                :disabled="isLoading"
                                 :validation-state="validationState(['tags'])"
                                 :validation-message="validationMessage(['tags'])"
                                 @selected="onTagSelected"
