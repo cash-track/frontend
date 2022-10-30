@@ -43,6 +43,10 @@ export function tagGetCommon(tagId: number): Promise<AxiosResponse<TagResponseIn
     return client().get<TagResponseInterface>(`/api/tags/common/${tagId}`)
 }
 
+export function tagGetSuggestions(query: string): Promise<AxiosResponse<TagsResponseInterface>> {
+    return client().get<TagsResponseInterface>(`/api/tags/suggestions/${query}`)
+}
+
 export function tagCreate(request: TagCreateRequestInterface): Promise<AxiosResponse<TagResponseInterface>> {
     return client().post<TagResponseInterface>(`/api/tags`, {
         name: request.name,

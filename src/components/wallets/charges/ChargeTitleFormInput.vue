@@ -1,26 +1,26 @@
 <template>
-    <b-form-group
-        label-for="tags-autocomplete"
-        class="autocomplete-root"
-        :invalid-feedback="validationMessage"
-        :state="validationState"
-        v-click-outside="onInputInactive"
+    <b-form-group label-for="title-suggestion"
+                  class="autocomplete-root"
+                  :invalid-feedback="validationMessage"
+                  :state="validationState"
+                  v-click-outside="onInputInactive"
     >
         <b-spinner small class="loader" v-if="autocompleteLoading"></b-spinner>
         <b-input
             type="text"
-            id="tags-autocomplete"
+            id="title-suggestion"
             required
-            placeholder="Tags"
+            placeholder="Title"
             v-model="name"
             :disabled="disabled"
             :state="validationState"
             @keyup="onAutocomplete"
             @focusin="onInputActive"
+            @change="onInputChanged"
             autocomplete="off"
         ></b-input>
-        <b-list-group class="autocomplete" v-show="suggestionActive">
-            <b-list-group-item v-if="autocompleteActive">
+        <b-list-group class="autocomplete" v-show="autocompleteActive">
+            <b-list-group-item>
                 <span v-if="autocompleteFiltered.length" class="list-container">
                     <tag v-for="tag of autocompleteFiltered"
                          :tag="tag"
@@ -28,52 +28,36 @@
                          @selected="onSelected"
                     ></tag>
                 </span>
-                <create-tag :name="nameAutocomplete"
-                            v-if="canCreate"
-                            @selected="onSelected"
-                ></create-tag>
                 <span v-else-if="!autocompleteFiltered.length"
                       class="text-notice text-muted"
                 >Find or create tags by start typing..</span>
-            </b-list-group-item>
-            <b-list-group-item v-if="!autocompleteActive">
-                <div v-if="suggestionsFiltered.length">
-                    <tag v-for="tag of suggestionsFiltered"
-                         :tag="tag"
-                         :key="tag.id"
-                         @selected="onSelected"
-                    ></tag>
-                </div>
-                <span v-else class="text-notice text-muted">Find or create tags by start typing..</span>
             </b-list-group-item>
         </b-list-group>
     </b-form-group>
 </template>
 
 <script lang="ts">
-import { Vue, Component, Prop, Watch } from 'vue-property-decorator'
 import { AxiosResponse } from 'axios';
-import { walletTagSearch, walletTagsGet } from '@/api/wallets';
-import { TagInterface, TagsResponseInterface } from '@/api/tags';
+import { Vue, Component, Prop, Watch } from 'vue-property-decorator'
+import { tagGetSuggestions, TagInterface, TagsResponseInterface } from '@/api/tags';
 import Tag from '@/components/tags/Tag.vue';
-import CreateTag, { parseEmoji } from '@/components/tags/CreateTag.vue';
 
 @Component({
-    components: {Tag, CreateTag}
+    components: {Tag}
 })
-export default class TagFormInput extends Vue {
-    @Prop({
-        required: true,
-        type: Number,
-    })
-    walletId!: number
-
+export default class ChargeTitleFormInput extends Vue {
     @Prop({
         required: true,
         type: Array,
         default: [],
     })
     tags!: Array<TagInterface>
+
+    @Prop({
+        required: true,
+        type: String,
+    })
+    value!: string
 
     @Prop({
         required: false,
@@ -98,20 +82,11 @@ export default class TagFormInput extends Vue {
 
     name = ''
 
-    suggestions: Array<TagInterface> = []
-    suggestionActive = false
-
     autocomplete: Array<TagInterface> = []
     autocompleteActive = false
     autocompleteLoading = false
     autocompleteDebounceHandle: number|null = null
     lastAutocompleteQuery = ''
-
-    get suggestionsFiltered(): Array<TagInterface> {
-        const addedTags = this.tags.map(tag => tag.name)
-
-        return this.suggestions.filter(tag => addedTags.indexOf(tag.name) === -1)
-    }
 
     get autocompleteFiltered(): Array<TagInterface> {
         const addedTags = this.tags.map(tag => tag.name)
@@ -119,51 +94,21 @@ export default class TagFormInput extends Vue {
         return this.autocomplete.filter(tag => addedTags.indexOf(tag.name) === -1)
     }
 
-    get canCreate(): boolean {
-        const name = this.nameAutocomplete
-
-        if (name.trim() === '') {
-            return false
-        }
-
-        if (name.trim().length < 3) {
-            return false
-        }
-
-        return this.tags.map(tag => tag.name).indexOf(name.trim()) === -1
-    }
-
-    get nameAutocomplete(): string {
-        return parseEmoji(this.name)[0]
-    }
-
-    mounted() {
-        this.loadSuggestions()
-    }
-
-    @Watch('walletId')
-    protected loadSuggestions() {
-        if (this.walletId === undefined) {
+    @Watch('value')
+    protected updateName() {
+        if (this.value === undefined) {
             return
         }
-
-        walletTagsGet(this.walletId).then(response => {
-            this.suggestions = response.data.data
-        }).catch(error => {
-            console.error('Unable to load tags suggestions')
-            console.debug(error)
-        })
+        this.name = this.value
     }
 
     protected onAutocomplete() {
-        const query = this.nameAutocomplete
+        const query = this.name
 
-        if (query.trim() === '' || this.walletId === undefined) {
+        if (query.trim() === '') {
             this.autocompleteActive = false
             return
         }
-
-        this.autocompleteActive = true
 
         if (this.lastAutocompleteQuery === query) {
             return
@@ -180,7 +125,7 @@ export default class TagFormInput extends Vue {
         this.autocompleteDebounceHandle = window.setTimeout(() => {
             this.autocompleteDebounceHandle = null
 
-            walletTagSearch(this.walletId, query)
+            tagGetSuggestions(query)
                 .then(this.onTagsAutocompleteLoaded)
                 .catch(error => {
                     console.error('Unable to load tags autocomplete for query: ' + query)
@@ -194,6 +139,7 @@ export default class TagFormInput extends Vue {
 
     protected onTagsAutocompleteLoaded(response: AxiosResponse<TagsResponseInterface>) {
         this.autocomplete = response.data.data
+        this.autocompleteActive = this.autocompleteFiltered.length > 0
     }
 
     protected onSelected(tag: TagInterface) {
@@ -205,19 +151,23 @@ export default class TagFormInput extends Vue {
 
         this.$emit('selected', tag)
 
-        this.name = ''
-
         this.onAutocomplete()
+
+        this.autocompleteActive = this.autocompleteFiltered.length > 0
 
         console.log(tag)
     }
 
     protected onInputActive() {
-        this.suggestionActive = true
+        this.autocompleteActive = this.autocompleteFiltered.length > 0
     }
 
     protected onInputInactive() {
-        this.suggestionActive = false
+        this.autocompleteActive = false
+    }
+
+    protected onInputChanged() {
+        this.$emit('input', this.name)
     }
 }
 </script>

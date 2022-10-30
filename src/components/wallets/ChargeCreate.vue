@@ -35,18 +35,13 @@
                 </b-form-group>
             </b-col>
             <b-col xl="7">
-                <b-form-group :invalid-feedback="validationMessage('title')"
-                              :state="validationState('title')">
-                    <b-input type="text"
-                             id="title"
-                             placeholder="Title"
-                             required
-                             v-model="form.title"
-                             :disabled="isLoading"
-                             :state="validationState('title')"
-                             @change="resetValidationMessage('title')"
-                    ></b-input>
-                </b-form-group>
+                <charge-title-form-input v-model="form.title"
+                                         :tags="form.tags"
+                                         :disabled="isLoading"
+                                         :validation-state="validationState('title')"
+                                         :validation-message="validationMessage('title')"
+                                         @selected="onTagSelected"
+                ></charge-title-form-input>
             </b-col>
             <b-col md="12">
                 <b-form-group v-if="form.tags.length">
@@ -117,13 +112,14 @@ import WarningMessage from '@/components/shared/WarningMessage.vue';
 import Tag from '@/components/tags/Tag.vue';
 import CreateTag from '@/components/tags/CreateTag.vue';
 import TagFormInput from '@/components/tags/TagFormInput.vue';
+import ChargeTitleFormInput from '@/components/wallets/charges/ChargeTitleFormInput.vue';
 
 export interface ChargeCreatedEvent {
     charge: ChargeInterface;
 }
 
 @Component({
-    components: {WarningMessage, Tag, CreateTag, TagFormInput}
+    components: {WarningMessage, Tag, CreateTag, TagFormInput, ChargeTitleFormInput}
 })
 export default class ChargeCreate extends Mixins(Loader, Messager, Validator) {
     @Prop()
