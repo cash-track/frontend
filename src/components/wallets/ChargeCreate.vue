@@ -38,6 +38,7 @@
                 <charge-title-form-input v-model="form.title"
                                          :tags="form.tags"
                                          :disabled="isLoading"
+                                         :reset-state="resetState"
                                          :validation-state="validationState('title')"
                                          :validation-message="validationMessage('title')"
                                          @selected="onTagSelected"
@@ -57,6 +58,7 @@
                 <tag-form-input :wallet-id="wallet.id"
                                 :tags="form.tags"
                                 :disabled="isLoading"
+                                :reset-state="resetState"
                                 :validation-state="validationState(['tags'])"
                                 :validation-message="validationMessage(['tags'])"
                                 @selected="onTagSelected"
@@ -133,6 +135,8 @@ export default class ChargeCreate extends Mixins(Loader, Messager, Validator) {
         tags: [],
     }
 
+    resetState = false
+
     get isTypeIncome(): boolean {
         return this.form.type === TypeIncome
     }
@@ -206,6 +210,8 @@ export default class ChargeCreate extends Mixins(Loader, Messager, Validator) {
             description: '',
             tags: [],
         }
+
+        this.resetState = !this.resetState
     }
 }
 </script>
