@@ -78,7 +78,14 @@ export default class ChargeTitleFormInput extends Vue {
         type: String,
         default: null,
     })
-    validationMessage!: boolean|null
+    validationMessage!: string|null
+
+    @Prop({
+        required: false,
+        type: Boolean,
+        default: false,
+    })
+    resetState!: boolean|null
 
     name = ''
 
@@ -168,6 +175,12 @@ export default class ChargeTitleFormInput extends Vue {
 
     protected onInputChanged() {
         this.$emit('input', this.name)
+    }
+
+    @Watch('resetState')
+    protected onReset() {
+        this.autocomplete = []
+        this.autocompleteActive = false
     }
 }
 </script>

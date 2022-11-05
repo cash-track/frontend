@@ -94,7 +94,14 @@ export default class TagFormInput extends Vue {
         type: String,
         default: null,
     })
-    validationMessage!: boolean|null
+    validationMessage!: string|null
+
+    @Prop({
+        required: false,
+        type: Boolean,
+        default: false,
+    })
+    resetState!: boolean|null
 
     name = ''
 
@@ -218,6 +225,14 @@ export default class TagFormInput extends Vue {
 
     protected onInputInactive() {
         this.suggestionActive = false
+    }
+
+    @Watch('resetState')
+    protected onReset() {
+        this.name = ''
+        this.autocomplete = []
+        this.suggestionActive = false
+        this.loadSuggestions()
     }
 }
 </script>
