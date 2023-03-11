@@ -20,10 +20,14 @@ export function tagTotalGet(tagId: number, filter?: FilterInterface): Promise<Ax
     })
 }
 
-export function walletTotalGet(walletId: number): Promise<AxiosResponse<TotalResponseInterface>> {
-    return client().get<TotalResponseInterface>(`/api/wallets/${walletId}/total`)
+export function walletTotalGet(walletId: number, filter?: FilterInterface): Promise<AxiosResponse<TotalResponseInterface>> {
+    return client().get<TotalResponseInterface>(`/api/wallets/${walletId}/total`, {
+        params: filter?.getQuery()
+    })
 }
 
-export function walletTagTotalGet(walletId: number, tagId: number): Promise<AxiosResponse<TotalResponseInterface>> {
-    return client().get<TotalResponseInterface>(`/api/wallets/${walletId}/tags/${tagId}/total`)
+export function walletTagTotalGet(walletId: number, tagId: number, filter?: FilterInterface): Promise<AxiosResponse<TotalResponseInterface>> {
+    return client().get<TotalResponseInterface>(`/api/wallets/${walletId}/tags/${tagId}/total`, {
+        params: filter?.getQuery()
+    })
 }

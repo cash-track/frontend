@@ -106,14 +106,14 @@ export default class ChargesList extends Mixins(Loader) {
     private buildLoader(page: number|null): Promise<AxiosResponse<ChargesResponseInterface>>|null {
         if (this.wallet !== undefined && this.tag !== null) {
             return page === null ?
-                walletTagChargesGet(this.wallet.id, this.tag.id) :
-                walletTagChargesGetPaginated(this.wallet.id, this.tag.id, page)
+                walletTagChargesGet(this.wallet.id, this.tag.id, Filter.createFromData(this.filter)) :
+                walletTagChargesGetPaginated(this.wallet.id, this.tag.id, page, Filter.createFromData(this.filter))
         }
 
         if (this.wallet !== undefined) {
             return page === null ?
-                walletChargesGet(this.wallet.id) :
-                walletChargesGetPaginated(this.wallet.id, page)
+                walletChargesGet(this.wallet.id, Filter.createFromData(this.filter)) :
+                walletChargesGetPaginated(this.wallet.id, page, Filter.createFromData(this.filter))
         }
 
         if (this.tag !== null) {
@@ -257,9 +257,12 @@ export default class ChargesList extends Mixins(Loader) {
 }
 
 .wallet-charge-create {
-    padding-top: 10px;
+    padding-top: 20px;
     padding-bottom: 35px;
-    margin-top: 10px;
+
+    .charge-type {
+        top: 28px;
+    }
 
     .charge-create {
         padding-top: 20px;
