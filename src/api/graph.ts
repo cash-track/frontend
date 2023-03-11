@@ -13,12 +13,24 @@ export interface GraphDataEntry {
     expense: number;
 }
 
-export interface TagGraphResponseInterface {
+export interface GraphResponseInterface {
     data: Array<GraphDataEntry>;
 }
 
-export function tagGraphGet(tagId: number, filter?: FilterInterface): Promise<AxiosResponse<TagGraphResponseInterface>> {
-    return client().get<TagGraphResponseInterface>(`/api/tags/${tagId}/charges/graph`, {
+export function tagGraphGet(tagId: number, filter?: FilterInterface): Promise<AxiosResponse<GraphResponseInterface>> {
+    return client().get<GraphResponseInterface>(`/api/tags/${tagId}/charges/graph`, {
+        params: filter?.getQuery()
+    })
+}
+
+export function walletGraphGet(walletId: number, filter?: FilterInterface): Promise<AxiosResponse<GraphResponseInterface>> {
+    return client().get<GraphResponseInterface>(`/api/wallets/${walletId}/charges/graph`, {
+        params: filter?.getQuery()
+    })
+}
+
+export function walletTagGraphGet(walletId: number, tagId: number, filter?: FilterInterface): Promise<AxiosResponse<GraphResponseInterface>> {
+    return client().get<GraphResponseInterface>(`/api/wallets/${walletId}/tags/${tagId}/charges/graph`, {
         params: filter?.getQuery()
     })
 }

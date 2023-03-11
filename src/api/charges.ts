@@ -49,12 +49,18 @@ export interface ChargeUpdateRequestInterface {
     tags: Array<TagInterface>;
 }
 
-export function walletChargesGet(walletId: number): Promise<AxiosResponse<ChargesResponseInterface>> {
-    return client().get<ChargesResponseInterface>(`/api/wallets/${walletId}/charges`)
+export function walletChargesGet(walletId: number, filter?: FilterInterface): Promise<AxiosResponse<ChargesResponseInterface>> {
+    return client().get<ChargesResponseInterface>(`/api/wallets/${walletId}/charges`, {
+        params: filter?.getQuery()
+    })
 }
 
-export function walletChargesGetPaginated(walletId: number, page: number): Promise<AxiosResponse<ChargesResponseInterface>> {
-    return client().get<ChargesResponseInterface>(`/api/wallets/${walletId}/charges?page=${page}`)
+export function walletChargesGetPaginated(walletId: number, page: number, filter?: FilterInterface): Promise<AxiosResponse<ChargesResponseInterface>> {
+    return client().get<ChargesResponseInterface>(`/api/wallets/${walletId}/charges`, {
+        params: filter?.getQuery({
+            'page': page
+        })
+    })
 }
 
 export function tagChargesGet(tagId: number, filter?: FilterInterface): Promise<AxiosResponse<ChargesResponseInterface>> {
@@ -71,12 +77,18 @@ export function tagChargesGetPaginated(tagId: number, page: number, filter?: Fil
     })
 }
 
-export function walletTagChargesGet(walletId: number, tagId: number): Promise<AxiosResponse<ChargesResponseInterface>> {
-    return client().get<ChargesResponseInterface>(`/api/wallets/${walletId}/tags/${tagId}/charges`)
+export function walletTagChargesGet(walletId: number, tagId: number, filter?: FilterInterface): Promise<AxiosResponse<ChargesResponseInterface>> {
+    return client().get<ChargesResponseInterface>(`/api/wallets/${walletId}/tags/${tagId}/charges`, {
+        params: filter?.getQuery()
+    })
 }
 
-export function walletTagChargesGetPaginated(walletId: number, tagId: number, page: number): Promise<AxiosResponse<ChargesResponseInterface>> {
-    return client().get<ChargesResponseInterface>(`/api/wallets/${walletId}/tags/${tagId}/charges?page=${page}`)
+export function walletTagChargesGetPaginated(walletId: number, tagId: number, page: number, filter?: FilterInterface): Promise<AxiosResponse<ChargesResponseInterface>> {
+    return client().get<ChargesResponseInterface>(`/api/wallets/${walletId}/tags/${tagId}/charges`, {
+        params: filter?.getQuery({
+            'page': page
+        })
+    })
 }
 
 export function walletChargeCreate(walletId: number, request: ChargeCreateRequestInterface): Promise<AxiosResponse<ChargeResponseInterface>> {
