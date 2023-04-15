@@ -8,16 +8,27 @@
 
                 <b-collapse id="nav-collapse" is-nav>
                     <b-navbar-nav>
-                        <b-nav-item :to="{name: 'wallets'}" exact-active-class="active">Wallets</b-nav-item>
-                        <b-nav-item :to="{name: 'tags'}" exact-active-class="active">Tags</b-nav-item>
-                        <b-nav-item :to="{name: 'profile'}" exact-active-class="active">Profile</b-nav-item>
-                        <b-nav-item :href="helpLink">Help</b-nav-item>
-                        <b-nav-item :href="aboutLink">About</b-nav-item>
+                        <b-nav-item :to="{name: 'wallets'}" exact-active-class="active">{{ $t('wallets.wallets') }}</b-nav-item>
+                        <b-nav-item :to="{name: 'tags'}" exact-active-class="active">{{ $t('tags.tags') }}</b-nav-item>
+                        <b-nav-item :to="{name: 'profile'}" exact-active-class="active">{{ $t('profile.profile') }}</b-nav-item>
+                        <b-nav-item :href="helpLink">{{ $t('help') }}</b-nav-item>
+                        <b-nav-item :href="aboutLink">{{ $t('about') }}</b-nav-item>
                     </b-navbar-nav>
 
                     <b-navbar-nav class="ml-auto">
+                        <b-nav-item-dropdown right>
+                            <template v-slot:button-content>
+                                <span class="current-locale">{{ $t('flag') }}</span>
+                            </template>
+                            <b-dropdown-item v-for="locale of locales"
+                                             :key="locale.code"
+                                             @click="onLocaleChange(locale.code, $event)"
+                                             :active="currentLocale === locale.code"
+                            >{{ locale.name }}</b-dropdown-item>
+                        </b-nav-item-dropdown>
+
                         <b-navbar-nav v-if="!isLogged">
-                            <b-nav-item>My Profile</b-nav-item>
+                            <b-nav-item>{{ $t('myProfile') }}</b-nav-item>
                         </b-navbar-nav>
 
                         <b-nav-item-dropdown v-if="isLogged" right>
@@ -25,13 +36,13 @@
                                 <profile-avatar :user="profile"></profile-avatar>
                                 {{ profile.name }}
                             </template>
-                            <b-dropdown-item :to="{name: 'wallets'}">Wallets</b-dropdown-item>
-                            <b-dropdown-item :to="{name: 'wallets.create'}">New Wallet</b-dropdown-item>
-                            <b-dropdown-item :to="{name: 'tags'}">Tags</b-dropdown-item>
+                            <b-dropdown-item :to="{name: 'wallets'}">{{ $t('wallets.wallets') }}</b-dropdown-item>
+                            <b-dropdown-item :to="{name: 'wallets.create'}">{{ $t('wallets.newWallet') }}</b-dropdown-item>
+                            <b-dropdown-item :to="{name: 'tags'}">{{ $t('tags.tags') }}</b-dropdown-item>
                             <b-dropdown-divider></b-dropdown-divider>
-                            <b-dropdown-item :to="{name: 'profile'}">Profile</b-dropdown-item>
-                            <b-dropdown-item :to="{name: 'settings.profile'}">Settings</b-dropdown-item>
-                            <b-dropdown-item href="#" @click="onLogout">Sign Out</b-dropdown-item>
+                            <b-dropdown-item :to="{name: 'profile'}">{{ $t('profile.profile') }}</b-dropdown-item>
+                            <b-dropdown-item :to="{name: 'settings.profile'}">{{ $t('settings') }}</b-dropdown-item>
+                            <b-dropdown-item href="#" @click="onLogout">{{ $t('signOut') }}</b-dropdown-item>
                         </b-nav-item-dropdown>
                     </b-navbar-nav>
                 </b-collapse>
@@ -41,11 +52,12 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+import { Component, Vue, Watch } from 'vue-property-decorator';
 import { logout } from '@/api/auth';
 import { webSiteLink } from '@/shared/links';
-import {ProfileInterface} from '@/api/profile';
+import { ProfileInterface, profilePutLocale } from '@/api/profile';
 import ProfileAvatar from '@/components/profile/ProfileAvatar.vue';
+import { loadLanguageAsync, locales } from '@/lang';
 
 @Component({
     components: {ProfileAvatar}
@@ -53,6 +65,10 @@ import ProfileAvatar from '@/components/profile/ProfileAvatar.vue';
 export default class Header extends Vue {
     getWebSiteLink(path: string): string {
         return webSiteLink(path)
+    }
+
+    mounted() {
+        this.$moment.locale(this.currentLocale)
     }
 
     get isLogged(): boolean {
@@ -71,6 +87,14 @@ export default class Header extends Vue {
         return webSiteLink('/about')
     }
 
+    get locales() {
+        return locales;
+    }
+
+    get currentLocale() {
+        return this.$store.state.locale
+    }
+
     protected onLogout(event: Event) {
         event.preventDefault()
         event.stopPropagation()
@@ -80,6 +104,30 @@ export default class Header extends Vue {
 
             window.location.href = res.data.redirectUrl ? res.data.redirectUrl : webSiteLink('/login');
         })
+    }
+
+    protected onLocaleChange(locale: string, event: Event) {
+        event.preventDefault()
+        event.stopPropagation()
+
+        this.$store.commit('localeChange', locale)
+    }
+
+    @Watch('currentLocale')
+    protected localeChangeObserver() {
+        loadLanguageAsync(this.currentLocale)
+
+        this.$moment.locale(this.currentLocale)
+
+        if (this.isLogged) {
+            profilePutLocale({
+                locale: this.currentLocale
+            }).then(() => {
+                console.info('Profile locale has been updated')
+            }).catch(err => {
+                console.error(err)
+            })
+        }
     }
 }
 </script>
@@ -93,6 +141,12 @@ export default class Header extends Vue {
 
         .b-avatar {
             margin: -13px 5px -10px 0;
+        }
+
+        .current-locale {
+            color: rgba(0, 0, 0, 1);
+            line-height: 1;
+            font-size: 20px;
         }
     }
 </style>

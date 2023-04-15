@@ -1,11 +1,11 @@
 <template>
     <div class="wallet">
-        <warning-message message="Unable to load tag. Please try again later" :show="loadFailed"></warning-message>
+        <warning-message :message="$t('tags.statsLoadingError')" :show="loadFailed"></warning-message>
 
         <div v-if="tag !== null">
             <div class="wallet-header d-flex justify-content-between">
                 <h3>
-                    Analyse tags usage
+                    {{ $t('tags.stats') }}
                 </h3>
             </div>
 
@@ -21,7 +21,7 @@
             <div class="wallet-details d-flex justify-content-center align-items-end" v-if="total.currency !== null">
                 <span class="wallet-total" :class="{'wallet-total-small': !isIncomeGreaterThanExpense}" v-if="hasIncome && isIncomeGreaterThanExpense">
                     <span class="text-muted wallet-total-title">
-                        Income
+                        {{ $t('wallets.income') }}
                     </span>
                     <span class="text-primary wallet-total-value">
                         <b-icon-arrow-up variant="primary" scale="1" class="d-none d-sm-inline"></b-icon-arrow-up>
@@ -29,7 +29,9 @@
                     </span>
                 </span>
                 <span class="wallet-total" :class="{'wallet-total-small': isIncomeGreaterThanExpense}" v-if="hasExpense || !hasIncome">
-                    <span class="text-muted wallet-total-title">Expense</span>
+                    <span class="text-muted wallet-total-title">
+                        {{ $t('wallets.expense') }}
+                    </span>
                     <span class="text-danger wallet-total-value">
                         <b-icon-arrow-down variant="danger" scale="1" class="d-none d-sm-inline"></b-icon-arrow-down>
                         {{ total.totalExpenseAmount | money(total.currency) }}
@@ -37,7 +39,7 @@
                 </span>
                 <span class="wallet-total wallet-total-small" v-if="hasIncome && !isIncomeGreaterThanExpense">
                     <span class="text-muted wallet-total-title">
-                        Income
+                        {{ $t('wallets.income') }}
                     </span>
                     <span class="text-primary wallet-total-value">
                         <b-icon-arrow-up variant="primary" scale="1" class="d-none d-sm-inline"></b-icon-arrow-up>
@@ -50,7 +52,7 @@
                 <div class="charge-loader-main d-flex justify-content-center align-items-center" v-if="isLoadingFor('chart') || hasLoadingFailedMessageFor('chart')">
                     <div class="d-flex align-items-center" v-if="isLoadingFor('chart')">
                         <b-spinner variant="light"></b-spinner>
-                        <span class="loading-text ml-2">Loading Data..</span>
+                        <span class="loading-text ml-2">{{ $t('loadingData') }}</span>
                     </div>
                     <div class="d-flex align-items-center" v-if="hasLoadingFailedMessageFor('chart')">
                         <b-icon-exclamation-circle></b-icon-exclamation-circle>
@@ -60,7 +62,7 @@
                 <div class="row">
                     <div class="col-md-8"></div>
                     <div class="col-md-4">
-                        <b-input-group prepend="Group By" class="mb-4">
+                        <b-input-group :prepend="$t('wallets.groupBy')" class="mb-4">
                             <b-form-select v-model="selectedGroupBy" :options="groupOptions"></b-form-select>
                         </b-input-group>
                     </div>
@@ -141,9 +143,9 @@ export default class TagView extends Mixins(Loader) {
 
     get groupOptions() {
         return [
-            {value: GROUP_BY_DAY, text: 'Day'},
-            {value: GROUP_BY_MONTH, text: 'Month'},
-            {value: GROUP_BY_YEAR, text: 'Year'},
+            {value: GROUP_BY_DAY, text: this.$t('wallets.groupByDay').toString()},
+            {value: GROUP_BY_MONTH, text: this.$t('wallets.groupByMonth').toString()},
+            {value: GROUP_BY_YEAR, text: this.$t('wallets.groupByYear').toString()},
         ]
     }
 
@@ -223,7 +225,7 @@ export default class TagView extends Mixins(Loader) {
             this.graphData = response.data.data
             this.graphGroupBy = this.selectedGroupBy
         }).catch((error) => {
-            this.setLoadingFailedMessageFor('chart', 'Unable to load chart data. Please try again later.')
+            this.setLoadingFailedMessageFor('chart', this.$t('wallets.chartLoadingError').toString())
             console.error(error)
         }).finally(() => {
             this.setLoadedFor('chart')

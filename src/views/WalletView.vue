@@ -1,36 +1,36 @@
 <template>
     <div class="wallet">
-        <warning-message message="Unable to load your wallet. Please try again later" :show="loadFailed"></warning-message>
+        <warning-message :message="$t('wallets.loadingError')" :show="loadFailed"></warning-message>
 
         <div v-if="wallet.id">
             <div class="wallet-header d-flex justify-content-between">
                 <h3>
                     {{ wallet.name }}
 
-                    <b-badge class="float-right" variant="primary" v-if="wallet.isActive">active</b-badge>
-                    <b-badge class="float-right" variant="secondary" v-if="wallet.isArchived">archived</b-badge>
+                    <b-badge class="float-right" variant="primary" v-if="wallet.isActive">{{ $t('wallets.active') }}</b-badge>
+                    <b-badge class="float-right" variant="secondary" v-if="wallet.isArchived">{{ $t('wallets.archived') }}</b-badge>
                 </h3>
 
                 <div>
                     <b-btn-group>
                         <b-button variant="primary" :to="{name: 'wallets.edit', params: {walletID: wallet.id.toString(), nameForTitle: wallet.name}}">
                             <b-icon-pencil></b-icon-pencil>
-                            Edit
+                            {{ $t('wallets.edit') }}
                         </b-button>
                         <b-dropdown right variant="primary">
-                            <b-dropdown-header>More actions</b-dropdown-header>
+                            <b-dropdown-header>{{ $t('wallets.moreActions') }}</b-dropdown-header>
 
-                            <b-dropdown-item :to="{name: 'wallets.share', params: {walletID: wallet.id.toString(), nameForTitle: wallet.name}}">Share</b-dropdown-item>
+                            <b-dropdown-item :to="{name: 'wallets.share', params: {walletID: wallet.id.toString(), nameForTitle: wallet.name}}">{{ $t('wallets.share') }}</b-dropdown-item>
 
-                            <b-dropdown-item v-if="!wallet.isActive" @click="onActivate">Activate</b-dropdown-item>
-                            <b-dropdown-item v-if="wallet.isActive" @click="onDisable">Disable</b-dropdown-item>
+                            <b-dropdown-item v-if="!wallet.isActive" @click="onActivate">{{ $t('wallets.acrivate') }}</b-dropdown-item>
+                            <b-dropdown-item v-if="wallet.isActive" @click="onDisable">{{ $t('wallets.disable') }}</b-dropdown-item>
 
-                            <b-dropdown-item v-if="!wallet.isArchived" @click="onArchive">To Archive</b-dropdown-item>
-                            <b-dropdown-item v-if="wallet.isArchived" @click="onUnArchive">Unarchive</b-dropdown-item>
+                            <b-dropdown-item v-if="!wallet.isArchived" @click="onArchive">{{ $t('wallets.toArchive') }}</b-dropdown-item>
+                            <b-dropdown-item v-if="wallet.isArchived" @click="onUnArchive">{{ $t('wallets.unArchive') }}</b-dropdown-item>
 
                             <b-dropdown-divider></b-dropdown-divider>
 
-                            <b-dropdown-item @click="onDelete">Delete</b-dropdown-item>
+                            <b-dropdown-item @click="onDelete">{{ $t('wallets.delete') }}</b-dropdown-item>
                         </b-dropdown>
                     </b-btn-group>
                 </div>
@@ -44,14 +44,14 @@
 
             <div class="wallet-details d-flex justify-content-center align-items-end">
                  <span class="wallet-total" v-if="!hasTag">
-                    <span class="text-muted wallet-total-title">Available</span>
+                    <span class="text-muted wallet-total-title">{{ $t('wallets.available') }}</span>
                     <span class="text-success wallet-total-value">
                         {{ walletTotal.totalAmount | money(wallet.defaultCurrency) }}
                     </span>
                 </span>
                 <span class="wallet-total" :class="{'wallet-total-small': !hasTag || !isIncomeGreaterThanExpense}" v-if="hasIncome && isIncomeGreaterThanExpense">
                     <span class="text-muted wallet-total-title">
-                        Income
+                        {{ $t('wallets.income') }}
                     </span>
                     <span class="text-primary wallet-total-value">
                         <b-icon-arrow-up variant="primary" scale="1" class="d-none d-sm-inline"></b-icon-arrow-up>
@@ -59,7 +59,9 @@
                     </span>
                 </span>
                 <span class="wallet-total" :class="{'wallet-total-small': !hasTag || isIncomeGreaterThanExpense}" v-if="hasExpense">
-                    <span class="text-muted wallet-total-title">Expense</span>
+                    <span class="text-muted wallet-total-title">
+                        {{ $t('wallets.expense') }}
+                    </span>
                     <span class="text-danger wallet-total-value">
                         <b-icon-arrow-down variant="danger" scale="1" class="d-none d-sm-inline"></b-icon-arrow-down>
                         {{ walletTotal.totalExpenseAmount | money(wallet.defaultCurrency) }}
@@ -67,7 +69,7 @@
                 </span>
                 <span class="wallet-total" :class="{'wallet-total-small': !hasTag}" v-if="hasIncome && !isIncomeGreaterThanExpense">
                     <span class="text-muted wallet-total-title">
-                        Income
+                        {{ $t('wallets.income') }}
                     </span>
                     <span class="text-primary wallet-total-value">
                         <b-icon-arrow-up variant="primary" scale="1" class="d-none d-sm-inline"></b-icon-arrow-up>
@@ -94,7 +96,7 @@
                     class="mr-2"
                     :pressed="graphVisible"
                 >
-                    Graph
+                    {{ $t('wallets.graph') }}
                     <b-icon icon="bar-chart-line-fill"></b-icon>
                 </b-button>
                 <b-button
@@ -103,7 +105,7 @@
                     size="sm"
                     :pressed="filterVisible"
                 >
-                    Filters
+                    {{ $t('wallets.filters') }}
                     <b-icon icon="funnel"></b-icon>
                 </b-button>
             </div>
@@ -113,7 +115,7 @@
                     <div class="charge-loader-main d-flex justify-content-center align-items-center" v-if="isLoadingFor('chart') || hasLoadingFailedMessageFor('chart')">
                         <div class="d-flex align-items-center" v-if="isLoadingFor('chart')">
                             <b-spinner variant="light"></b-spinner>
-                            <span class="loading-text ml-2">Loading Data..</span>
+                            <span class="loading-text ml-2">{{ $t('loadingData') }}</span>
                         </div>
                         <div class="d-flex align-items-center" v-if="hasLoadingFailedMessageFor('chart')">
                             <b-icon-exclamation-circle></b-icon-exclamation-circle>
@@ -123,7 +125,7 @@
                     <div class="row">
                         <div class="col-md-8"></div>
                         <div class="col-md-4">
-                            <b-input-group prepend="Group By" class="mb-4">
+                            <b-input-group :prepend="$t('wallets.groupBy')" class="mb-4">
                                 <b-form-select v-model="selectedGroupBy" :options="groupOptions"></b-form-select>
                             </b-input-group>
                         </div>
@@ -238,9 +240,9 @@ export default class WalletView extends Mixins(Loader) {
 
     get groupOptions() {
         return [
-            {value: GROUP_BY_DAY, text: 'Day'},
-            {value: GROUP_BY_MONTH, text: 'Month'},
-            {value: GROUP_BY_YEAR, text: 'Year'},
+            {value: GROUP_BY_DAY, text: this.$t('wallets.groupByDay').toString()},
+            {value: GROUP_BY_MONTH, text: this.$t('wallets.groupByMonth').toString()},
+            {value: GROUP_BY_YEAR, text: this.$t('wallets.groupByYear').toString()},
         ]
     }
 
@@ -447,7 +449,7 @@ export default class WalletView extends Mixins(Loader) {
             this.graphData = response.data.data
             this.graphGroupBy = this.selectedGroupBy
         }).catch((error) => {
-            this.setLoadingFailedMessageFor('chart', 'Unable to load chart data. Please try again later.')
+            this.setLoadingFailedMessageFor('chart', this.$t('wallets.chartLoadingError').toString())
             console.error(error)
         }).finally(() => {
             this.setLoadedFor('chart')

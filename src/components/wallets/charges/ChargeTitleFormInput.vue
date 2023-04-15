@@ -10,7 +10,7 @@
             type="text"
             id="title-suggestion"
             required
-            placeholder="Title"
+            :placeholder="$t('charges.title')"
             v-model="name"
             :disabled="disabled"
             :state="validationState"
@@ -30,7 +30,7 @@
                 </span>
                 <span v-else-if="!autocompleteFiltered.length"
                       class="text-notice text-muted"
-                >Find or create tags by start typing..</span>
+                >{{ $t('tags.autocompleteHint') }}</span>
             </b-list-group-item>
         </b-list-group>
     </b-form-group>

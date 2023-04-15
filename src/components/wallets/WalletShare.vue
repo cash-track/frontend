@@ -2,10 +2,10 @@
     <b-card footer-tag="footer" header-tag="header" class="wallet-share">
         <template v-slot:header v-if="isWalletLoaded">
             <b-button-close @click="onClose"></b-button-close>
-            Members of <b>{{ wallet.name }}</b>
+            {{ $t('wallets.shareTitle') }} <b>{{ wallet.name }}</b>
         </template>
 
-        <warning-message message="Unable to load users of wallet. Please try again later" :show="loadUsersFailed"></warning-message>
+        <warning-message :message="$t('wallets.shareMembersLoadingError')" :show="loadUsersFailed"></warning-message>
 
         <div class="wallet-owners">
             <b-list-group>
@@ -18,7 +18,7 @@
         <hr v-if="commonUsersFiltered.length">
 
         <div class="wallet-owners" v-if="commonUsersFiltered.length">
-            <small class="form-text text-muted mb-2">Users you may know as you have common wallets</small>
+            <small class="form-text text-muted mb-2">{{ $t('wallets.shareCommonUsers') }}</small>
             <b-list-group>
                 <b-list-group-item v-for="user of commonUsersFiltered" v-bind:key="user.id">
                     <div class="d-flex justify-content-between align-items-center">
@@ -26,7 +26,7 @@
                             {{ user.name }} {{ user.lastName }} ({{ user.email }})
                         </profile-avatar-badge>
                         <b-button variant="primary" :disabled="isLoading" @click="onSelect(user)">
-                            Select
+                            {{ $t('wallets.shareSelect') }}
                         </b-button>
                     </div>
                 </b-list-group-item>
@@ -42,7 +42,7 @@
                 label-for="email"
                 :invalid-feedback="validationMessage('email')"
                 :state="validationState('email')"
-                description="Type email of user you want to invite"
+                :description="$t('wallets.shareEmailHint')"
             >
                 <b-input-group>
                     <b-form-input
@@ -58,7 +58,7 @@
                     <b-input-group-append>
                         <b-button variant="primary" :disabled="isLoading" @click="onSearch">
                             <b-spinner v-show="isLoading" small></b-spinner>
-                            Search
+                            {{ $t('wallets.shareSearch') }}
                         </b-button>
                     </b-input-group-append>
                 </b-input-group>
@@ -70,7 +70,7 @@
                 <profile-avatar-badge :user="inviteUser">{{ inviteUser.name }} {{ inviteUser.lastName }} ({{ inviteUser.email }})</profile-avatar-badge>
                 <b-button variant="primary" :disabled="isLoading" @click="onInvite">
                     <b-spinner v-show="isLoading" small></b-spinner>
-                    Invite
+                    {{ $t('wallets.shareInvite') }}
                 </b-button>
             </b-list-group-item>
         </b-list-group>
@@ -170,7 +170,7 @@ export default class WalletShare extends Mixins(Loader, Messager, Validator) {
         userFindByEmail(this.inviteUserEmail).then(response => {
             this.inviteUser = response.data.data
         }).catch(() => {
-            this.setValidationMessage('email', 'User not found')
+            this.setValidationMessage('email', this.$t('wallets.shareSearchError').toString())
         }).finally(this.setLoaded)
     }
 

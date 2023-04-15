@@ -15,6 +15,7 @@ export interface ProfileInterface extends UserInterface {
     email: string;
     isEmailConfirmed: boolean;
     defaultCurrencyCode: string;
+    locale: string;
 }
 
 export interface ProfilePhotoResponseInterface {
@@ -33,6 +34,7 @@ export function emptyProfile(): ProfileInterface {
         isEmailConfirmed: true,
         photoUrl: '',
         defaultCurrencyCode: '',
+        locale: '',
     };
 }
 
@@ -45,6 +47,7 @@ export interface UpdateProfileRequestInterface {
     lastName: string;
     nickName: string;
     defaultCurrencyCode: string;
+    locale: string;
 }
 
 export function profilePut(request: UpdateProfileRequestInterface): Promise<AxiosResponse<ProfileResponseInterface>> {
@@ -53,6 +56,7 @@ export function profilePut(request: UpdateProfileRequestInterface): Promise<Axio
         lastName: request.lastName,
         nickName: request.nickName,
         defaultCurrencyCode: request.defaultCurrencyCode,
+        locale: request.locale,
     })
 }
 
@@ -81,5 +85,15 @@ export function profilePutPhoto(request: UpdateProfilePhotoRequestInterface): Pr
         headers: {
             "Content-Type": "multipart/form-data",
         }
+    })
+}
+
+export interface UpdateProfileLocaleRequestInterface {
+    locale: string;
+}
+
+export function profilePutLocale(request: UpdateProfileLocaleRequestInterface): Promise<AxiosResponse<ProfileResponseInterface>> {
+    return client().put<ProfileResponseInterface>('/api/profile/locale', {
+        locale: request.locale,
     })
 }

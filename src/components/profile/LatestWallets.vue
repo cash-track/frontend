@@ -1,7 +1,7 @@
 <template>
     <b-row>
         <b-col md="12">
-            <h4>Latest Wallets</h4>
+            <h4>{{ $t('profile.latestWallets') }}</h4>
             <hr>
         </b-col>
         <b-col md="6" v-for="wallet in walletsOrdered" :key="wallet.id">

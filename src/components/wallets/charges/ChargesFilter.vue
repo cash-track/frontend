@@ -2,13 +2,13 @@
     <div class="row">
         <div class="charge-filter-state-container col-md-4 col-12">
             <b-badge variant="primary" v-show="dateFrom" class="date-state">
-                From: {{ dateFrom }}
+                {{ $t('charges.filterFrom') }}: {{ dateFrom }}
                 <b-button @click="resetDateFrom">
                     <b-icon icon="x"></b-icon>
                 </b-button>
             </b-badge>
             <b-badge variant="primary" v-show="dateTo" class="date-state">
-                To: {{ dateTo }}
+                {{ $t('charges.filterTo') }}: {{ dateTo }}
                 <b-button @click="resetDateTo">
                     <b-icon icon="x"></b-icon>
                 </b-button>
@@ -16,12 +16,29 @@
         </div>
         <div class="charge-filter-main-container col-md-8 col-12">
             <b-input-group class="grouped-filters">
-                <b-form-datepicker placeholder="Date from" v-model="dateFrom" :date-format-options="dateFormatOptions"></b-form-datepicker>
-                <b-form-datepicker placeholder="Date to" v-model="dateTo" :date-format-options="dateFormatOptions"></b-form-datepicker>
+                <b-form-datepicker :placeholder="$t('charges.filterInputFrom')"
+                                   v-model="dateFrom"
+                                   :locale="locale"
+                                   :date-format-options="dateFormatOptions"
+                ></b-form-datepicker>
+                <b-form-datepicker :placeholder="$t('charges.filterInputTo')"
+                                   v-model="dateTo"
+                                   :locale="locale"
+                                   :date-format-options="dateFormatOptions"
+                ></b-form-datepicker>
             </b-input-group>
             <div class="ungrouped-filters">
-                <b-form-datepicker placeholder="Date from" v-model="dateFrom" :date-format-options="dateFormatOptions" class="mb-2"></b-form-datepicker>
-                <b-form-datepicker placeholder="Date to" v-model="dateTo" :date-format-options="dateFormatOptions"></b-form-datepicker>
+                <b-form-datepicker :placeholder="$t('charges.filterInputFrom')"
+                                   v-model="dateFrom"
+                                   :locale="locale"
+                                   :date-format-options="dateFormatOptions"
+                                   class="mb-2"
+                ></b-form-datepicker>
+                <b-form-datepicker :placeholder="$t('charges.filterInputTo')"
+                                   v-model="dateTo"
+                                   :locale="locale"
+                                   :date-format-options="dateFormatOptions"
+                ></b-form-datepicker>
             </div>
         </div>
     </div>
@@ -39,6 +56,10 @@ export interface FilterChangeEvent {
 export default class ChargesFilter extends Vue {
     public dateFrom = ''
     public dateTo = ''
+
+    get locale() {
+        return this.$store.state.locale
+    }
 
     get dateFormatOptions() {
         return {

@@ -1,6 +1,6 @@
 <template>
     <div>
-        <warning-message message="Unable to load your wallets. Please try again later" :show="loadFailed"></warning-message>
+        <warning-message :message="$t('wallets.listLoadingError')" :show="loadFailed"></warning-message>
 
         <draggable v-show="!loadFailed"
                    :list="wallets"
@@ -18,9 +18,9 @@
         </draggable>
 
         <b-alert variant="success" :show="displayNoWallets">
-            <h2>No Wallets</h2>
-            You don't have any wallets yet. Good time to create one.
-            <b-button variant="success" size="sm" :to="{name: 'wallets.create'}">Create</b-button>
+            <h2>{{ $t('wallets.noWallets') }}</h2>
+            {{ $t('wallets.noWalletsMessage') }}
+            <b-button variant="success" size="sm" :to="{name: 'wallets.create'}">{{ $t('wallets.noWalletsCreate') }}</b-button>
         </b-alert>
     </div>
 </template>
@@ -61,7 +61,7 @@ export default class WalletsGridList extends Mixins(Loader) {
             return false
         }
 
-        return !this.loadFailed && this.wallets.length === 0
+        return !this.isLoading && !this.loadFailed && this.wallets.length === 0
     }
 
     get dragOptions() {

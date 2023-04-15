@@ -1,7 +1,7 @@
 <template>
     <div class="row">
         <div class="col-md-8 ml-md-auto mr-md-auto">
-            <warning-message message="Unable to load your wallet. Please try again later" :show="loadFailed"></warning-message>
+            <warning-message :message="$t('wallets.loadingError')" :show="loadFailed"></warning-message>
             <wallet-share :wallet="wallet"></wallet-share>
         </div>
     </div>

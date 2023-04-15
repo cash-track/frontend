@@ -1,14 +1,18 @@
 import Vue from 'vue'
 import Vuex from 'vuex'
+import Cookies from 'js-cookie'
 import { emptyProfile, profileGet, ProfileInterface } from '@/api/profile';
 
 Vue.use(Vuex)
+
+const LOCALE_COOKIE_NAME = 'cshtrkl'
 
 export default new Vuex.Store({
     state: {
         isLogged: false,
         profile: emptyProfile(),
         isEmailConfirmed: true,
+        locale: 'en',
     },
     mutations: {
         logout(state) {
@@ -26,8 +30,30 @@ export default new Vuex.Store({
         profilePhotoUpdated(state, photoUrl: string) {
             state.profile.photoUrl = photoUrl;
         },
+
+        localeChange(state, locale: string) {
+            state.locale = locale;
+
+            Cookies.set(LOCALE_COOKIE_NAME, state.locale, {
+                path: '/',
+                secure: false,
+                sameSite: 'strict',
+                expires: 365,
+            })
+        }
     },
     actions: {
+        loadCachedLocale() {
+            const locale = Cookies.get(LOCALE_COOKIE_NAME)
+
+            if (locale === undefined) {
+                this.commit('localeChange', this.state.locale)
+                return
+            }
+
+            this.commit('localeChange', locale)
+        },
+
         loadProfile() {
             return profileGet().then(res => {
                 if (res.status === 401) {
@@ -36,6 +62,7 @@ export default new Vuex.Store({
                 }
 
                 this.commit('login', res.data.data)
+                this.commit('localeChange', res.data.data.locale)
             }).catch(() => {
                 this.commit('logout')
                 return

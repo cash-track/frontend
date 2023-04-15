@@ -47,7 +47,7 @@ export default class ChargesFlowChart extends Vue {
         return {
             datasets: [
                 {
-                    label: 'Expense',
+                    label: this.$t('wallets.expense').toString(),
                     backgroundColor: '#dc3545',
                     stack: 'bar',
                     normalized: true,
@@ -55,7 +55,7 @@ export default class ChargesFlowChart extends Vue {
                     data: this.expenseData,
                 },
                 {
-                    label: 'Income',
+                    label: this.$t('wallets.income').toString(),
                     backgroundColor: '#28a745',
                     stack: 'bar',
                     normalized: true,

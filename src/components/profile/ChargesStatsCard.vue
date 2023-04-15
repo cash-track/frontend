@@ -2,7 +2,7 @@
     <b-card no-body :border-variant="isIncome ? 'success' : 'danger'" class="mb-4">
         <b-card-body>
             <b-card-title class="mb-0 d-flex justify-content-between align-items-center">
-                {{ isIncome ? 'Income' : 'Expense' }}
+                {{ isIncome ? $t('profile.income') : $t('profile.expense') }}
 
                 <b-icon-arrow-up variant="success" scale="1" class="d-none d-sm-inline" v-if="isIncome"></b-icon-arrow-up>
                 <b-icon-arrow-down variant="danger" scale="1" class="d-none d-sm-inline" v-if="isExpense"></b-icon-arrow-down>
@@ -11,7 +11,7 @@
 
         <b-list-group flush>
             <b-list-group-item class="d-flex justify-content-between align-items-center text-secondary">
-                All time:
+                {{ $t('profile.allTime') }}:
                 <b-spinner v-show="isLoading" small></b-spinner>
                 <span
                     v-if="!isLoading"
@@ -22,7 +22,7 @@
                 </span>
             </b-list-group-item>
             <b-list-group-item class="d-flex justify-content-between align-items-center text-secondary">
-                Year:
+                {{ $t('profile.year') }}:
                 <b-spinner v-show="isLoading" small></b-spinner>
                 <span
                     v-if="!isLoading"
@@ -33,7 +33,7 @@
                 </span>
             </b-list-group-item>
             <b-list-group-item class="d-flex justify-content-between align-items-center text-secondary">
-                Quarter:
+                {{ $t('profile.quarter') }}:
                 <b-spinner v-show="isLoading" small></b-spinner>
                 <span
                     v-if="!isLoading"
@@ -44,7 +44,7 @@
                 </span>
             </b-list-group-item>
             <b-list-group-item class="d-flex justify-content-between align-items-center text-secondary">
-                Month:
+                {{ $t('profile.month') }}:
                 <b-spinner v-show="isLoading" small></b-spinner>
                 <span
                     v-if="!isLoading"

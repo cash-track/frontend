@@ -1,11 +1,11 @@
 <template>
     <div class="wallets">
         <b-tabs content-class="mt-3">
-            <b-tab title="Active">
+            <b-tab :title="$t('wallets.activeTitle')">
                 <wallets-grid-list :by-archived="false"></wallets-grid-list>
             </b-tab>
 
-            <b-tab title="Archived" lazy>
+            <b-tab :title="$t('wallets.archivedTitle')" lazy>
                 <wallets-grid-list :by-archived="true"></wallets-grid-list>
             </b-tab>
         </b-tabs>

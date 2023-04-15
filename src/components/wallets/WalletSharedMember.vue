@@ -60,7 +60,7 @@ export default class WalletSharedMember extends Mixins(Loader, Messager) {
     isDeleted = false
 
     get tooltip(): string {
-        return `Stop sharing ${this.wallet.name} for this user`
+        return this.$t('wallets.shareCancelInvite', [this.wallet.name]).toString()
     }
 
     @Watch('message')
