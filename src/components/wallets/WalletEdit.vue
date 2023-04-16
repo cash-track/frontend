@@ -1,7 +1,7 @@
 <template>
     <b-form novalidate @submit="onSubmit" class="wallet-update">
         <b-card footer-tag="footer" header-tag="header">
-            <template v-slot:header>Edit Wallet</template>
+            <template v-slot:header>{{ $t('wallets.editTitle') }}</template>
 
             <b-form-group
                 label-align-lg="right"
@@ -10,7 +10,7 @@
                 :invalid-feedback="validationMessage('name')"
                 :state="validationState('name')"
             >
-                <template v-slot:label>Name</template>
+                <template v-slot:label>{{ $t('wallets.formName') }}</template>
                 <b-form-input
                     id="name"
                     v-model="form.name"
@@ -29,9 +29,9 @@
                 label-for="defaultCurrencyCode"
                 :invalid-feedback="validationMessage('defaultCurrencyCode')"
                 :state="validationState('defaultCurrencyCode')"
-                description="Default currency for this wallet. You still may create charge using custom currency"
+                :description="$t('wallets.formCurrencyDescription')"
             >
-                <template v-slot:label>Currency</template>
+                <template v-slot:label>{{ $t('wallets.formCurrency') }}</template>
                 <b-form-select
                     id="defaultCurrencyCode"
                     v-model="form.defaultCurrencyCode"
@@ -51,18 +51,12 @@
                 </b-form-select>
             </b-form-group>
 
-            <b-form-group label-cols-md="2">
-                <b-form-checkbox v-model="form.isPublic" :disabled="isLoading">
-                    Is Public
-                </b-form-checkbox>
-            </b-form-group>
-
             <warning-message :message="message" :show="hasMessage" @dismissed="resetMessage"></warning-message>
 
             <template v-slot:footer>
                 <div class="text-center">
                     <b-button variant="secondary" :to="{name: 'wallets.show', params: {walletID: wallet.id.toString(), nameForTitle: wallet.name}}">
-                        Cancel
+                        {{ $t('wallets.cancel') }}
                     </b-button>
 
                     <b-button
@@ -71,7 +65,7 @@
                         variant="primary"
                         @click="onSubmit"
                     >
-                        Update
+                        {{ $t('wallets.update') }}
                         <b-spinner v-show="isLoading" small></b-spinner>
                     </b-button>
                 </div>

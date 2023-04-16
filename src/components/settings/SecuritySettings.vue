@@ -3,7 +3,7 @@
         <b-card footer-tag="footer" header-tag="header">
             <template v-slot:header>
                 <div class="text-md-center">
-                    <b>Change Password</b>
+                    <b>{{ $t('securitySettings.changePassword') }}</b>
                 </div>
             </template>
 
@@ -14,7 +14,7 @@
                 :invalid-feedback="validationMessage('currentPassword')"
                 :state="validationState('currentPassword')"
             >
-                <template v-slot:label>Current Password</template>
+                <template v-slot:label>{{ $t('securitySettings.currentPassword') }}</template>
                 <b-form-input
                     id="currentPassword"
                     v-model="form.currentPassword"
@@ -32,9 +32,9 @@
                 label-for="newPassword"
                 :invalid-feedback="validationMessage('newPassword')"
                 :state="validationState('newPassword')"
-                description="Password must contain at least 6 symbols"
+                :description="$t('securitySettings.newPasswordDescription')"
             >
-                <template v-slot:label>New Password</template>
+                <template v-slot:label>{{ $t('securitySettings.newPassword') }}</template>
                 <b-form-input
                     id="newPassword"
                     v-model="form.newPassword"
@@ -52,9 +52,9 @@
                 label-for="newPasswordConfirmation"
                 :invalid-feedback="validationMessage('newPasswordConfirmation')"
                 :state="validationState('newPasswordConfirmation')"
-                description="Repeat new password here just for sure"
+                :description="$t('securitySettings.newPasswordConfirmationDescription')"
             >
-                <template v-slot:label>Confirm New Password</template>
+                <template v-slot:label>{{ $t('securitySettings.newPasswordConfirmation') }}</template>
                 <b-form-input
                     id="newPasswordConfirmation"
                     v-model="form.newPasswordConfirmation"
@@ -91,7 +91,7 @@
             <template v-slot:footer>
                 <div class="text-center">
                     <b-button variant="primary" type="submit" :disabled="isLoading">
-                        Update Password
+                        {{ $t('securitySettings.updatePassword') }}
                         <b-spinner v-show="isLoading" small></b-spinner>
                     </b-button>
                 </div>

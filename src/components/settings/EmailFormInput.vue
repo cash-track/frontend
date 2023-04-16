@@ -5,19 +5,19 @@
         label-for="lastName"
         :state="isConfirmed"
     >
-        <template v-slot:label>Email</template>
+        <template v-slot:label>{{ $t('emailFormInput.label') }}</template>
         <template v-slot:invalid-feedback>
-            To use all service features please confirm your email.<br>
+            {{ $t('emailFormInput.labelDescription') }}<br>
             <span v-show="!isAlreadySent">
-                <b-link @click.prevent="onResend" :disabled="isLoading">Resend</b-link>
+                <b-link @click.prevent="onResend" :disabled="isLoading">{{ $t('emailFormInput.resend') }}</b-link>
                 <b-spinner v-show="isLoading" small></b-spinner>
-                confirmation message.
+                {{ $t('emailFormInput.confirmationMessage') }}
             </span>
-            <span v-show="isAlreadySent">Confirmation email has been sent. You will be able to retry in {{ resendUnlockIn }} seconds</span>
+            <span v-show="isAlreadySent">{{ $t('emailFormInput.confirmationMessageSent', [resendUnlockIn]) }}</span>
             <span v-if="hasMessage">{{ message }}</span>
         </template>
         <template v-slot:valid-feedback>
-            Your email has been confirmed. Use all service features
+            {{ $t('emailFormInput.confirmed') }}
         </template>
         <b-form-input
             id="email"

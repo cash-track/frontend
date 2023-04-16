@@ -7,8 +7,8 @@
         @click="onWalletClick"
     >
         <b-card-body class="clearfix">
-            <b-badge class="float-right" variant="primary" v-if="wallet.isActive">active</b-badge>
-            <b-badge class="float-right" variant="secondary" v-if="wallet.isArchived">archived</b-badge>
+            <b-badge class="float-right" variant="primary" v-if="wallet.isActive">{{ $t('wallets.active') }}</b-badge>
+            <b-badge class="float-right" variant="secondary" v-if="wallet.isArchived">{{ $t('wallets.archived') }}</b-badge>
 
             <h4 class="card-title">
                 {{ wallet.name }}
@@ -18,7 +18,7 @@
         <b-list-group flush>
             <b-list-group-item class="d-flex justify-content-between">
                 <span class="text-muted wallet-card-currency">
-                    {{ wallet.defaultCurrency.name }} ({{ wallet.defaultCurrency.code }})
+                    {{ $t(`currency.${wallet.defaultCurrency.code}`) }} ({{ wallet.defaultCurrency.code }})
                 </span>
                 <span class="text-primary wallet-card-price">
                     <b>{{ wallet.totalAmount | money(wallet.defaultCurrency) }}</b>
@@ -41,7 +41,7 @@
                             <b-avatar
                                 text="..."
                                 v-if="hasMoreMembers"
-                                title="and more members.."
+                                :title="$t('wallets.moreMembers')"
                                 v-b-tooltip.top
                             ></b-avatar>
                         </b-avatar-group>

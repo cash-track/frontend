@@ -1,9 +1,9 @@
 <template>
     <b-alert :show="shouldDisplay" dismissible variant="info" >
-        <h4 class="alert-heading">Account is not confirmed</h4>
-        Please check your mailbox for a confirmation message to activate your account.<br>
-        You can resend confirmation message from profile settings.<br>
-        <b-button variant="outline-info" class="mt-2" :to="{name: 'settings.profile'}">Settings</b-button>
+        <h4 class="alert-heading">{{ $t('profile.emailNotConfirmed') }}</h4>
+        {{ $t('profile.emailNotConfirmedMainMessage') }}<br>
+        {{ $t('profile.emailNotConfirmedResendMessage') }}<br>
+        <b-button variant="outline-info" class="mt-2" :to="{name: 'settings.profile'}">{{ $t('profileSettings.profileSettings') }}</b-button>
     </b-alert>
 </template>
 

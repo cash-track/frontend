@@ -3,7 +3,7 @@
         <b-card footer-tag="footer" header-tag="header">
             <template v-slot:header>
                 <div class="text-md-center">
-                    <b>Photo</b>
+                    <b>{{ $t('profilePhoto.photo') }}</b>
                 </div>
             </template>
 
@@ -12,8 +12,8 @@
                 label-cols-lg="4"
                 class="current-photo-group"
             >
-                <template v-slot:label>Current Photo</template>
-                <b-avatar :src="currentPhotoUrl" size="10rem" alt="Your current photo"></b-avatar>
+                <template v-slot:label>{{ $t('profilePhoto.currentPhoto') }}</template>
+                <b-avatar :src="currentPhotoUrl" size="10rem" :alt="$t('profilePhoto.currentPhotoDescription')"></b-avatar>
             </b-form-group>
 
 
@@ -23,9 +23,9 @@
                 label-for="photo"
                 :invalid-feedback="validationMessage('photo')"
                 :state="validationState('photo')"
-                description="Your personal profile photo. The best choice is a square photo (for ex: 500pxx500px). Do not use too big picture as it is useless."
+                :description="$t('profilePhoto.labelDescription')"
             >
-                <template v-slot:label>File</template>
+                <template v-slot:label>{{ $t('profilePhoto.label') }}</template>
                 <b-form-file
                     id="photo"
                     v-model="form.photo"
@@ -33,10 +33,10 @@
                     :disabled="isLoading"
                     :state="validationState('photo')"
                     @change="resetValidationMessage('photo')"
-                    placeholder="Choose a file or drop it here..."
-                    drop-placeholder="Drop file here..."
+                    :placeholder="$t('profilePhoto.labelPlaceholder')"
+                    :drop-placeholder="$t('profilePhoto.labelDropPlaceholder')"
                 ></b-form-file>
-                <div class="mt-3" v-if="form.photo">Selected file: {{ form.photo.name }}</div>
+                <div class="mt-3" v-if="form.photo">{{ $t('profilePhoto.selectedFile') }} {{ form.photo.name }}</div>
             </b-form-group>
 
             <b-alert
@@ -64,7 +64,7 @@
             <template v-slot:footer>
                 <div class="text-center">
                     <b-button variant="primary" type="submit" :disabled="isLoading">
-                        Save
+                        {{ $t('profilePhoto.save') }}
                         <b-spinner v-show="isLoading" small></b-spinner>
                     </b-button>
                 </div>

@@ -30,8 +30,8 @@
                     <template v-slot:button-content>
                         <b-icon-three-dots></b-icon-three-dots>
                     </template>
-                    <b-dropdown-item @click="toggleEdit">Edit</b-dropdown-item>
-                    <b-dropdown-item @click="onDeleted">Delete</b-dropdown-item>
+                    <b-dropdown-item @click="toggleEdit">{{ $t('charges.edit') }}</b-dropdown-item>
+                    <b-dropdown-item @click="onDeleted">{{ $t('charges.delete') }}</b-dropdown-item>
                 </b-dropdown>
             </div>
 
@@ -42,8 +42,8 @@
                         class="charge-wallet text-muted"
                         v-if="showWallet && charge.wallet !== null"
                     >@{{ charge.wallet.name }}
-                        <b-badge variant="primary" v-if="charge.wallet.isActive">active</b-badge>
-                        <b-badge variant="secondary" v-if="charge.wallet.isArchived">archived</b-badge>
+                        <b-badge variant="primary" v-if="charge.wallet.isActive">{{ $t('wallets.active') }}</b-badge>
+                        <b-badge variant="secondary" v-if="charge.wallet.isArchived">{{ $t('wallets.archived') }}</b-badge>
                     </span>
                 </span>
             </div>
@@ -144,7 +144,7 @@ export default class ChargeItem extends Vue {
         event.preventDefault()
         event.stopPropagation()
 
-        if (! confirm('Are you sure?')) {
+        if (! confirm(this.$t('charges.deletingConfirm').toString())) {
             return
         }
 

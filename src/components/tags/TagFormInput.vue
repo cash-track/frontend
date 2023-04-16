@@ -11,7 +11,7 @@
             type="text"
             id="tags-autocomplete"
             required
-            placeholder="Tags"
+            :placeholder="$t('tags.tags')"
             v-model="name"
             :disabled="disabled"
             :state="validationState"
@@ -34,7 +34,7 @@
                 ></create-tag>
                 <span v-else-if="!autocompleteFiltered.length"
                       class="text-notice text-muted"
-                >Find or create tags by start typing..</span>
+                >{{ $t('tags.autocompleteHint') }}</span>
             </b-list-group-item>
             <b-list-group-item v-if="!autocompleteActive">
                 <div v-if="suggestionsFiltered.length">
@@ -44,7 +44,7 @@
                          @selected="onSelected"
                     ></tag>
                 </div>
-                <span v-else class="text-notice text-muted">Find or create tags by start typing..</span>
+                <span v-else class="text-notice text-muted">{{ $t('tags.autocompleteHint') }}</span>
             </b-list-group-item>
         </b-list-group>
     </b-form-group>

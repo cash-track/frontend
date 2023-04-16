@@ -16,7 +16,7 @@
                     <b-form-group
                         :invalid-feedback="validationMessage(['name', 'icon'])"
                         :state="validationState(['name', 'icon'])"
-                        description="Enter tag name. Try add emoji at the beginning"
+                        :description="$t('tags.inputDescription')"
                     >
                         <b-input-group>
                             <b-form-input
@@ -24,7 +24,7 @@
                                 v-model="input"
                                 required
                                 type="text"
-                                placeholder="Tag name"
+                                :placeholder="$t('tags.inputLabel')"
                                 :disabled="false"
                                 autocomplete="off"
                                 :state="validationState(['name', 'icon'])"
@@ -33,7 +33,7 @@
 
                             <b-input-group-append>
                                 <b-button variant="primary" type="submit" :disabled="isLoading">
-                                    {{ isEdit ? 'Save' : 'Create' }}
+                                    {{ isEdit ? $t('tags.update') : $t('tags.create') }}
                                     <b-spinner v-show="isLoading" small></b-spinner>
                                     <b-icon-check v-show="isSuccess"></b-icon-check>
                                 </b-button>
@@ -140,7 +140,7 @@ export default class TagForm extends Mixins(Loader, Messager, Validator) {
             return
         }
 
-        if (! confirm(`Deleting tag ${this.tag.name}. Are you sure?`)) {
+        if (! confirm(this.$t('tags.deletingConfirm', [this.tag.name]).toString())) {
             return
         }
 

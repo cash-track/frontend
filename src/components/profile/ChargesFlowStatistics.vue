@@ -1,7 +1,7 @@
 <template>
     <b-row>
         <b-col md="12" v-if="loadFailed">
-            <warning-message message="Unable to load charges statistics. Please try again later" :show="loadFailed"></warning-message>
+            <warning-message :message="$t('profile.chargesFlowLoadingError')" :show="loadFailed"></warning-message>
         </b-col>
         <b-col md="6" v-if="!loadFailed">
             <charges-stats-card :type="typeIncomeID" :stats="incomeStatistics" :currency="currency"></charges-stats-card>
@@ -12,7 +12,7 @@
         <b-col md="12">
             <b-alert show variant="secondary">
                 <b-icon-info-circle></b-icon-info-circle>
-                For now this statistics took into account only wallets that matched with your default currency.
+                {{ $t('profile.chargesFlowNotice') }}
             </b-alert>
         </b-col>
     </b-row>

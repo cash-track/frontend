@@ -18,7 +18,7 @@
             <b-spinner small></b-spinner>
         </b-button>
         <b-button v-if="hasError">
-            <b-icon icon="exclamation-triangle" v-b-popover.hover.left="{ title: 'Error', content: errorMessage, html: true }"></b-icon>
+            <b-icon icon="exclamation-triangle" v-b-popover.hover.left="{ title: $t('error'), content: errorMessage, html: true }"></b-icon>
         </b-button>
     </b-badge>
 </template>

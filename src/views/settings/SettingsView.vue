@@ -1,10 +1,10 @@
 <template>
     <b-row class="personal-settings">
         <b-col md="4" class="mb-3">
-            <b-card no-body header="Personal Settings">
+            <b-card no-body :header="$t('personalSettings.header')">
                 <b-list-group flush>
-                    <b-list-group-item :to="{name: 'settings.profile'}" exact-active-class="active">Profile</b-list-group-item>
-                    <b-list-group-item :to="{name: 'settings.security'}" exact-active-class="active">Security</b-list-group-item>
+                    <b-list-group-item :to="{name: 'settings.profile'}" exact-active-class="active">{{ $t('personalSettings.profile') }}</b-list-group-item>
+                    <b-list-group-item :to="{name: 'settings.security'}" exact-active-class="active">{{ $t('personalSettings.security') }}</b-list-group-item>
                 </b-list-group>
             </b-card>
         </b-col>

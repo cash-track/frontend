@@ -1,7 +1,7 @@
 <template>
     <div class="common-tags-root">
         <h6>
-            Common Tags
+            {{ $t('profile.commonTags') }}
 
             <b-spinner v-if="!loadFailed && isLoading" small></b-spinner>
 

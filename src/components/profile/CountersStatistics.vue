@@ -1,6 +1,6 @@
 <template>
     <div>
-        <h6>Counters</h6>
+        <h6>{{ $t('profile.counters') }}</h6>
         <b-list-group>
             <b-list-group-item class="text-secondary">
                 <b-spinner v-if="!loadFailed && isLoading" small></b-spinner>
@@ -8,11 +8,11 @@
                 <div v-if="!loadFailed && !isLoading"
                      class="d-flex justify-content-around"
                 >
-                    <div class="counter-item" title="Total wallets amount" v-b-tooltip.top>
+                    <div class="counter-item" :title="$t('profile.totalWalletsAmount')" v-b-tooltip.top>
                         <b-icon-wallet></b-icon-wallet>
                         <span>{{ counters.wallets }}</span>
                     </div>
-                    <div class="counter-item" title="Archived wallets amount" v-b-tooltip.top>
+                    <div class="counter-item" :title="$t('profile.archivedWalletsAmount')" v-b-tooltip.top>
                         <b-icon-archive-fill></b-icon-archive-fill>
                         <span>{{ counters.walletsArchived }}</span>
                     </div>
@@ -29,16 +29,16 @@
                 <div v-if="!loadFailed && !isLoading"
                      class="d-flex justify-content-around"
                 >
-                    <div class="counter-item" title="Total charges amount" v-b-tooltip.top>
+                    <div class="counter-item" :title="$t('profile.totalChargesAmount')" v-b-tooltip.top>
                         <b-icon-cash-stack></b-icon-cash-stack>
                         <span>{{ counters.charges }}</span>
                     </div>
-                    <div class="counter-item" title="Amount of income charges" v-b-tooltip.top>
+                    <div class="counter-item" :title="$t('profile.incomeChargesAmount')" v-b-tooltip.top>
                         <b-icon-arrow-up variant="success"></b-icon-arrow-up>
 
                         <span>{{ counters.chargesIncome }}</span>
                     </div>
-                    <div class="counter-item" title="Amount of expense charges" v-b-tooltip.top>
+                    <div class="counter-item" :title="$t('profile.expenseChargesAmount')" v-b-tooltip.top>
                         <b-icon-arrow-down variant="danger"></b-icon-arrow-down>
                         <span>{{ chargesExpense }}</span>
                     </div>

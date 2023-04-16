@@ -21,22 +21,12 @@
                 <latest-wallets></latest-wallets>
             </b-col>
         </b-row>
-        <b-row v-show="false">
-            <b-col md="6">
-                <p class="lead chapter">Last Charges</p>
-                <last-charges></last-charges>
-            </b-col>
-            <b-col md="6">
-                <p class="lead chapter">Featured Wallets</p>
-            </b-col>
-        </b-row>
     </div>
 </template>
 
 <script lang="ts">
 import { Vue, Component } from 'vue-property-decorator'
 import ProfileTitle from '@/components/profile/ProfileTitle.vue';
-import LastCharges from '@/components/profile/LastCharges.vue';
 import EmailIsNotConfirmedAlert from '@/components/profile/EmailIsNotConfirmedAlert.vue';
 import ChargesFlowStatistics from '@/components/profile/ChargesFlowStatistics.vue';
 import CountersStatistics from '@/components/profile/CountersStatistics.vue';
@@ -47,7 +37,6 @@ import CommonTags from '@/components/profile/CommonTags.vue';
     components: {
         CountersStatistics,
         ChargesFlowStatistics,
-        LastCharges,
         ProfileTitle,
         EmailIsNotConfirmedAlert,
         LatestWallets,

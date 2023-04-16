@@ -3,7 +3,7 @@
         <div class="charge-loader-main" v-show="isLoading">
             <div class="d-flex justify-content-center">
                 <b-spinner variant="light"></b-spinner>
-                <span class="loading-text ml-2">Loading Charges..</span>
+                <span class="loading-text ml-2">{{ $t('charges.loading') }}</span>
             </div>
         </div>
 
@@ -15,7 +15,7 @@
                     <b-icon-plus variant="muted" scale="1.5"></b-icon-plus>
                 </div>
 
-                <b-button variant="outline-primary" v-b-toggle.charge-create>New Charge</b-button>
+                <b-button variant="outline-primary" v-b-toggle.charge-create>{{ $t('charges.new') }}</b-button>
 
                 <b-collapse class="charge-create" id="charge-create">
                     <charge-create :wallet="wallet" @created="onChargeCreated"></charge-create>
@@ -39,7 +39,7 @@
             <div class="charge-loader-pagination" v-if="isLoadingPagination">
                 <div class="d-flex justify-content-center">
                     <b-spinner small></b-spinner>
-                    <span class="loading-text ml-2">Loading more..</span>
+                    <span class="loading-text ml-2">{{ $t('charges.loadingMore') }}</span>
                 </div>
             </div>
 
@@ -138,7 +138,7 @@ export default class ChargesList extends Mixins(Loader) {
             this.onChargesLoaded(response)
         }).catch(() => {
             this.charges = []
-            this.setLoadingFailedMessage('Unable to load charges. Please try again later')
+            this.setLoadingFailedMessage(this.$t('charges.loadingError').toString())
         }).finally(this.setLoaded)
     }
 
@@ -162,7 +162,7 @@ export default class ChargesList extends Mixins(Loader) {
         this.buildLoader(this.pagination.nextPage)
             ?.then(this.onChargesLoaded)
             .catch(() => {
-                this.setLoadingFailedMessageFor(PAGINATION, 'Unable to load more charges. Please try again later')
+                this.setLoadingFailedMessageFor(PAGINATION, this.$t('charges.loadingMoreError').toString())
             }).finally(() => {
                 this.setLoadedFor(PAGINATION)
             })

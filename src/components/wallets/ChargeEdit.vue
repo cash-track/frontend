@@ -28,7 +28,7 @@
                                  :disabled="isLoading"
                                  :state="validationState('amount')"
                                  @change="resetValidationMessage('amount')"
-                                 placeholder="Amount"
+                                 :placeholder="$t('charges.amount')"
                         ></b-input>
                     </b-input-group>
                 </b-form-group>
@@ -74,7 +74,7 @@
                         id="description"
                         v-model="form.description"
                         :disabled="isLoading"
-                        placeholder="Description"
+                        :placeholder="$t('charges.description')"
                         :state="validationState('description')"
                         @change="resetValidationMessage('description')"
                     ></b-textarea>
@@ -85,10 +85,12 @@
             </b-col>
             <b-col md="12">
                 <b-button variant="primary" type="submit" class="mr-1" :disabled="isLoading">
-                    Update
+                    {{ $t('charges.update') }}
                     <b-spinner v-show="isLoading" small></b-spinner>
                 </b-button>
-                <b-button variant="secondary" :disabled="isLoading" @click="onCancelled">Cancel</b-button>
+                <b-button variant="secondary" :disabled="isLoading" @click="onCancelled">
+                    {{ $t('charges.cancel') }}
+                </b-button>
             </b-col>
         </b-row>
     </b-form>

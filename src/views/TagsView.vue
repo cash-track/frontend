@@ -11,7 +11,7 @@
                          :active="activeTag !== null && activeTag.id === item.id"
                          @selected="onSelected"
                     ></tag>
-                    <tag :tag="{name: 'Add New'}"
+                    <tag :tag="{name: $t('tags.addNew')}"
                          state="creatable"
                          :active="activeTag === null"
                          @selected="onSelected(null)"

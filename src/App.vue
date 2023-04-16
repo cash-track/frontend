@@ -21,6 +21,7 @@ import { webSiteLink } from './shared/links';
 })
 export default class App extends Vue {
     mounted() {
+        this.$store.dispatch('loadCachedLocale')
         this.$store.dispatch('loadProfile').finally(() => {
             // this.validateIsLogged()
         })

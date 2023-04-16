@@ -3,7 +3,7 @@
         <b-card footer-tag="footer" header-tag="header">
             <template v-slot:header>
                 <div class="text-md-center">
-                    <b>Profile Settings</b>
+                    <b>{{ $t('profileSettings.profileSettings') }}</b>
                 </div>
             </template>
 
@@ -13,9 +13,9 @@
                 label-for="name"
                 :invalid-feedback="validationMessage('name')"
                 :state="validationState('name')"
-                description="To display on site, emails, reports"
+                :description="$t('profileSettings.nameDescription')"
             >
-                <template v-slot:label>Name</template>
+                <template v-slot:label>{{ $t('profileSettings.name') }}</template>
                 <b-form-input
                     id="name"
                     v-model="form.name"
@@ -33,9 +33,9 @@
                 label-for="lastName"
                 :invalid-feedback="validationMessage('lastName')"
                 :state="validationState('lastName')"
-                description="Same as name :)"
+                :description="$t('profileSettings.lastNameDescription')"
             >
-                <template v-slot:label>Last Name</template>
+                <template v-slot:label>{{ $t('profileSettings.lastName') }}</template>
                 <b-form-input
                     id="lastName"
                     v-model="form.lastName"
@@ -53,9 +53,9 @@
                 label-for="nickName"
                 :invalid-feedback="validationMessage('nickName')"
                 :state="nickNameValidationState"
-                description="Your unique identification. Will be used in some URLs, mentions, etc."
+                :description="$t('profileSettings.nickNameDescription')"
             >
-                <template v-slot:label>Nick Name</template>
+                <template v-slot:label>{{ $t('profileSettings.nickName') }}</template>
                 <b-form-input
                     id="nickName"
                     v-model="form.nickName"
@@ -76,9 +76,9 @@
                 label-for="defaultCurrencyCode"
                 :invalid-feedback="validationMessage('defaultCurrencyCode')"
                 :state="validationState('defaultCurrencyCode')"
-                description="Your local currency that you're using most of time. Will be used for new wallets as default currency."
+                :description="$t('profileSettings.defaultCurrencyDescription')"
             >
-                <template v-slot:label>Default Currency</template>
+                <template v-slot:label>{{ $t('profileSettings.defaultCurrency') }}</template>
                 <b-form-select
                     id="defaultCurrencyCode"
                     v-model="form.defaultCurrencyCode"
@@ -94,6 +94,34 @@
                         :value="currency.code"
                     >
                         {{ currency.code }}
+                    </b-form-select-option>
+                </b-form-select>
+            </b-form-group>
+
+            <b-form-group
+                label-align-lg="right"
+                label-cols-lg="4"
+                label-for="locale"
+                :invalid-feedback="validationMessage('locale')"
+                :state="validationState('locale')"
+                :description="$t('profileSettings.languageDescription')"
+            >
+                <template v-slot:label>{{ $t('profileSettings.language') }}</template>
+                <b-form-select
+                    id="locale"
+                    v-model="form.locale"
+                    required
+                    type="text"
+                    :disabled="isLoading"
+                    :state="validationState('locale')"
+                    @change="resetValidationMessage('locale')"
+                >
+                    <b-form-select-option
+                        v-for="l of locales"
+                        v-bind:key="l.code"
+                        :value="l.code"
+                    >
+                        {{ l.name }}
                     </b-form-select-option>
                 </b-form-select>
             </b-form-group>
@@ -123,7 +151,7 @@
             <template v-slot:footer>
                 <div class="text-center">
                     <b-button variant="primary" type="submit" :disabled="isLoading">
-                        Save
+                        {{ $t('profileSettings.save') }}
                         <b-spinner v-show="isLoading" small></b-spinner>
                     </b-button>
                 </div>
@@ -135,6 +163,7 @@
 <script lang="ts">
 import { Mixins, Component, Watch } from 'vue-property-decorator';
 import { MutationPayload } from "vuex";
+import { locales } from '@/lang';
 import Loader from '@/shared/Loader';
 import Messager from '@/shared/Messager';
 import Validator from '@/shared/Validator';
@@ -151,6 +180,7 @@ export default class ProfileSettings extends Mixins(Loader, Messager, Validator)
         lastName: '',
         nickName: '',
         defaultCurrencyCode: '',
+        locale: ''
     }
 
     isNickNameValid: boolean | null = null
@@ -172,6 +202,10 @@ export default class ProfileSettings extends Mixins(Loader, Messager, Validator)
         }
     }
 
+    get locales() {
+        return locales;
+    }
+
     protected onProfileLoaded(mutation: MutationPayload) {
         if (mutation.type !== 'login') {
             return
@@ -189,6 +223,7 @@ export default class ProfileSettings extends Mixins(Loader, Messager, Validator)
         this.form.lastName = this.$store.state.profile.lastName
         this.form.nickName = this.$store.state.profile.nickName
         this.form.defaultCurrencyCode = this.$store.state.profile.defaultCurrencyCode
+        this.form.locale = this.$store.state.profile.locale
     }
 
     protected loadCurrencies() {
@@ -252,7 +287,7 @@ export default class ProfileSettings extends Mixins(Loader, Messager, Validator)
 
     protected onSuccess() {
         this.$store.dispatch('loadProfile').finally(this.loadProfile)
-        this.successMessage = 'Your profile has been updated'
+        this.successMessage = this.$t('profileSettings.success').toString()
     }
 }
 </script>

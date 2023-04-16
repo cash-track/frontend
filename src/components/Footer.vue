@@ -5,11 +5,11 @@
                 <div class="col-sm text-sm-left text-center">
                     © {{ year() }} Cash Track
                 </div>
-                <div class="col-sm text-center">Made with ❤️ &nbsp;in 🇺🇦</div>
+                <div class="col-sm text-center" v-html="$t('madeBy')"></div>
                 <div class="col-sm text-sm-right text-center">
                     <b-nav class="justify-content-sm-end justify-content-center">
-                        <b-nav-item :href="getWebSiteLink('/help')">Help</b-nav-item>
-                        <b-nav-item :href="getWebSiteLink('/about')">About</b-nav-item>
+                        <b-nav-item :href="getWebSiteLink('/help')">{{ $t('help') }}</b-nav-item>
+                        <b-nav-item :href="getWebSiteLink('/about')">{{ $t('about') }}</b-nav-item>
                     </b-nav>
                 </div>
             </div>
