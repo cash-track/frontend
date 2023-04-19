@@ -22,7 +22,7 @@
 
                             <b-dropdown-item :to="{name: 'wallets.share', params: {walletID: wallet.id.toString(), nameForTitle: wallet.name}}">{{ $t('wallets.share') }}</b-dropdown-item>
 
-                            <b-dropdown-item v-if="!wallet.isActive" @click="onActivate">{{ $t('wallets.acrivate') }}</b-dropdown-item>
+                            <b-dropdown-item v-if="!wallet.isActive" @click="onActivate">{{ $t('wallets.activate') }}</b-dropdown-item>
                             <b-dropdown-item v-if="wallet.isActive" @click="onDisable">{{ $t('wallets.disable') }}</b-dropdown-item>
 
                             <b-dropdown-item v-if="!wallet.isArchived" @click="onArchive">{{ $t('wallets.toArchive') }}</b-dropdown-item>
