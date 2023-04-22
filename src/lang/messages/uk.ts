@@ -9,6 +9,8 @@ export default {
     madeBy: 'Зроблено з ❤️ &nbsp;в&nbsp; 🇺🇦',
     error: 'Упс..',
     loadingData: 'Завантаження даних..',
+    cookiePolicy: 'Про Cookie',
+    privacyPolicy: 'Про Конфіденційність',
 
     currency: {
         USD: 'Долар США',

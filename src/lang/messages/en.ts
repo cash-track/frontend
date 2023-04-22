@@ -9,6 +9,8 @@ export default {
     madeBy: 'Made with ❤️ &nbsp;in 🇺🇦',
     error: 'Error',
     loadingData: 'Loading Data..',
+    cookiePolicy: 'Cookie Policy',
+    privacyPolicy: 'Privacy Policy',
 
     currency: {
         USD: 'United States dollar',
