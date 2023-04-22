@@ -32,7 +32,7 @@
                             ></b-form-input>
 
                             <b-input-group-append>
-                                <b-button variant="primary" type="submit" :disabled="isLoading">
+                                <b-button variant="primary" type="submit" :disabled="!isEmailConfirmed || isLoading">
                                     {{ isEdit ? $t('tags.update') : $t('tags.create') }}
                                     <b-spinner v-show="isLoading" small></b-spinner>
                                     <b-icon-check v-show="isSuccess"></b-icon-check>
@@ -71,6 +71,10 @@ export default class TagForm extends Mixins(Loader, Messager, Validator) {
     input = ''
 
     isSuccess = false
+
+    get isEmailConfirmed(): boolean {
+        return this.$store.state.isEmailConfirmed
+    }
 
     get isEdit(): boolean {
         return typeof this.tag !== undefined && this.tag !== null

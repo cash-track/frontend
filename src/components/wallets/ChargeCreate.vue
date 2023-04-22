@@ -84,7 +84,7 @@
                 <warning-message :message="message" :show="hasMessage"></warning-message>
             </b-col>
             <b-col md="12">
-                <b-button variant="primary" type="submit" class="mr-1" :disabled="isLoading">
+                <b-button variant="primary" type="submit" class="mr-1" :disabled="!isEmailConfirmed || isLoading">
                     {{ $t('charges.create') }}
                     <b-spinner v-show="isLoading" small></b-spinner>
                 </b-button>
@@ -138,6 +138,10 @@ export default class ChargeCreate extends Mixins(Loader, Messager, Validator) {
     }
 
     resetState = false
+
+    get isEmailConfirmed(): boolean {
+        return this.$store.state.isEmailConfirmed
+    }
 
     get isTypeIncome(): boolean {
         return this.form.type === TypeIncome

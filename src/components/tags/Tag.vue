@@ -54,6 +54,10 @@ export default class Tag extends Vue {
     })
     active!: boolean
 
+    get isEmailConfirmed(): boolean {
+        return this.$store.state.isEmailConfirmed
+    }
+
     get isClosable(): boolean {
         return !this.hasError && this.state === 'closable'
     }

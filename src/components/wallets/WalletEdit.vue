@@ -3,6 +3,8 @@
         <b-card footer-tag="footer" header-tag="header">
             <template v-slot:header>{{ $t('wallets.editTitle') }}</template>
 
+            <email-is-not-confirmed-alert></email-is-not-confirmed-alert>
+
             <b-form-group
                 label-align-lg="right"
                 label-cols-lg="2"
@@ -60,7 +62,7 @@
                     </b-button>
 
                     <b-button
-                        :disabled="isLoading"
+                        :disabled="!isEmailConfirmed || isLoading"
                         type="submit"
                         variant="primary"
                         @click="onSubmit"
@@ -88,9 +90,10 @@ import {
 } from '@/api/wallets';
 import WarningMessage from '@/components/shared/WarningMessage.vue';
 import { currenciesGet, CurrencyInterface } from '@/api/currency';
+import EmailIsNotConfirmedAlert from '@/components/profile/EmailIsNotConfirmedAlert.vue';
 
 @Component({
-    components: {WarningMessage}
+    components: {EmailIsNotConfirmedAlert, WarningMessage}
 })
 export default class WalletEdit extends Mixins(Loader, Messager, Validator) {
     @Prop({
@@ -108,6 +111,10 @@ export default class WalletEdit extends Mixins(Loader, Messager, Validator) {
 
     mounted() {
         this.loadCurrencies()
+    }
+
+    get isEmailConfirmed(): boolean {
+        return this.$store.state.isEmailConfirmed
     }
 
     @Watch('wallet')

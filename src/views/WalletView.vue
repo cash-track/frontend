@@ -1,5 +1,7 @@
 <template>
     <div class="wallet">
+        <email-is-not-confirmed-alert></email-is-not-confirmed-alert>
+
         <warning-message :message="$t('wallets.loadingError')" :show="loadFailed"></warning-message>
 
         <div v-if="wallet.id">
@@ -13,7 +15,10 @@
 
                 <div>
                     <b-btn-group>
-                        <b-button variant="primary" :to="{name: 'wallets.edit', params: {walletID: wallet.id.toString(), nameForTitle: wallet.name}}">
+                        <b-button variant="primary"
+                                  :to="{name: 'wallets.edit', params: {walletID: wallet.id.toString(), nameForTitle: wallet.name}}"
+                                  :disabled="!isEmailConfirmed"
+                        >
                             <b-icon-pencil></b-icon-pencil>
                             {{ $t('wallets.edit') }}
                         </b-button>
@@ -22,15 +27,15 @@
 
                             <b-dropdown-item :to="{name: 'wallets.share', params: {walletID: wallet.id.toString(), nameForTitle: wallet.name}}">{{ $t('wallets.share') }}</b-dropdown-item>
 
-                            <b-dropdown-item v-if="!wallet.isActive" @click="onActivate">{{ $t('wallets.activate') }}</b-dropdown-item>
-                            <b-dropdown-item v-if="wallet.isActive" @click="onDisable">{{ $t('wallets.disable') }}</b-dropdown-item>
+                            <b-dropdown-item v-if="!wallet.isActive" @click="onActivate" :disabled="!isEmailConfirmed">{{ $t('wallets.activate') }}</b-dropdown-item>
+                            <b-dropdown-item v-if="wallet.isActive" @click="onDisable" :disabled="!isEmailConfirmed">{{ $t('wallets.disable') }}</b-dropdown-item>
 
-                            <b-dropdown-item v-if="!wallet.isArchived" @click="onArchive">{{ $t('wallets.toArchive') }}</b-dropdown-item>
-                            <b-dropdown-item v-if="wallet.isArchived" @click="onUnArchive">{{ $t('wallets.unArchive') }}</b-dropdown-item>
+                            <b-dropdown-item v-if="!wallet.isArchived" @click="onArchive" :disabled="!isEmailConfirmed">{{ $t('wallets.toArchive') }}</b-dropdown-item>
+                            <b-dropdown-item v-if="wallet.isArchived" @click="onUnArchive" :disabled="!isEmailConfirmed">{{ $t('wallets.unArchive') }}</b-dropdown-item>
 
                             <b-dropdown-divider></b-dropdown-divider>
 
-                            <b-dropdown-item @click="onDelete">{{ $t('wallets.delete') }}</b-dropdown-item>
+                            <b-dropdown-item @click="onDelete" :disabled="!isEmailConfirmed">{{ $t('wallets.delete') }}</b-dropdown-item>
                         </b-dropdown>
                     </b-btn-group>
                 </div>
@@ -181,9 +186,11 @@ import { TagInterface } from '@/api/tags';
 import { TotalInterface, walletTagTotalGet, walletTotalGet } from '@/api/total';
 import { GraphDataEntry, GROUP_BY_DAY, GROUP_BY_MONTH, GROUP_BY_YEAR, walletGraphGet, walletTagGraphGet } from '@/api/graph';
 import { emptyFilterData, Filter, FilterDataInterface } from '@/api/filters';
+import EmailIsNotConfirmedAlert from '@/components/profile/EmailIsNotConfirmedAlert.vue';
 
 @Component({
     components: {
+        EmailIsNotConfirmedAlert,
         ChargesList,
         ChargeCreate,
         ChargeItem,
@@ -236,6 +243,10 @@ export default class WalletView extends Mixins(Loader) {
         this.loadUsers()
         this.loadTags()
         this.loadChart()
+    }
+
+    get isEmailConfirmed(): boolean {
+        return this.$store.state.isEmailConfirmed
     }
 
     get groupOptions() {

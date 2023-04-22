@@ -1,5 +1,7 @@
 <template>
     <div>
+        <email-is-not-confirmed-alert></email-is-not-confirmed-alert>
+
         <warning-message :message="$t('wallets.listLoadingError')" :show="loadFailed"></warning-message>
 
         <draggable v-show="!loadFailed"
@@ -17,7 +19,7 @@
             </transition-group>
         </draggable>
 
-        <b-alert variant="success" :show="displayNoWallets">
+        <b-alert variant="success" :show="isEmailConfirmed && displayNoWallets">
             <h2>{{ $t('wallets.noWallets') }}</h2>
             {{ $t('wallets.noWalletsMessage') }}
             <b-button variant="success" size="sm" :to="{name: 'wallets.create'}">{{ $t('wallets.noWalletsCreate') }}</b-button>
@@ -38,9 +40,10 @@ import {
 } from '@/api/wallets';
 import WarningMessage from '@/components/shared/WarningMessage.vue';
 import WalletCard from '@/components/wallets/WalletCard.vue';
+import EmailIsNotConfirmedAlert from '@/components/profile/EmailIsNotConfirmedAlert.vue';
 
 @Component({
-    components: {draggable, WalletCard, WarningMessage}
+    components: {draggable, WalletCard, WarningMessage, EmailIsNotConfirmedAlert}
 })
 export default class WalletsGridList extends Mixins(Loader) {
     @Prop()
@@ -54,6 +57,10 @@ export default class WalletsGridList extends Mixins(Loader) {
 
     mounted() {
         this.load()
+    }
+
+    get isEmailConfirmed(): boolean {
+        return this.$store.state.isEmailConfirmed
     }
 
     get displayNoWallets(): boolean {

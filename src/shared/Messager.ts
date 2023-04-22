@@ -69,7 +69,7 @@ export default class Messager extends Vue {
     }
 
     protected onForbiddenResponse(response: ErrorResponseInterface) {
-        this.setMessage(response.message)
+        this.setMessage(response.error ?? response.message)
     }
 
     protected onUnprocessableEntityResponse(
