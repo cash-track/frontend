@@ -5,6 +5,8 @@
             {{ $t('wallets.shareTitle') }} <b>{{ wallet.name }}</b>
         </template>
 
+        <email-is-not-confirmed-alert></email-is-not-confirmed-alert>
+
         <warning-message :message="$t('wallets.shareMembersLoadingError')" :show="loadUsersFailed"></warning-message>
 
         <div class="wallet-owners">
@@ -25,7 +27,7 @@
                         <profile-avatar-badge :user="user">
                             {{ user.name }} {{ user.lastName }} ({{ user.email }})
                         </profile-avatar-badge>
-                        <b-button variant="primary" :disabled="isLoading" @click="onSelect(user)">
+                        <b-button variant="primary" :disabled="!isEmailConfirmed || isLoading" @click="onSelect(user)">
                             {{ $t('wallets.shareSelect') }}
                         </b-button>
                     </div>
@@ -56,7 +58,7 @@
                         @change="resetValidationMessage('email')"
                     ></b-form-input>
                     <b-input-group-append>
-                        <b-button variant="primary" :disabled="isLoading" @click="onSearch">
+                        <b-button variant="primary" :disabled="!isEmailConfirmed || isLoading" @click="onSearch">
                             <b-spinner v-show="isLoading" small></b-spinner>
                             {{ $t('wallets.shareSearch') }}
                         </b-button>
@@ -68,7 +70,7 @@
         <b-list-group v-if="inviteUser !== null">
             <b-list-group-item class="d-flex justify-content-between">
                 <profile-avatar-badge :user="inviteUser">{{ inviteUser.name }} {{ inviteUser.lastName }} ({{ inviteUser.email }})</profile-avatar-badge>
-                <b-button variant="primary" :disabled="isLoading" @click="onInvite">
+                <b-button variant="primary" :disabled="!isEmailConfirmed || isLoading" @click="onInvite">
                     <b-spinner v-show="isLoading" small></b-spinner>
                     {{ $t('wallets.shareInvite') }}
                 </b-button>
@@ -87,9 +89,10 @@ import { userFindByEmail, usersFindByCommonWallets, UserInterface } from '@/api/
 import WarningMessage from '@/components/shared/WarningMessage.vue';
 import ProfileAvatarBadge from '@/components/profile/ProfileAvatarBadge.vue';
 import WalletSharedMember, { WalletSharedMemberDeletedEvent } from '@/components/wallets/WalletSharedMember.vue';
+import EmailIsNotConfirmedAlert from '@/components/profile/EmailIsNotConfirmedAlert.vue';
 
 @Component({
-    components: {WalletSharedMember, ProfileAvatarBadge, WarningMessage}
+    components: {EmailIsNotConfirmedAlert, WalletSharedMember, ProfileAvatarBadge, WarningMessage}
 })
 export default class WalletShare extends Mixins(Loader, Messager, Validator) {
     @Prop({
@@ -108,6 +111,10 @@ export default class WalletShare extends Mixins(Loader, Messager, Validator) {
 
     mounted() {
         this.onWalletLoaded()
+    }
+
+    get isEmailConfirmed(): boolean {
+        return this.$store.state.isEmailConfirmed
     }
 
     get commonUsersFiltered() {

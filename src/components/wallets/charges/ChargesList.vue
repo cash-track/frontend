@@ -15,7 +15,7 @@
                     <b-icon-plus variant="muted" scale="1.5"></b-icon-plus>
                 </div>
 
-                <b-button variant="outline-primary" v-b-toggle.charge-create>{{ $t('charges.new') }}</b-button>
+                <b-button variant="outline-primary" v-b-toggle.charge-create :disabled="!isEmailConfirmed">{{ $t('charges.new') }}</b-button>
 
                 <b-collapse class="charge-create" id="charge-create">
                     <charge-create :wallet="wallet" @created="onChargeCreated"></charge-create>
@@ -86,6 +86,10 @@ export default class ChargesList extends Mixins(Loader) {
     charges: Array<ChargeInterface> = []
 
     pagination: PaginationInterface = emptyPagination()
+
+    get isEmailConfirmed(): boolean {
+        return this.$store.state.isEmailConfirmed
+    }
 
     get isLoadingPagination(): boolean {
         return this.isLoadingFor(PAGINATION)

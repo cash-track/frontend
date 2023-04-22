@@ -8,8 +8,8 @@
                 <div class="col-sm text-center" v-html="$t('madeBy')"></div>
                 <div class="col-sm text-sm-right text-center">
                     <b-nav class="justify-content-sm-end justify-content-center">
-                        <b-nav-item :href="getWebSiteLink('/help')">{{ $t('help') }}</b-nav-item>
-                        <b-nav-item :href="getWebSiteLink('/about')">{{ $t('about') }}</b-nav-item>
+                        <b-nav-item :href="getWebSiteLink('/cookie-policy')">{{ $t('cookiePolicy') }}</b-nav-item>
+                        <b-nav-item :href="getWebSiteLink('/privacy-policy')">{{ $t('privacyPolicy') }}</b-nav-item>
                     </b-nav>
                 </div>
             </div>

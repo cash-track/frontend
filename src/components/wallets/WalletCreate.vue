@@ -3,6 +3,8 @@
         <b-card footer-tag="footer" header-tag="header">
             <template v-slot:header>{{ $t('wallets.createTitle') }}</template>
 
+            <email-is-not-confirmed-alert></email-is-not-confirmed-alert>
+
             <b-form-group
                 label-align-lg="right"
                 label-cols-lg="2"
@@ -60,7 +62,7 @@
                     </b-button>
 
                     <b-button
-                        :disabled="isLoading"
+                        :disabled="!isEmailConfirmed || isLoading"
                         type="submit"
                         variant="primary"
                         @click="onSubmit"
@@ -81,11 +83,12 @@ import Loader from '@/shared/Loader';
 import Messager from '@/shared/Messager';
 import Validator from '@/shared/Validator';
 import { walletCreate, WalletCreateRequestInterface, WalletResponseInterface } from '@/api/wallets';
-import WarningMessage from '@/components/shared/WarningMessage.vue';
 import { currenciesGet, CurrencyInterface } from '@/api/currency';
+import WarningMessage from '@/components/shared/WarningMessage.vue';
+import EmailIsNotConfirmedAlert from '@/components/profile/EmailIsNotConfirmedAlert.vue';
 
 @Component({
-    components: {WarningMessage}
+    components: {EmailIsNotConfirmedAlert, WarningMessage}
 })
 export default class WalletCreate extends Mixins(Loader, Messager, Validator) {
     form: WalletCreateRequestInterface = {
@@ -107,6 +110,10 @@ export default class WalletCreate extends Mixins(Loader, Messager, Validator) {
         } else {
             this.unsubscribeFromStore = this.$store.subscribe(this.loadDefaultCurrency)
         }
+    }
+
+    get isEmailConfirmed(): boolean {
+        return this.$store.state.isEmailConfirmed
     }
 
     protected loadCurrencies() {

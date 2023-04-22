@@ -30,8 +30,8 @@
                     <template v-slot:button-content>
                         <b-icon-three-dots></b-icon-three-dots>
                     </template>
-                    <b-dropdown-item @click="toggleEdit">{{ $t('charges.edit') }}</b-dropdown-item>
-                    <b-dropdown-item @click="onDeleted">{{ $t('charges.delete') }}</b-dropdown-item>
+                    <b-dropdown-item @click="toggleEdit" :disabled="!isEmailConfirmed">{{ $t('charges.edit') }}</b-dropdown-item>
+                    <b-dropdown-item @click="onDeleted" :disabled="!isEmailConfirmed">{{ $t('charges.delete') }}</b-dropdown-item>
                 </b-dropdown>
             </div>
 
@@ -105,6 +105,10 @@ export default class ChargeItem extends Vue {
 
     isActive = false
     isEdit = false
+
+    get isEmailConfirmed(): boolean {
+        return this.$store.state.isEmailConfirmed
+    }
 
     get dateTime(): string {
         return this.$moment(this.charge.createdAt).format('Y-MM-DD HH:mm:ss')

@@ -9,6 +9,8 @@ export default {
     madeBy: 'Made with ❤️ &nbsp;in 🇺🇦',
     error: 'Error',
     loadingData: 'Loading Data..',
+    cookiePolicy: 'Cookie Policy',
+    privacyPolicy: 'Privacy Policy',
 
     currency: {
         USD: 'United States dollar',
@@ -85,7 +87,7 @@ export default {
         month: 'Month',
 
         emailNotConfirmed: 'Account is not confirmed',
-        emailNotConfirmedMainMessage: 'Please check your mailbox for a confirmation message to activate your account.',
+        emailNotConfirmedMainMessage: 'Please check your mailbox (maybe Spam folder as well) for a confirmation message to activate your account. Your access is limited until you confirm your account.',
         emailNotConfirmedResendMessage: 'You can resend confirmation message from profile settings.',
 
         counters: 'Counters',
