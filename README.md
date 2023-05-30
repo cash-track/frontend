@@ -1,6 +1,6 @@
 # Frontend
 
-[![Check](https://github.com/cash-track/frontend/actions/workflows/pull.yml/badge.svg)](https://github.com/cash-track/frontend/actions/workflows/pull.yml) [![Release](https://github.com/cash-track/frontend/actions/workflows/release.yml/badge.svg)](https://github.com/cash-track/frontend/actions/workflows/release.yml)
+[![quality](https://github.com/cash-track/frontend/actions/workflows/quality.yml/badge.svg)](https://github.com/cash-track/frontend/actions/workflows/quality.yml) 
 
 Static resources and frontend code for Cash Track web interface.
 
