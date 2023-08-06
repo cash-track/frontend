@@ -148,6 +148,17 @@
                 {{ successMessage }}
             </b-alert>
 
+            <hr>
+
+            <b-form-group label-align-lg="right" label-cols-lg="4">
+                <h5>{{ $t('profileSettings.social') }}</h5>
+            </b-form-group>
+
+            <b-form-group label-align-lg="right" label-cols-lg="4">
+                <template v-slot:label>Google</template>
+                <b-form-checkbox switch size="lg" disabled v-model="isGoogleEnabled" class="mt-1"></b-form-checkbox>
+            </b-form-group>
+
             <template v-slot:footer>
                 <div class="text-center">
                     <b-button variant="primary" type="submit" :disabled="isLoading">
@@ -169,7 +180,7 @@ import Messager from '@/shared/Messager';
 import Validator from '@/shared/Validator';
 import EmailFormInput from '@/components/settings/EmailFormInput.vue';
 import { currenciesGet, CurrencyInterface } from '@/api/currency';
-import { profilePut, profileCheckNickName, UpdateProfileRequestInterface} from '@/api/profile';
+import { profilePut, profileCheckNickName, profileGetSocial, UpdateProfileRequestInterface} from '@/api/profile';
 
 @Component({
     components: {EmailFormInput}
@@ -191,9 +202,12 @@ export default class ProfileSettings extends Mixins(Loader, Messager, Validator)
 
     unsubscribeFromStore: Function|null = null
 
+    isGoogleEnabled = false
+
     mounted() {
         this.loadProfile()
         this.loadCurrencies()
+        this.loadSocial()
 
         if (this.$store.state.isLogged) {
             this.loadProfile()
@@ -229,6 +243,12 @@ export default class ProfileSettings extends Mixins(Loader, Messager, Validator)
     protected loadCurrencies() {
         currenciesGet().then(response => {
             this.currencies = response.data.data
+        }).catch(this.dispatchError)
+    }
+
+    protected loadSocial() {
+        profileGetSocial().then(response => {
+            this.isGoogleEnabled = response.data.data.google
         }).catch(this.dispatchError)
     }
 
