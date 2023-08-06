@@ -69,6 +69,7 @@ export default {
         languageDescription: 'Change interface language from the supported list',
         save: 'Save',
         success: 'Your profile has been updated',
+        social: 'Social Networks Login',
     },
 
     profile: {

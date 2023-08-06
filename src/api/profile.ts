@@ -97,3 +97,11 @@ export function profilePutLocale(request: UpdateProfileLocaleRequestInterface): 
         locale: request.locale,
     })
 }
+
+export interface ProfileSocialResponseInterface {
+    google: boolean;
+}
+
+export function profileGetSocial(): Promise<AxiosResponse<ProfileSocialResponseInterface>> {
+    return client().get<ProfileSocialResponseInterface>('/api/profile/social')
+}
