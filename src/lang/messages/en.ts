@@ -165,6 +165,8 @@ export default {
         create: 'Create',
         update: 'Update',
         cancel: 'Cancel',
+        changeDescription: 'Change description',
+        changeDate: 'Change date',
 
         loading: 'Loading Charges..',
         loadingError: 'Unable to load charges. Please try again later.',

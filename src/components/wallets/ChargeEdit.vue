@@ -64,7 +64,12 @@
                                 @selected="onTagSelected"
                 ></tag-form-input>
             </b-col>
-            <b-col md="12">
+            <b-col md="12" v-show="!isDescriptionEnabled && !hasValidationMessage('description')">
+                <b-form-group>
+                    <b-link href="#" @click="isDescriptionEnabled = true">{{ $t('charges.changeDescription') }}</b-link>
+                </b-form-group>
+            </b-col>
+            <b-col md="12" v-if="isDescriptionEnabled || hasValidationMessage('description')">
                 <b-form-group
                     label-for="description"
                     :invalid-feedback="validationMessage('description')"
@@ -78,6 +83,41 @@
                         :state="validationState('description')"
                         @change="resetValidationMessage('description')"
                     ></b-textarea>
+                </b-form-group>
+            </b-col>
+            <b-col md="12" v-show="!isDateTimeEnabled && !hasValidationMessage('dateTime')">
+                <b-form-group>
+                    <b-link href="#" @click="isDateTimeEnabled = true">{{ $t('charges.changeDate') }}</b-link>
+                </b-form-group>
+            </b-col>
+            <b-col md="8" v-show="isDateTimeEnabled || hasValidationMessage('dateTime')">
+                <b-form-group
+                    label-for="dateTime"
+                    :invalid-feedback="validationMessage('dateTime')"
+                    :state="validationState('dateTime')"
+                >
+                    <b-form-datepicker v-model="formDate"
+                                       :locale="locale"
+                                       :max="new Date()"
+                                       :disabled="isLoading"
+                                       :date-format-options="dateFormatOptions"
+                                       :state="validationState('dateTime')"
+                                       @change="resetValidationMessage('dateTime')"
+                    ></b-form-datepicker>
+                </b-form-group>
+            </b-col>
+            <b-col md="4" v-show="isDateTimeEnabled || hasValidationMessage('dateTime')">
+                <b-form-group
+                    label-for="time"
+                    :state="validationState('dateTime')"
+                >
+                    <b-form-timepicker no-close-button
+                                       v-model="formTime"
+                                       :locale="locale"
+                                       :disabled="isLoading"
+                                       :state="validationState('dateTime')"
+                                       @change="resetValidationMessage('dateTime')"
+                    ></b-form-timepicker>
                 </b-form-group>
             </b-col>
             <b-col md="12">
@@ -97,7 +137,7 @@
 </template>
 
 <script lang="ts">
-import { Mixins, Component, Prop } from 'vue-property-decorator'
+import { Mixins, Component, Prop, Watch } from 'vue-property-decorator'
 import { AxiosResponse } from 'axios';
 import Loader from '@/shared/Loader';
 import Messager from '@/shared/Messager';
@@ -107,20 +147,24 @@ import {
     walletChargeUpdate,
     TypeIncome,
     TypeExpense,
-    ChargeCreateRequestInterface,
     ChargeResponseInterface,
-    ChargeInterface
+    ChargeInterface, ChargeUpdateRequestInterface
 } from '@/api/charges';
 import { TagInterface } from '@/api/tags';
 import WarningMessage from '@/components/shared/WarningMessage.vue';
 import TagFormInput from '@/components/tags/TagFormInput.vue';
 import Tag from '@/components/tags/Tag.vue';
 import ChargeTitleFormInput from '@/components/wallets/charges/ChargeTitleFormInput.vue';
+import moment from 'moment';
 
 export interface ChargeUpdatedEvent {
     id: string;
     charge: ChargeInterface;
 }
+
+const DATE_FORMAT = 'YYYY-MM-DD'
+const TIME_FORMAT = 'HH:mm:ss'
+const DATETIME_FORMAT = 'YYYY-MM-DD HH:mm:ss'
 
 @Component({
     components: {WarningMessage, Tag, TagFormInput, ChargeTitleFormInput}
@@ -132,24 +176,43 @@ export default class ChargeEdit extends Mixins(Loader, Messager, Validator) {
     @Prop()
     charge!: ChargeInterface
 
-    form: ChargeCreateRequestInterface = {
+    form: ChargeUpdateRequestInterface = {
         type: TypeExpense,
         amount: null,
         title: '',
         description: '',
         tags: [],
+        dateTime: '',
     }
+
+    formDate = ''
+    formTime = ''
+
+    isDescriptionEnabled = false
+    isDateTimeEnabled = false
 
     resetState = false
 
     mounted() {
+        this.setForm(this.charge)
+    }
+
+    protected setForm(charge: ChargeInterface) {
         this.form = {
-            type: this.charge.operation,
-            amount: this.charge.amount,
-            title: this.charge.title,
-            description: this.charge.description,
-            tags: this.charge.tags,
+            type: charge.operation,
+            amount: charge.amount,
+            title: charge.title,
+            description: charge.description,
+            tags: charge.tags,
+            dateTime: charge.dateTime,
         }
+        this.setFormDateTime(charge.dateTime)
+    }
+
+    protected setFormDateTime(dateTime: string) {
+        const date = moment(dateTime)
+        this.formDate = date.format(DATE_FORMAT)
+        this.formTime = date.format(TIME_FORMAT)
     }
 
     get isTypeIncome(): boolean {
@@ -158,6 +221,24 @@ export default class ChargeEdit extends Mixins(Loader, Messager, Validator) {
 
     get isTypeExpense(): boolean {
         return this.form.type === TypeExpense
+    }
+
+    get locale() {
+        return this.$store.state.locale
+    }
+
+    get dateFormatOptions() {
+        return {
+            year: 'numeric',
+            month: 'numeric',
+            day: 'numeric'
+        }
+    }
+
+    @Watch('formDate')
+    @Watch('formTime')
+    protected updateFormDateTime() {
+        this.form.dateTime = moment(`${this.formDate} ${this.formTime}`).utc().format(DATETIME_FORMAT)
     }
 
     protected onTypeChangedExpense(event: Event) {
@@ -218,15 +299,9 @@ export default class ChargeEdit extends Mixins(Loader, Messager, Validator) {
             id: response.data.data.id,
             charge: response.data.data,
         })
-
-        this.form = {
-            type: response.data.data.operation,
-            amount: response.data.data.amount,
-            title: response.data.data.title,
-            description: response.data.data.description,
-            tags: response.data.data.tags,
-        }
-
+        this.setForm(response.data.data)
+        this.isDescriptionEnabled = false
+        this.isDateTimeEnabled = false
         this.resetState = !this.resetState
     }
 

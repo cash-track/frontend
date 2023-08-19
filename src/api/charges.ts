@@ -17,6 +17,7 @@ export interface ChargeInterface {
     description: string;
     userId: number;
     walletId: number;
+    dateTime: string;
     createdAt: string;
     updatedAt: string;
 
@@ -47,6 +48,7 @@ export interface ChargeUpdateRequestInterface {
     title: string;
     description: string;
     tags: Array<TagInterface>;
+    dateTime: string|null;
 }
 
 export function walletChargesGet(walletId: number, filter?: FilterInterface): Promise<AxiosResponse<ChargesResponseInterface>> {
@@ -112,6 +114,7 @@ export function walletChargeUpdate(
         title: request.title,
         description: request.description,
         tags: request.tags.length ? request.tags.map(tag => tag.id) : null,
+        dateTime: request.dateTime,
     })
 }
 
