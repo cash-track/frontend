@@ -177,6 +177,9 @@ export default {
         filterInputFrom: 'Date from',
         filterTo: 'To',
         filterInputTo: 'Date to',
+
+        move: 'Move To',
+        moveError: 'Unable to move selected charges to target wallet. Please try again later.',
     },
 
     tags: {

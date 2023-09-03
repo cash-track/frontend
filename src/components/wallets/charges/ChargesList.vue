@@ -15,7 +15,30 @@
                     <b-icon-plus variant="muted" scale="1.5"></b-icon-plus>
                 </div>
 
-                <b-button variant="outline-primary" v-b-toggle.charge-create :disabled="!isEmailConfirmed">{{ $t('charges.new') }}</b-button>
+                <b-button variant="outline-primary" class="my-2 mr-2" v-b-toggle.charge-create :disabled="!isEmailConfirmed">{{ $t('charges.new') }}</b-button>
+
+                <b-dropdown variant="outline-primary" class="my-2 mr-2" v-show="selectedCharges.length">
+                    <template #button-content>
+                        {{ $t('charges.move') }}
+                        <b-spinner small v-show="isLoadingFor('move')"></b-spinner>
+                    </template>
+                    <b-dropdown-item-button
+                        :key="wallet.id"
+                        v-for="wallet of moveTargetWallets"
+                        @click="onMoveTo(wallet)"
+                        :disabled="isLoadingFor('move')"
+                    >
+                        {{ wallet.name }} <b-badge variant="success">{{ wallet.totalAmount | money(wallet.defaultCurrency) }}</b-badge>
+                    </b-dropdown-item-button>
+                </b-dropdown>
+
+                <b-icon-exclamation-triangle-fill
+                    class="warning-icon my-3 mr-2 align-top"
+                    v-if="moveErrorMessage.content"
+                    variant="warning"
+                    v-b-popover="moveErrorMessage"
+                    @click="onMoveToErrorClear"
+                ></b-icon-exclamation-triangle-fill>
 
                 <b-collapse class="charge-create" id="charge-create">
                     <charge-create :wallet="wallet" @created="onChargeCreated"></charge-create>
@@ -34,6 +57,8 @@
                 @updated="onChargeUpdated"
                 @deleted="onChargeDeleted"
                 @tag-selected="onTagSelected"
+                @selected="onChargeSelected"
+                @un-selected="onChargeUnSelected"
             ></charge-item>
 
             <div class="charge-loader-pagination" v-if="isLoadingPagination">
@@ -52,23 +77,38 @@
 import { Component, Mixins, Prop, Watch } from 'vue-property-decorator'
 import { AxiosResponse } from 'axios';
 import Loader from '@/shared/Loader';
-import { WalletInterface } from '@/api/wallets';
+import { WalletInterface, walletsUnArchivedGet } from '@/api/wallets';
 import {
     ChargeInterface,
-    ChargesResponseInterface, tagChargesGet, tagChargesGetPaginated,
+    ChargesResponseInterface,
+    tagChargesGet,
+    tagChargesGetPaginated,
     walletChargesGet,
     walletChargesGetPaginated,
-    walletTagChargesGet, walletTagChargesGetPaginated
+    walletChargesMove,
+    walletTagChargesGet,
+    walletTagChargesGetPaginated
 } from '@/api/charges';
 import { emptyPagination, PaginationInterface } from '@/api/pagination';
 import WarningMessage from '@/components/shared/WarningMessage.vue';
 import { ChargeUpdatedEvent } from '@/components/wallets/ChargeEdit.vue';
-import ChargeItem, { ChargeDeletedEvent } from '@/components/wallets/ChargeItem.vue';
-import ChargeCreate, {ChargeCreatedEvent} from '@/components/wallets/ChargeCreate.vue';
+import ChargeItem, {
+    ChargeDeletedEvent,
+    ChargeSelectedEvent,
+    ChargeUnSelectedEvent
+} from '@/components/wallets/ChargeItem.vue';
+import ChargeCreate, { ChargeCreatedEvent } from '@/components/wallets/ChargeCreate.vue';
 import { TagInterface } from '@/api/tags';
 import { Filter, FilterDataInterface } from '@/api/filters';
 
+
 const PAGINATION = 'pagination'
+
+export interface ChargesMovedEvent {
+    sourceWallet: WalletInterface;
+    targetWallet: WalletInterface;
+    charges: Array<ChargeInterface>;
+}
 
 @Component({
     components: {ChargeCreate, WarningMessage, ChargeItem}
@@ -82,6 +122,17 @@ export default class ChargesList extends Mixins(Loader) {
 
     @Prop()
     filter!: FilterDataInterface
+
+    selectedCharges: Array<ChargeInterface> = []
+
+    moveTargetWallets: Array<WalletInterface> = []
+    moveErrorMessage = {
+        id: `wallet-charges-move-message-${this.wallet.id}`,
+        variant: 'warning',
+        placement: 'right',
+        trigger: 'hover focus',
+        content: ''
+    }
 
     charges: Array<ChargeInterface> = []
 
@@ -105,6 +156,7 @@ export default class ChargesList extends Mixins(Loader) {
 
     mounted() {
         this.initiallyLoadCharges()
+        this.loadWallets()
     }
 
     private buildLoader(page: number|null): Promise<AxiosResponse<ChargesResponseInterface>>|null {
@@ -127,6 +179,17 @@ export default class ChargesList extends Mixins(Loader) {
         }
 
         return null;
+    }
+
+    protected loadWallets() {
+        this.setLoadingFor('move')
+        walletsUnArchivedGet().then(response => {
+            this.moveTargetWallets = response.data.data.filter(wallet => wallet.id !== this.wallet.id)
+        }).catch(() => {
+            this.moveTargetWallets = []
+        }).finally(() => {
+            this.setLoadedFor('move')
+        })
     }
 
     @Watch('tag')
@@ -214,6 +277,70 @@ export default class ChargesList extends Mixins(Loader) {
     protected onTagSelected(tag: TagInterface) {
         this.$emit('tag-selected', tag)
     }
+
+    protected onChargeSelected(event: ChargeSelectedEvent) {
+        this.selectedCharges.push(event.charge)
+    }
+    protected onChargeUnSelected(event: ChargeUnSelectedEvent) {
+        const index = this.selectedCharges.findIndex(charge => charge.id === event.id)
+
+        if (index === -1) {
+            return
+        }
+
+        this.selectedCharges.splice(index, 1)
+    }
+
+    protected onMoveTo(targetWallet: WalletInterface) {
+        if (this.selectedCharges.length === 0) {
+            return
+        }
+
+        this.onMoveToErrorClear()
+        this.setLoadingFor('move')
+
+        walletChargesMove(this.wallet.id, targetWallet.id, this.selectedCharges.map(charge => charge.id))
+            .then(() => {
+                this.onMovedTo({
+                    sourceWallet: this.wallet,
+                    targetWallet: targetWallet,
+                    charges: this.selectedCharges,
+                })
+            })
+            .catch(() => {
+                this.onMoveToError()
+            }).finally(() => {
+                this.setLoadedFor('move')
+            })
+    }
+
+    protected onMoveToError() {
+        this.moveErrorMessage.content = this.$t('charges.moveError').toString()
+        this.$root.$emit('bv::show::popover', this.moveErrorMessage.id)
+
+    }
+
+    protected onMoveToErrorClear() {
+        this.moveErrorMessage.content = ''
+        this.$root.$emit('bv::hide::popover', this.moveErrorMessage.id)
+    }
+
+    protected onMovedTo(event: ChargesMovedEvent) {
+        for (const movedCharge of event.charges) {
+            const index = this.charges.findIndex(charge => charge.id === movedCharge.id)
+
+            if (index === -1) {
+                console.warn('Unable to find charge in the list. Charge ID:', movedCharge.id)
+                return
+            }
+
+            this.charges.splice(index, 1)
+        }
+
+        this.selectedCharges = []
+
+        this.$emit('moved', event)
+    }
 }
 </script>
 
@@ -265,7 +392,7 @@ export default class ChargesList extends Mixins(Loader) {
     padding-bottom: 35px;
 
     .charge-type {
-        top: 28px;
+        top: 36px;
     }
 
     .charge-create {

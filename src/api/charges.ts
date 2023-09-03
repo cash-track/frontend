@@ -124,3 +124,13 @@ export function walletChargeDelete(
 ): Promise<AxiosResponse> {
     return client().delete(`/api/wallets/${walletId}/charges/${chargeId}`)
 }
+
+export function walletChargesMove(
+    walletId: number,
+    targetWalletId: number,
+    chargeIds: Array<string>,
+): Promise<AxiosResponse> {
+    return client().post(`/api/wallets/${walletId}/charges/move/${targetWalletId}`, {
+        chargeIds: chargeIds,
+    })
+}

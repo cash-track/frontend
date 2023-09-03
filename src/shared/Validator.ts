@@ -1,5 +1,6 @@
 import { Vue, Component } from 'vue-property-decorator'
 import { ValidationResponseInterface } from '@/api/responses'
+import { isArray } from 'chart.js/helpers';
 
 @Component({
     data: () => {
@@ -15,7 +16,14 @@ export default class Validator extends Vue {
         this.validationMessages = {}
     }
 
-    public resetValidationMessage(field: string) {
+    public resetValidationMessage(field: string | Array<string>) {
+        if (isArray(field)) {
+            for (const f of field) {
+                this.resetValidationMessage(f)
+            }
+            return
+        }
+
         if (!this.hasValidationMessage(field)) {
             return
         }

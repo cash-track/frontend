@@ -177,6 +177,9 @@ export default {
         filterInputFrom: 'Дата з',
         filterTo: 'До',
         filterInputTo: 'Дата до',
+
+        move: 'Перемістити До',
+        moveError: 'Помилка перенесення обраних операцій у гаманець. Будь ласка, спробуйте пізніше.',
     },
 
     tags: {
