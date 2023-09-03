@@ -137,16 +137,17 @@ export default class Header extends Vue {
 
 <style lang="scss" scoped>
     .navbar {
-        .navbar-brand {
-            padding-top: 0;
-            padding-bottom: 0;
-            height: 36px;
-        }
-
         background: #f5f5f5;
         border-bottom: 1px solid #e5e5e5;
         border-radius: 0;
         margin-bottom: 20px;
+
+        .navbar-brand {
+            padding-top: 0;
+            padding-bottom: 0;
+            height: 36px;
+            width: 162px;
+        }
 
         .b-avatar {
             margin: -13px 5px -10px 0;
