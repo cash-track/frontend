@@ -2,7 +2,9 @@
     <div>
         <b-navbar toggleable="lg" type="light">
             <b-container>
-                <b-navbar-brand :href="getWebSiteLink('/')">Cash Track 🇺🇦</b-navbar-brand>
+                <b-navbar-brand :href="getWebSiteLink('/')">
+                    <logo></logo>
+                </b-navbar-brand>
 
                 <b-navbar-toggle target="nav-collapse"></b-navbar-toggle>
 
@@ -57,10 +59,11 @@ import { logout } from '@/api/auth';
 import { webSiteLink } from '@/shared/links';
 import { ProfileInterface, profilePutLocale } from '@/api/profile';
 import ProfileAvatar from '@/components/profile/ProfileAvatar.vue';
+import Logo from '@/components/Logo.vue';
 import { loadLanguageAsync, locales } from '@/lang';
 
 @Component({
-    components: {ProfileAvatar}
+    components: {ProfileAvatar, Logo}
 })
 export default class Header extends Vue {
     getWebSiteLink(path: string): string {
@@ -134,6 +137,12 @@ export default class Header extends Vue {
 
 <style lang="scss" scoped>
     .navbar {
+        .navbar-brand {
+            padding-top: 0;
+            padding-bottom: 0;
+            height: 36px;
+        }
+
         background: #f5f5f5;
         border-bottom: 1px solid #e5e5e5;
         border-radius: 0;
