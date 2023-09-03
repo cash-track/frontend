@@ -74,6 +74,16 @@ import Tag from '@/components/tags/Tag.vue';
 import { TagInterface } from '@/api/tags';
 import { CurrencyInterface } from '@/api/currency';
 
+export interface ChargeSelectedEvent {
+    id: string;
+    charge: ChargeInterface;
+}
+
+export interface ChargeUnSelectedEvent {
+    id: string;
+    charge: ChargeInterface;
+}
+
 export interface ChargeDeletedEvent {
     id: string;
     charge: ChargeInterface;
@@ -131,6 +141,17 @@ export default class ChargeItem extends Vue {
         event.stopPropagation()
 
         this.isActive = !this.isActive
+
+        const notification = {
+            id: this.charge.id,
+            charge: this.charge,
+        }
+
+        if (this.isActive) {
+            this.$emit('selected', notification)
+        } else {
+            this.$emit('un-selected', notification)
+        }
     }
 
     toggleEdit() {

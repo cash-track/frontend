@@ -147,9 +147,10 @@
                     :wallet="wallet"
                     :tag="tag"
                     :filter="filter"
-                    @created="onChargeCreated"
-                    @updated="onChargeUpdated"
-                    @deleted="onChargeDeleted"
+                    @created="onChargesListChanged"
+                    @updated="onChargesListChanged"
+                    @deleted="onChargesListChanged"
+                    @moved="onChargesListChanged"
                     @tag-selected="onTagSelected"
                 ></charges-list>
             </div>
@@ -330,19 +331,7 @@ export default class WalletView extends Mixins(Loader) {
         this.loadFailed = true
     }
 
-    protected onChargeCreated() {
-        this.loadTotal()
-        this.loadTags()
-        this.loadChart()
-    }
-
-    protected onChargeUpdated() {
-        this.loadTotal()
-        this.loadTags()
-        this.loadChart()
-    }
-
-    protected onChargeDeleted() {
+    protected onChargesListChanged() {
         this.loadTotal()
         this.loadTags()
         this.loadChart()

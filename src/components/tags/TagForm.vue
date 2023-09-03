@@ -101,7 +101,7 @@ export default class TagForm extends Mixins(Loader, Messager, Validator) {
         }
     }
 
-    get previewState(): string|null {
+    get previewState(): string|undefined {
         if (this.isEdit) {
             return 'closable';
         }
@@ -110,7 +110,7 @@ export default class TagForm extends Mixins(Loader, Messager, Validator) {
             return 'loading';
         }
 
-        return null;
+        return undefined;
     }
 
     @Watch('tag')
