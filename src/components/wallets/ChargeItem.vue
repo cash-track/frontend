@@ -6,7 +6,7 @@
                     <span class="text-muted charge-date"
                           :title="dateTime"
                           v-b-tooltip.left>
-                        {{ charge.createdAt | moment("from") }}
+                        {{ charge.createdAt | moment("HH:mm") }}
                     </span>
                     <div class="charge-tags">
                         <tag v-for="tag of charge.tags" :key="tag.id" :tag="tag" @selected="onTagSelected"></tag>
