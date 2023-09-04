@@ -405,19 +405,21 @@ export default class ChargesList extends Mixins(Loader) {
 
             &>div {
                 padding-top: 20px;
+                padding-bottom: 20px;
                 padding-left: 0;
                 padding-right: 0;
-                margin-bottom: -10px;
             }
 
             .charges-list-group-title-container {
+                position: relative;
+
                 span {
                     background: #fff;
                     padding: 3px 5px;
                     display: inline-block;
                     margin-left: 26px;
-                    position: relative;
-                    top: -50%;
+                    position: absolute;
+                    top: 30%;
                 }
             }
 
