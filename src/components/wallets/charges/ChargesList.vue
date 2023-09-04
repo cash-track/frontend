@@ -47,19 +47,31 @@
         </b-row>
 
         <div class="charges-list" v-if="!isLoadingFailed">
-            <charge-item
-                v-for="charge of charges"
-                v-bind:key="charge.id"
-                :wallet="wallet"
-                :charge="charge"
-                :read-only="!hasWallet && charge.wallet === null"
-                :show-wallet="!hasWallet"
-                @updated="onChargeUpdated"
-                @deleted="onChargeDeleted"
-                @tag-selected="onTagSelected"
-                @selected="onChargeSelected"
-                @un-selected="onChargeUnSelected"
-            ></charge-item>
+            <div :key="key" v-for="[key, value] in chargesGrouped" class="charges-list-group">
+                <b-row v-show="key" class="charges-list-group-title">
+                    <b-col md="4" cols="12" class="charges-list-group-title-container">
+                        <hr>
+                        <span class="text-muted">{{ key }}</span>
+                    </b-col>
+                    <b-col md="8" cols="12" class="charges-list-group-title-placeholder">
+                        <hr>
+                    </b-col>
+                </b-row>
+
+                <charge-item
+                    v-for="charge of value"
+                    v-bind:key="charge.id"
+                    :wallet="wallet"
+                    :charge="charge"
+                    :read-only="!hasWallet && charge.wallet === null"
+                    :show-wallet="!hasWallet"
+                    @updated="onChargeUpdated"
+                    @deleted="onChargeDeleted"
+                    @tag-selected="onTagSelected"
+                    @selected="onChargeSelected"
+                    @un-selected="onChargeUnSelected"
+                ></charge-item>
+            </div>
 
             <div class="charge-loader-pagination" v-if="isLoadingPagination">
                 <div class="d-flex justify-content-center">
@@ -100,9 +112,10 @@ import ChargeItem, {
 import ChargeCreate, { ChargeCreatedEvent } from '@/components/wallets/ChargeCreate.vue';
 import { TagInterface } from '@/api/tags';
 import { Filter, FilterDataInterface } from '@/api/filters';
-
+import { Moment } from 'moment/moment';
 
 const PAGINATION = 'pagination'
+const GROUP_DATE_FORMAT = 'dddd, D MMMM YYYY'
 
 export interface ChargesMovedEvent {
     sourceWallet: WalletInterface;
@@ -138,6 +151,8 @@ export default class ChargesList extends Mixins(Loader) {
 
     pagination: PaginationInterface = emptyPagination()
 
+    today: Moment = this.$moment().startOf('day')
+
     get isEmailConfirmed(): boolean {
         return this.$store.state.isEmailConfirmed
     }
@@ -152,6 +167,38 @@ export default class ChargesList extends Mixins(Loader) {
 
     get isWalletActive(): boolean {
         return this.hasWallet && this.wallet?.isActive
+    }
+
+    get chargesGrouped(): Map<string, Array<ChargeInterface>> {
+        const map = new Map<string, Array<ChargeInterface>>()
+
+        for (const charge of this.charges) {
+            const group = this.getGroupName(charge.createdAt)
+
+            let list = map.get(group)
+
+            if (list === undefined) {
+                list = new Array<ChargeInterface>()
+            }
+
+            list.push(charge)
+
+            map.set(group, list)
+        }
+
+        return map
+    }
+
+    private getGroupName(dateTime: string): string {
+        const date = this.$moment(dateTime).startOf('day')
+
+        const diff = this.today.diff(date, 'days')
+
+        if (diff === 0) {
+            return ''
+        }
+
+        return date.format(GROUP_DATE_FORMAT)
     }
 
     mounted() {
@@ -352,6 +399,34 @@ export default class ChargesList extends Mixins(Loader) {
 .charges-list-container {
     position: relative;
 
+    .charges-list-group {
+        .charges-list-group-title {
+            font-size: 14px;
+
+            &>div {
+                padding-top: 20px;
+                padding-left: 0;
+                padding-right: 0;
+                margin-bottom: -10px;
+            }
+
+            .charges-list-group-title-container {
+                span {
+                    background: #fff;
+                    padding: 3px 5px;
+                    display: inline-block;
+                    margin-left: 26px;
+                    position: relative;
+                    top: -50%;
+                }
+            }
+
+            .charges-list-group-title-placeholder {
+                border-left: 1px solid #eee;
+            }
+        }
+    }
+
     .charge-loader-main {
         padding: 30px 0;
         height: 100%;
@@ -487,6 +562,10 @@ export default class ChargesList extends Mixins(Loader) {
             vertical-align: middle;
             margin: 7px 20px 7px 0;
         }
+    }
+
+    .charges-list-group-title-placeholder {
+        display: none;
     }
 }
 </style>
