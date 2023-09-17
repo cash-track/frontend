@@ -207,7 +207,7 @@ export default class ChargesList extends Mixins(Loader) {
     }
 
     private buildLoader(page: number|null): Promise<AxiosResponse<ChargesResponseInterface>>|null {
-        if (this.wallet !== undefined && this.tag !== null) {
+        if (this.wallet !== undefined && this.tag !== undefined) {
             return page === null ?
                 walletTagChargesGet(this.wallet.id, this.tag.id, Filter.createFromData(this.filter)) :
                 walletTagChargesGetPaginated(this.wallet.id, this.tag.id, page, Filter.createFromData(this.filter))
@@ -219,7 +219,7 @@ export default class ChargesList extends Mixins(Loader) {
                 walletChargesGetPaginated(this.wallet.id, page, Filter.createFromData(this.filter))
         }
 
-        if (this.tag !== null) {
+        if (this.tag !== undefined) {
             return page === null ?
                 tagChargesGet(this.tag.id, Filter.createFromData(this.filter)) :
                 tagChargesGetPaginated(this.tag.id, page, Filter.createFromData(this.filter))
