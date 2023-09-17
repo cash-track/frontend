@@ -145,7 +145,7 @@
                 </b-collapse>
                 <charges-list
                     :wallet="wallet"
-                    :tag="tag"
+                    :tag="this.hasTag ? tag : undefined"
                     :filter="filter"
                     @created="onChargesListChanged"
                     @updated="onChargesListChanged"
