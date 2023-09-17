@@ -88,7 +88,7 @@
                      :tag="tag"
                      :key="tag.id"
                      @selected="onTagSelected"
-                     :state="tag.id === tagIDParsed ? 'closable' : null"
+                     :state="tag.id === tagIDParsed ? 'closable' : undefined"
                      :active="tag.id === tagIDParsed"
                 ></tag>
             </div>
@@ -216,7 +216,7 @@ export default class WalletView extends Mixins(Loader) {
         totalAmount: 0,
         totalIncomeAmount: 0,
         totalExpenseAmount: 0,
-        currency: null,
+        currency: undefined,
     }
 
     loadFailed = false
@@ -225,7 +225,7 @@ export default class WalletView extends Mixins(Loader) {
 
     tags: Array<TagInterface> = []
 
-    tag: TagInterface|null = null
+    tag: TagInterface|undefined = undefined
 
     filter: FilterDataInterface = emptyFilterData()
 
@@ -317,7 +317,7 @@ export default class WalletView extends Mixins(Loader) {
 
     protected setByTagIfPresent() {
         if (!this.hasTag) {
-            this.tag = null
+            this.tag = undefined
             return
         }
 
