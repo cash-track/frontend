@@ -140,7 +140,7 @@ export default class ChargesList extends Mixins(Loader) {
 
     moveTargetWallets: Array<WalletInterface> = []
     moveErrorMessage = {
-        id: `wallet-charges-move-message-${this.wallet.id}`,
+        id: `wallet-charges-move-message-${this.wallet?.id}`,
         variant: 'warning',
         placement: 'right',
         trigger: 'hover focus',

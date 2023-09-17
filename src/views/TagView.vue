@@ -18,7 +18,7 @@
                 ></tag>
             </div>
 
-            <div class="wallet-details d-flex justify-content-center align-items-end" v-if="total.currency !== null">
+            <div class="wallet-details d-flex justify-content-center align-items-end" v-if="total.currency !== undefined">
                 <span class="wallet-total" :class="{'wallet-total-small': !isIncomeGreaterThanExpense}" v-if="hasIncome && isIncomeGreaterThanExpense">
                     <span class="text-muted wallet-total-title">
                         {{ $t('wallets.income') }}
@@ -121,7 +121,7 @@ export default class TagView extends Mixins(Loader) {
         totalAmount: 0,
         totalIncomeAmount: 0,
         totalExpenseAmount: 0,
-        currency: null,
+        currency: undefined,
     }
 
     loadFailed = false

@@ -7,7 +7,7 @@ export interface TotalInterface {
     totalAmount: number;
     totalIncomeAmount: number;
     totalExpenseAmount: number;
-    currency: CurrencyInterface|null;
+    currency: CurrencyInterface|undefined;
 }
 
 export interface TotalResponseInterface {
