@@ -10,6 +10,12 @@
                     <b-nav class="justify-content-sm-end justify-content-center">
                         <b-nav-item :href="getWebSiteLink('/cookie-policy')">{{ $t('cookiePolicy') }}</b-nav-item>
                         <b-nav-item :href="getWebSiteLink('/privacy-policy')">{{ $t('privacyPolicy') }}</b-nav-item>
+                        <b-nav-item
+                            href="https://t.me/cash_track"
+                            target="_blank"
+                        >
+                            <tg-icon></tg-icon>
+                        </b-nav-item>
                     </b-nav>
                 </div>
             </div>
@@ -20,8 +26,11 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { webSiteLink } from '@/shared/links';
+import TgIcon from '@/components/shared/TgIcon.vue';
 
-@Component
+@Component({
+    components: { TgIcon }
+})
 export default class Footer extends Vue {
     year() {
         return (new Date()).getFullYear()
