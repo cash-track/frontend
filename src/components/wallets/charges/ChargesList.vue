@@ -284,9 +284,16 @@ export default class ChargesList extends Mixins(Loader) {
 
     // forward event
     protected onChargeCreated(event: ChargeCreatedEvent) {
-        this.charges.unshift(event.charge)
-        this.$root.$emit('bv::toggle::collapse', 'charge-create')
+        const charges = Array.from<ChargeInterface>(this.charges)
+        const index = charges.findIndex(charge => charge.dateTime < event.charge.dateTime)
 
+        if (index === -1) {
+            this.charges.unshift(event.charge)
+        } else {
+            this.charges.splice(index, 0, event.charge)
+        }
+
+        this.$root.$emit('bv::toggle::collapse', 'charge-create')
         this.$emit('created', event)
     }
 

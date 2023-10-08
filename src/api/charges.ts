@@ -40,6 +40,7 @@ export interface ChargeCreateRequestInterface {
     title: string;
     description: string;
     tags: Array<TagInterface>;
+    dateTime: string|null;
 }
 
 export interface ChargeUpdateRequestInterface {
@@ -100,6 +101,7 @@ export function walletChargeCreate(walletId: number, request: ChargeCreateReques
         title: request.title,
         description: request.description,
         tags: request.tags.length ? request.tags.map(tag => tag.id) : null,
+        dateTime: request.dateTime,
     })
 }
 

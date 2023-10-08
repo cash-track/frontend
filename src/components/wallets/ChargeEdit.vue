@@ -139,6 +139,7 @@
 <script lang="ts">
 import { Mixins, Component, Prop, Watch } from 'vue-property-decorator'
 import { AxiosResponse } from 'axios';
+import moment from 'moment';
 import Loader from '@/shared/Loader';
 import Messager from '@/shared/Messager';
 import Validator from '@/shared/Validator';
@@ -155,7 +156,6 @@ import WarningMessage from '@/components/shared/WarningMessage.vue';
 import TagFormInput from '@/components/tags/TagFormInput.vue';
 import Tag from '@/components/tags/Tag.vue';
 import ChargeTitleFormInput from '@/components/wallets/charges/ChargeTitleFormInput.vue';
-import moment from 'moment';
 
 export interface ChargeUpdatedEvent {
     id: string;

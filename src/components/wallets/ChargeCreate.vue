@@ -64,7 +64,12 @@
                                 @selected="onTagSelected"
                 ></tag-form-input>
             </b-col>
-            <b-col md="12">
+            <b-col md="12" v-show="!isDescriptionEnabled && !hasValidationMessage('description')">
+                <b-form-group>
+                    <b-link href="#" @click="isDescriptionEnabled = true">{{ $t('charges.changeDescription') }}</b-link>
+                </b-form-group>
+            </b-col>
+            <b-col md="12" v-if="isDescriptionEnabled || hasValidationMessage('description')">
                 <b-form-group
                     label-for="description"
                     :invalid-feedback="validationMessage('description')"
@@ -78,6 +83,41 @@
                         :state="validationState('description')"
                         @change="resetValidationMessage('description')"
                     ></b-textarea>
+                </b-form-group>
+            </b-col>
+            <b-col md="12" v-show="!isDateTimeEnabled && !hasValidationMessage('dateTime')">
+                <b-form-group>
+                    <b-link href="#" @click="isDateTimeEnabled = true">{{ $t('charges.changeDate') }}</b-link>
+                </b-form-group>
+            </b-col>
+            <b-col md="8" v-show="isDateTimeEnabled || hasValidationMessage('dateTime')">
+                <b-form-group
+                    label-for="dateTime"
+                    :invalid-feedback="validationMessage('dateTime')"
+                    :state="validationState('dateTime')"
+                >
+                    <b-form-datepicker v-model="formDate"
+                                       :locale="locale"
+                                       :max="new Date()"
+                                       :disabled="isLoading"
+                                       :date-format-options="dateFormatOptions"
+                                       :state="validationState('dateTime')"
+                                       @change="resetValidationMessage('dateTime')"
+                    ></b-form-datepicker>
+                </b-form-group>
+            </b-col>
+            <b-col md="4" v-show="isDateTimeEnabled || hasValidationMessage('dateTime')">
+                <b-form-group
+                    label-for="time"
+                    :state="validationState('dateTime')"
+                >
+                    <b-form-timepicker no-close-button
+                                       v-model="formTime"
+                                       :locale="locale"
+                                       :disabled="isLoading"
+                                       :state="validationState('dateTime')"
+                                       @change="resetValidationMessage('dateTime')"
+                    ></b-form-timepicker>
                 </b-form-group>
             </b-col>
             <b-col md="12">
@@ -97,8 +137,9 @@
 </template>
 
 <script lang="ts">
-import { Mixins, Component, Prop } from 'vue-property-decorator'
+import { Mixins, Component, Prop, Watch } from 'vue-property-decorator'
 import { AxiosResponse } from 'axios';
+import moment from 'moment/moment';
 import Loader from '@/shared/Loader';
 import Messager from '@/shared/Messager';
 import Validator from '@/shared/Validator';
@@ -122,6 +163,11 @@ export interface ChargeCreatedEvent {
     charge: ChargeInterface;
 }
 
+const DATE_FORMAT = 'YYYY-MM-DD'
+const TIME_FORMAT = 'HH:mm:ss'
+const DATETIME_FORMAT = 'YYYY-MM-DD HH:mm:ss'
+const PARENT_COLLAPSE_ID = 'charge-create'
+
 @Component({
     components: {WarningMessage, Tag, CreateTag, TagFormInput, ChargeTitleFormInput}
 })
@@ -135,9 +181,26 @@ export default class ChargeCreate extends Mixins(Loader, Messager, Validator) {
         title: '',
         description: '',
         tags: [],
+        dateTime: '',
     }
 
+    formDate = ''
+    formTime = ''
+
+    isDescriptionEnabled = false
+    isDateTimeEnabled = false
+
     resetState = false
+
+    mounted() {
+        this.onFormDisplayed()
+        this.$root.$on('bv::collapse::state', (collapseId: string, isJustShown: boolean) => {
+            if (isJustShown && collapseId === PARENT_COLLAPSE_ID) {
+                this.onFormDisplayed()
+            }
+        })
+
+    }
 
     get isEmailConfirmed(): boolean {
         return this.$store.state.isEmailConfirmed
@@ -149,6 +212,34 @@ export default class ChargeCreate extends Mixins(Loader, Messager, Validator) {
 
     get isTypeExpense(): boolean {
         return this.form.type === TypeExpense
+    }
+
+    get locale() {
+        return this.$store.state.locale
+    }
+
+    get dateFormatOptions() {
+        return {
+            year: 'numeric',
+            month: 'numeric',
+            day: 'numeric'
+        }
+    }
+
+    protected setFormDateTime(dateTime?: string) {
+        const date = moment(dateTime)
+        this.formDate = date.format(DATE_FORMAT)
+        this.formTime = date.format(TIME_FORMAT)
+    }
+
+    @Watch('formDate')
+    @Watch('formTime')
+    protected updateFormDateTime() {
+        this.form.dateTime = moment(`${this.formDate} ${this.formTime}`).utc().format(DATETIME_FORMAT)
+    }
+
+    protected onFormDisplayed() {
+        this.setFormDateTime()
     }
 
     protected onTypeChangedExpense(event: Event) {
@@ -215,8 +306,12 @@ export default class ChargeCreate extends Mixins(Loader, Messager, Validator) {
             title: '',
             description: '',
             tags: [],
+            dateTime: '',
         }
 
+        this.setFormDateTime()
+        this.isDescriptionEnabled = false
+        this.isDateTimeEnabled = false
         this.resetState = !this.resetState
     }
 }
