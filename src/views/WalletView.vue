@@ -152,6 +152,7 @@
                     @deleted="onChargesListChanged"
                     @moved="onChargesListChanged"
                     @tag-selected="onTagSelected"
+                    @last-charge-removed="onLastChargeRemoved"
                 ></charges-list>
             </div>
         </div>
@@ -335,6 +336,15 @@ export default class WalletView extends Mixins(Loader) {
         this.loadTotal()
         this.loadTags()
         this.loadChart()
+    }
+
+    protected onLastChargeRemoved() {
+        this.$router.push({
+            name: 'wallets.show',
+            params: {
+                'walletID': this.walletID.toString(),
+            }
+        })
     }
 
     protected onDelete(event: Event) {
