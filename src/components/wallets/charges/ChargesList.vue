@@ -311,6 +311,14 @@ export default class ChargesList extends Mixins(Loader) {
 
         this.charges = charges
 
+        if (this.tag !== undefined &&
+            this.charges.length === 1 &&
+            event.charge.tags.map(tag => tag.id).indexOf(this.tag.id) === -1
+        ) {
+            this.$emit('last-charge-removed', event)
+            return
+        }
+
         this.$emit('updated', event)
     }
 
