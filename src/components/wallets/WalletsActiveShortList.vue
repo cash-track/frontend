@@ -20,7 +20,6 @@
 
 <script lang="ts">
 import { Component, Mixins } from 'vue-property-decorator';
-import draggable from 'vuedraggable';
 import Loader from '@/shared/Loader';
 import { WalletFullInterface } from '@/api/wallets';
 import WarningMessage from '@/components/shared/WarningMessage.vue';
@@ -28,7 +27,7 @@ import WalletCard from '@/components/wallets/WalletCard.vue';
 import EmailIsNotConfirmedAlert from '@/components/profile/EmailIsNotConfirmedAlert.vue';
 
 @Component({
-    components: {draggable, WalletCard, WarningMessage, EmailIsNotConfirmedAlert}
+    components: {WalletCard, WarningMessage, EmailIsNotConfirmedAlert}
 })
 export default class WalletsActiveShortList extends Mixins(Loader) {
     get wallets(): Array<WalletFullInterface> {
