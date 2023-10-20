@@ -1,5 +1,9 @@
 <template>
     <div class="row">
+        <div class="col-md-12">
+            <wallets-active-short-list class="mb-4"></wallets-active-short-list>
+        </div>
+
         <div class="col-md-8 ml-md-auto mr-md-auto">
             <warning-message :message="$t('wallets.loadingError')" :show="loadFailed"></warning-message>
             <wallet-share :wallet="wallet"></wallet-share>
@@ -12,9 +16,10 @@ import { Vue, Component, Prop } from 'vue-property-decorator'
 import { emptyWallet, walletGet, WalletInterface } from '@/api/wallets';
 import WarningMessage from '@/components/shared/WarningMessage.vue';
 import WalletShare from '@/components/wallets/WalletShare.vue';
+import WalletsActiveShortList from '@/components/wallets/WalletsActiveShortList.vue';
 
 @Component({
-    components: {WalletShare, WarningMessage}
+    components: {WalletsActiveShortList, WalletShare, WarningMessage}
 })
 export default class WalletShareView extends Vue {
     @Prop()

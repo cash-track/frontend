@@ -2,6 +2,7 @@ import Vue from 'vue'
 import Vuex from 'vuex'
 import Cookies from 'js-cookie'
 import { emptyProfile, profileGet, ProfileInterface } from '@/api/profile';
+import { walletsUnArchivedGet, WalletFullInterface } from '@/api/wallets';
 
 Vue.use(Vuex)
 
@@ -13,6 +14,10 @@ export default new Vuex.Store({
         profile: emptyProfile(),
         isEmailConfirmed: true,
         locale: 'en',
+
+        activeWallets: new Array<WalletFullInterface>(),
+        activeWalletsLoadingStatus: false,
+        activeWalletsLoadingFailed: false,
     },
     mutations: {
         logout(state) {
@@ -40,7 +45,23 @@ export default new Vuex.Store({
                 sameSite: 'strict',
                 expires: 365,
             })
-        }
+        },
+
+        activeWalletsLoadingChanged(state, status: null|boolean) {
+            if (status === null) {
+                state.activeWallets = new Array<WalletFullInterface>();
+                state.activeWalletsLoadingFailed = true
+                state.activeWalletsLoadingStatus = false
+                return
+            }
+
+            state.activeWalletsLoadingStatus = status
+            state.activeWalletsLoadingFailed = false
+        },
+
+        activeWalletsChanged(state, wallets: Array<WalletFullInterface>) {
+            state.activeWallets = wallets;
+        },
     },
     actions: {
         loadCachedLocale() {
@@ -63,9 +84,20 @@ export default new Vuex.Store({
 
                 this.commit('login', res.data.data)
                 this.commit('localeChange', res.data.data.locale)
+                this.dispatch('loadActiveWallets')
             }).catch(() => {
                 this.commit('logout')
                 return
+            })
+        },
+
+        loadActiveWallets() {
+            this.commit('activeWalletsLoadingChanged', false)
+            return walletsUnArchivedGet().then(res => {
+                this.commit('activeWalletsChanged', res.data.data)
+                this.commit('activeWalletsLoadingChanged', true)
+            }).catch(() => {
+                this.commit('activeWalletsLoadingChanged', null)
             })
         }
     },

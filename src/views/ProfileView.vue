@@ -1,6 +1,10 @@
 <template>
     <div class="profile">
         <b-row>
+            <b-col md="12">
+                <wallets-active-short-list class="mb-4"></wallets-active-short-list>
+            </b-col>
+
             <b-col md="4">
                 <profile-title></profile-title>
 
@@ -32,9 +36,11 @@ import ChargesFlowStatistics from '@/components/profile/ChargesFlowStatistics.vu
 import CountersStatistics from '@/components/profile/CountersStatistics.vue';
 import LatestWallets from '@/components/profile/LatestWallets.vue';
 import CommonTags from '@/components/profile/CommonTags.vue';
+import WalletsActiveShortList from '@/components/wallets/WalletsActiveShortList.vue';
 
 @Component({
     components: {
+        WalletsActiveShortList,
         CountersStatistics,
         ChargesFlowStatistics,
         ProfileTitle,

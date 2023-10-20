@@ -1,5 +1,7 @@
 <template>
     <div class="wallet">
+        <wallets-active-short-list class="mb-4"></wallets-active-short-list>
+
         <email-is-not-confirmed-alert></email-is-not-confirmed-alert>
 
         <warning-message :message="$t('wallets.loadingError')" :show="loadFailed"></warning-message>
@@ -189,9 +191,11 @@ import { TotalInterface, walletTagTotalGet, walletTotalGet } from '@/api/total';
 import { GraphDataEntry, GROUP_BY_DAY, GROUP_BY_MONTH, GROUP_BY_YEAR, walletGraphGet, walletTagGraphGet } from '@/api/graph';
 import { emptyFilterData, Filter, FilterDataInterface } from '@/api/filters';
 import EmailIsNotConfirmedAlert from '@/components/profile/EmailIsNotConfirmedAlert.vue';
+import WalletsActiveShortList from '@/components/wallets/WalletsActiveShortList.vue';
 
 @Component({
     components: {
+        WalletsActiveShortList,
         EmailIsNotConfirmedAlert,
         ChargesList,
         ChargeCreate,
@@ -240,11 +244,7 @@ export default class WalletView extends Mixins(Loader) {
     filterVisible = false
 
     mounted() {
-        this.load()
-        this.loadTotal()
-        this.loadUsers()
-        this.loadTags()
-        this.loadChart()
+        this.onWalletIdChange()
     }
 
     get isEmailConfirmed(): boolean {
@@ -277,6 +277,22 @@ export default class WalletView extends Mixins(Loader) {
 
     get hasExpense(): boolean {
         return this.walletTotal.totalExpenseAmount !== 0
+    }
+
+    @Watch('walletID')
+    protected onWalletIdChange() {
+        this.load()
+        this.loadTotal()
+        this.loadUsers()
+        this.loadTags()
+        this.loadChart()
+    }
+
+    @Watch('tagID')
+    protected onTagChange() {
+        this.setByTagIfPresent()
+        this.loadTotal()
+        this.loadChart()
     }
 
     protected load() {
@@ -336,6 +352,7 @@ export default class WalletView extends Mixins(Loader) {
         this.loadTotal()
         this.loadTags()
         this.loadChart()
+        this.$store.dispatch('loadActiveWallets')
     }
 
     protected onLastChargeRemoved() {
@@ -352,6 +369,7 @@ export default class WalletView extends Mixins(Loader) {
         event.stopPropagation()
 
         walletDelete(this.walletID).then(() => {
+            this.$store.dispatch('loadActiveWallets')
             this.$router.push({
                 name: 'wallets'
             })
@@ -366,6 +384,7 @@ export default class WalletView extends Mixins(Loader) {
 
         walletActivate(this.walletID).then(() => {
             this.wallet.isActive = true
+            this.$store.dispatch('loadActiveWallets')
         }).catch(err => {
             console.log('Unable to activate wallet', err)
         })
@@ -377,6 +396,7 @@ export default class WalletView extends Mixins(Loader) {
 
         walletDisable(this.walletID).then(() => {
             this.wallet.isActive = false
+            this.$store.dispatch('loadActiveWallets')
         }).catch(err => {
             console.log('Unable to disable wallet', err)
         })
@@ -388,6 +408,7 @@ export default class WalletView extends Mixins(Loader) {
 
         walletArchive(this.walletID).then(() => {
             this.wallet.isArchived = true
+            this.$store.dispatch('loadActiveWallets')
         }).catch(err => {
             console.log('Unable to archive wallet', err)
         })
@@ -399,16 +420,10 @@ export default class WalletView extends Mixins(Loader) {
 
         walletUnArchive(this.walletID).then(() => {
             this.wallet.isArchived = false
+            this.$store.dispatch('loadActiveWallets')
         }).catch(err => {
             console.log('Unable to un-archive wallet', err)
         })
-    }
-
-    @Watch('tagID')
-    protected onTagChange() {
-        this.setByTagIfPresent()
-        this.loadTotal()
-        this.loadChart()
     }
 
     protected onTagSelected(tag: TagInterface) {
