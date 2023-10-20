@@ -2,7 +2,7 @@
     <div class="wallets">
         <b-tabs content-class="mt-3">
             <b-tab :title="$t('wallets.activeTitle')">
-                <wallets-grid-list :by-archived="false"></wallets-grid-list>
+                <wallets-active-grid-list></wallets-active-grid-list>
             </b-tab>
 
             <b-tab :title="$t('wallets.archivedTitle')" lazy>
@@ -15,9 +15,10 @@
 <script lang="ts">
 import { Vue, Component } from 'vue-property-decorator'
 import WalletsGridList from '@/components/wallets/WalletsGridList.vue';
+import WalletsActiveGridList from '@/components/wallets/WalletsActiveGridList.vue';
 
 @Component({
-    components: {WalletsGridList}
+    components: {WalletsGridList, WalletsActiveGridList}
 })
 export default class WalletsView extends Vue {
 

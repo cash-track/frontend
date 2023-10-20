@@ -20,13 +20,13 @@
                 <b-dropdown variant="outline-primary" class="my-2 mr-2" v-show="selectedCharges.length">
                     <template #button-content>
                         {{ $t('charges.move') }}
-                        <b-spinner small v-show="isLoadingFor('move')"></b-spinner>
+                        <b-spinner small v-show="isLoadingFor('move') || isMoveTargetWalletsLoading"></b-spinner>
                     </template>
                     <b-dropdown-item-button
                         :key="wallet.id"
                         v-for="wallet of moveTargetWallets"
                         @click="onMoveTo(wallet)"
-                        :disabled="isLoadingFor('move')"
+                        :disabled="isLoadingFor('move') || isMoveTargetWalletsLoading"
                     >
                         {{ wallet.name }} <b-badge variant="success">{{ wallet.totalAmount | money(wallet.defaultCurrency) }}</b-badge>
                     </b-dropdown-item-button>
@@ -89,7 +89,7 @@
 import { Component, Mixins, Prop, Watch } from 'vue-property-decorator'
 import { AxiosResponse } from 'axios';
 import Loader from '@/shared/Loader';
-import { WalletInterface, walletsUnArchivedGet } from '@/api/wallets';
+import { WalletInterface } from '@/api/wallets';
 import {
     ChargeInterface,
     ChargesResponseInterface,
@@ -138,7 +138,6 @@ export default class ChargesList extends Mixins(Loader) {
 
     selectedCharges: Array<ChargeInterface> = []
 
-    moveTargetWallets: Array<WalletInterface> = []
     moveErrorMessage = {
         id: `wallet-charges-move-message-${this.wallet?.id}`,
         variant: 'warning',
@@ -155,6 +154,14 @@ export default class ChargesList extends Mixins(Loader) {
 
     get isEmailConfirmed(): boolean {
         return this.$store.state.isEmailConfirmed
+    }
+
+    get moveTargetWallets(): Array<WalletInterface> {
+        return this.$store.state.activeWallets.filter((wallet: WalletInterface) => wallet.id !== this.wallet.id)
+    }
+
+    get isMoveTargetWalletsLoading(): boolean {
+        return !this.$store.state.activeWalletsLoadingStatus
     }
 
     get isLoadingPagination(): boolean {
@@ -203,7 +210,6 @@ export default class ChargesList extends Mixins(Loader) {
 
     mounted() {
         this.initiallyLoadCharges()
-        this.loadWallets()
     }
 
     private buildLoader(page: number|null): Promise<AxiosResponse<ChargesResponseInterface>>|null {
@@ -228,17 +234,7 @@ export default class ChargesList extends Mixins(Loader) {
         return null;
     }
 
-    protected loadWallets() {
-        this.setLoadingFor('move')
-        walletsUnArchivedGet().then(response => {
-            this.moveTargetWallets = response.data.data.filter(wallet => wallet.id !== this.wallet.id)
-        }).catch(() => {
-            this.moveTargetWallets = []
-        }).finally(() => {
-            this.setLoadedFor('move')
-        })
-    }
-
+    @Watch('wallet.id')
     @Watch('tag')
     @Watch('filter', {
         deep: true

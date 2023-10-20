@@ -147,6 +147,7 @@ export default class WalletEdit extends Mixins(Loader, Messager, Validator) {
     }
 
     protected onSuccess(response: AxiosResponse<WalletResponseInterface>) {
+        this.$store.dispatch('loadActiveWallets')
         this.$router.push({
             name: 'wallets.show',
             params: {

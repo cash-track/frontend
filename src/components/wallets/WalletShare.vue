@@ -200,6 +200,7 @@ export default class WalletShare extends Mixins(Loader, Messager, Validator) {
         this.setLoading()
 
         walletUsersAdd(this.wallet.id, this.inviteUser).then(() => {
+            this.$store.dispatch('loadActiveWallets')
             this.users.push(user)
             this.inviteUser = null
             this.inviteUserEmail = ''

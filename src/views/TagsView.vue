@@ -1,5 +1,7 @@
 <template>
     <div class="tags">
+        <wallets-active-short-list class="mb-4"></wallets-active-short-list>
+
         <warning-message :message="getMessage()" :show="shouldDisplayMessage()"></warning-message>
 
         <b-row>
@@ -33,9 +35,11 @@ import Messager from '@/shared/Messager';
 import WarningMessage from '@/components/shared/WarningMessage.vue';
 import Tag from '@/components/tags/Tag.vue';
 import TagForm from '@/components/tags/TagForm.vue';
+import WalletsActiveShortList from '@/components/wallets/WalletsActiveShortList.vue';
 
 @Component({
     components: {
+        WalletsActiveShortList,
         TagForm,
         WarningMessage,
         Tag,

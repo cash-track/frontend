@@ -1,5 +1,7 @@
 <template>
     <div class="wallet">
+        <wallets-active-short-list class="mb-4"></wallets-active-short-list>
+
         <warning-message :message="$t('tags.statsLoadingError')" :show="loadFailed"></warning-message>
 
         <div v-if="tag !== null">
@@ -99,9 +101,11 @@ import { TagInterface, tagsGetCommon } from '@/api/tags';
 import { tagTotalGet, TotalInterface } from '@/api/total';
 import { emptyFilterData, Filter, FilterDataInterface } from '@/api/filters';
 import { GraphDataEntry, GROUP_BY_DAY, GROUP_BY_MONTH, GROUP_BY_YEAR, tagGraphGet } from '@/api/graph';
+import WalletsActiveShortList from '@/components/wallets/WalletsActiveShortList.vue';
 
 @Component({
     components: {
+        WalletsActiveShortList,
         ChargesList,
         ChargeCreate,
         ChargeItem,
