@@ -2,7 +2,6 @@
 node_modules
 /dist
 .bin
-.idea
 
 /tests/e2e/videos/
 /tests/e2e/screenshots/
@@ -27,3 +26,4 @@ pnpm-debug.log*
 *.njsproj
 *.sln
 *.sw?
+certs
