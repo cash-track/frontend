@@ -4,7 +4,7 @@ import getEnv from '@/shared/env';
 
 export function client(): AxiosInstance {
     const instance = axios.create({
-        baseURL: getEnv('VUE_APP_WEBSITE_URL'),
+        baseURL: getEnv('VUE_APP_GATEWAY_URL'),
         withCredentials: true,
     })
 

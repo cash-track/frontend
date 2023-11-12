@@ -1,4 +1,12 @@
 module.exports = {
+    devServer: {
+        https: (() => process.env.HTTPS_ENABLED === 'true' ? {
+            key: process.env.HTTPS_KEY_PATH,
+            cert: process.env.HTTPS_CRT_PATH,
+        } : undefined) (),
+        host: process.env.HTTP_HOST,
+        port: process.env.HTTP_PORT,
+    },
     chainWebpack: config => {
         config.module
             .rule('vue')
