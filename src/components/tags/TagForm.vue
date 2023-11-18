@@ -85,9 +85,9 @@ export default class TagForm extends Mixins(Loader, Messager, Validator) {
         const potentialIcon = getEmojiFromString(name)
         let icon = null
 
-        if (potentialIcon !== null && potentialIcon.length > 0) {
-            icon = potentialIcon[0].trim()
-            name = name.substr(icon.length)
+        if (potentialIcon.length > 0) {
+            icon = potentialIcon.trim()
+            name = name.substr(potentialIcon.length).trim()
         }
 
         return {
