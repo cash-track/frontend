@@ -104,7 +104,7 @@ export default class TagForm extends Mixins(Loader, Messager, Validator) {
             id: 0,
             name: name.trim(),
             icon: icon,
-            color: this.colorInput,
+            color: this.colorInput.length !== 0 ? this.colorInput : null,
             userId: 0,
             createdAt: '',
             updatedAt: '',
