@@ -3,7 +3,8 @@
         href="#"
         variant="secondary"
         class="badge-tag border border-secondary"
-        :class="{'active': active}"
+        :class="{'active': active, 'darker': isDarker}"
+        :style="{'background-color': backgroundColor}"
         v-if="tag"
         @click="onSelected"
     >
@@ -26,6 +27,11 @@
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator';
 import { TagInterface } from '@/api/tags';
+import { getRGBBrightness } from '@/shared/numbers';
+import { parseRGBFromHex } from '@/shared/strings';
+
+const BRIGHTNESS_MAX = 255
+const BRIGHTNESS_CONTRAST_LIMIT = 125
 
 @Component({})
 export default class Tag extends Vue {
@@ -53,6 +59,35 @@ export default class Tag extends Vue {
         default: false,
     })
     active!: boolean
+
+    get hasColor(): boolean {
+        return this.tag.color !== null &&
+            this.tag.color !== undefined &&
+            this.tag.color !== '#000000' &&
+            this.tag.color !== '#ffffff'
+    }
+
+    get backgroundColor(): string|null {
+        return this.hasColor ? this.tag.color : null
+    }
+
+    get backgroundColorBrightness(): number {
+        if (this.tag.color === null || !this.hasColor) {
+            return BRIGHTNESS_MAX
+        }
+
+        const rgb = parseRGBFromHex(this.tag.color)
+
+        if (rgb === null) {
+            return BRIGHTNESS_MAX
+        }
+
+        return getRGBBrightness(rgb)
+    }
+
+    get isDarker(): boolean {
+        return this.backgroundColorBrightness <= BRIGHTNESS_CONTRAST_LIMIT
+    }
 
     get isEmailConfirmed(): boolean {
         return this.$store.state.isEmailConfirmed
@@ -117,6 +152,16 @@ export default class Tag extends Vue {
     border-color: #ced4da!important;
     padding: 6px 10px;
     color: #495057;
+    transition-property: color, background-color, border-color, box-shadow, opacity;
+
+    &.darker {
+        color: #eaeaea;
+        border-color: #62686d !important;
+
+        button:hover {
+            background-color: rgba(219, 227, 234, 0.25);
+        }
+    }
 
     &.active:not(:hover, :active, :focus) {
         box-shadow: 0 0 0 0.2rem rgb(73 80 87 / 25%);
@@ -147,7 +192,6 @@ export default class Tag extends Vue {
 
         &:hover {
             background-color: rgb(108 117 125 / 25%);
-
         }
     }
 
@@ -156,6 +200,11 @@ export default class Tag extends Vue {
         background-color: rgb(108 117 125 / 10%);
         border-color: rgb(81 87 93 / 32%) !important;
         box-shadow: none;
+
+        &.darker {
+            color: #ffffff !important;
+            opacity: 0.9;
+        }
     }
 }
 

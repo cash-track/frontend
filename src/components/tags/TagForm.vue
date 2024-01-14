@@ -8,6 +8,7 @@
                          :error-message="getLoadingFailedMessageFor('deleting')"
                          @selected="onDelete"
                     ></tag>
+                    <b-form-text>{{ $t('tags.editHelpLine1') }}</b-form-text>
                     <hr>
                 </b-col>
             </b-row>
@@ -16,9 +17,10 @@
                     <b-form-group
                         :invalid-feedback="validationMessage(['name', 'icon'])"
                         :state="validationState(['name', 'icon'])"
-                        :description="$t('tags.inputDescription')"
                     >
                         <b-input-group>
+                            <b-form-input id="color" v-model="colorInput" type="color" size="10"></b-form-input>
+
                             <b-form-input
                                 id="name"
                                 v-model="input"
@@ -39,6 +41,12 @@
                                 </b-button>
                             </b-input-group-append>
                         </b-input-group>
+
+                        <template v-slot:description>
+                            {{ $t('tags.inputHelpLine1') }}<br><br>
+                            {{ $t('tags.inputHelpLine2') }}<br><br>
+                            {{ $t('tags.inputHelpLine3') }}
+                        </template>
                     </b-form-group>
 
                     <warning-message :message="message" :show="hasMessage"></warning-message>
@@ -70,6 +78,8 @@ export default class TagForm extends Mixins(Loader, Messager, Validator) {
 
     input = ''
 
+    colorInput = ''
+
     isSuccess = false
 
     get isEmailConfirmed(): boolean {
@@ -94,7 +104,7 @@ export default class TagForm extends Mixins(Loader, Messager, Validator) {
             id: 0,
             name: name.trim(),
             icon: icon,
-            color: null,
+            color: this.colorInput.length !== 0 ? this.colorInput : null,
             userId: 0,
             createdAt: '',
             updatedAt: '',
@@ -124,6 +134,10 @@ export default class TagForm extends Mixins(Loader, Messager, Validator) {
             this.input = tag?.name
         } else {
             this.input = `${tag?.icon} ${tag?.name}`
+        }
+
+        if (tag.color !== null) {
+            this.colorInput = tag.color
         }
     }
 
@@ -165,7 +179,7 @@ export default class TagForm extends Mixins(Loader, Messager, Validator) {
         return tagCreate({
             name: this.preview.name,
             icon: this.preview.icon,
-            color: null,
+            color: this.preview.color,
         }).then(this.onCreateSuccess)
     }
 
@@ -179,7 +193,7 @@ export default class TagForm extends Mixins(Loader, Messager, Validator) {
         return tagUpdate(this.tag?.id, {
             name: this.preview.name,
             icon: this.preview.icon,
-            color: null,
+            color: this.preview.color,
         }).then(this.onUpdateSuccess)
     }
 
@@ -199,5 +213,9 @@ export default class TagForm extends Mixins(Loader, Messager, Validator) {
 </script>
 
 <style lang="scss" scoped>
+input[type=color] {
+    max-width: 40px;
+    min-width: 40px;
+}
 
 </style>

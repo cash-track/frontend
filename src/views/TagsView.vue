@@ -6,7 +6,7 @@
 
         <b-row>
             <b-col md="6">
-                <div class="tags-list list-ltr" v-show="tags.length">
+                <div class="tags-list list-ltr mb-4" v-show="tags.length">
                     <tag v-for="item of tagsOrdered"
                          :tag="item"
                          :key="item.id"
@@ -22,6 +22,13 @@
             </b-col>
             <b-col md="6">
                 <tag-form :tag="activeTag" @created="onCreated" @updated="onUpdated" @deleted="onDeleted"></tag-form>
+            </b-col>
+            <b-col md="12">
+                <b-alert show variant="secondary" class="mt-4">
+                    <b-icon-info-circle-fill></b-icon-info-circle-fill>
+                    {{ $t('tags.editInfoLine1') }}<br>
+                    {{ $t('tags.editInfoLine2') }}
+                </b-alert>
             </b-col>
         </b-row>
     </div>
