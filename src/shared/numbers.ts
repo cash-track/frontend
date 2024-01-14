@@ -13,3 +13,7 @@ export function money(value: number, currency: CurrencyInterface|undefined): str
 
     return `${str} ${currency.char}`
 }
+
+export function getRGBBrightness(rgb: Array<number>): number {
+    return Math.round(((rgb[0] * 299) + (rgb[1] * 587) + (rgb[2] * 114)) / 1000);
+}

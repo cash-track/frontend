@@ -12,3 +12,17 @@ export function getEmojiFromString(value: string): string {
 
     return emoji.filter((item) => FILTER_CHAR_CODES.indexOf(item.charCodeAt(0)) === -1).join()
 }
+
+export function parseRGBFromHex(value: string): Array<number>|null {
+    const m = value.match(/^#([0-9a-f]{6})$/i);
+
+    if (!m || !m[1]) {
+        return null
+    }
+
+    return [
+        parseInt(m[1].substr(0,2),16),
+        parseInt(m[1].substr(2,2),16),
+        parseInt(m[1].substr(4,2),16)
+    ];
+}
