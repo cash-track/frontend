@@ -32,6 +32,19 @@
                       class="text-notice text-muted"
                 >{{ $t('tags.autocompleteHint') }}</span>
             </b-list-group-item>
+            <b-list-group-item>
+                <b-list-group class="items-container">
+                    <b-list-group-item :key="item.title"
+                                       button
+                                       v-for="item of chargeTitleAutocompleteFiltered"
+                                       @click="onTitleSelected(item)"
+                                       class="d-flex justify-content-between align-items-center"
+                    >
+                        {{ item.title }}
+                        <b-badge>{{ item.count }}</b-badge>
+                    </b-list-group-item>
+                </b-list-group>
+            </b-list-group-item>
         </b-list-group>
     </b-form-group>
 </template>
@@ -41,6 +54,7 @@ import { AxiosResponse } from 'axios';
 import { Vue, Component, Prop, Watch } from 'vue-property-decorator'
 import { tagGetSuggestions, TagInterface, TagsResponseInterface } from '@/api/tags';
 import Tag from '@/components/tags/Tag.vue';
+import { chargeTitleGetSuggestions, ChargeTitleInterface, ChargeTitlesResponseInterface } from '@/api/charges';
 
 @Component({
     components: {Tag}
@@ -90,6 +104,7 @@ export default class ChargeTitleFormInput extends Vue {
     name = ''
 
     autocomplete: Array<TagInterface> = []
+    chargeTitleAutocomplete: Array<ChargeTitleInterface> = []
     autocompleteActive = false
     autocompleteLoading = false
     autocompleteDebounceHandle: number|null = null
@@ -99,6 +114,15 @@ export default class ChargeTitleFormInput extends Vue {
         const addedTags = this.tags.map(tag => tag.name)
 
         return this.autocomplete.filter(tag => addedTags.indexOf(tag.name) === -1)
+    }
+
+    get chargeTitleAutocompleteFiltered(): Array<ChargeTitleInterface> {
+        const title = this.name.trim().toLowerCase()
+        return this.chargeTitleAutocomplete.filter(item => item.title.toLowerCase() !== title)
+    }
+
+    get hasAutocompleteData(): boolean {
+        return this.autocompleteFiltered.length > 0 || this.chargeTitleAutocompleteFiltered.length > 0
     }
 
     @Watch('value')
@@ -132,10 +156,13 @@ export default class ChargeTitleFormInput extends Vue {
         this.autocompleteDebounceHandle = window.setTimeout(() => {
             this.autocompleteDebounceHandle = null
 
-            tagGetSuggestions(query)
-                .then(this.onTagsAutocompleteLoaded)
+            Promise.all([
+                tagGetSuggestions(query),
+                chargeTitleGetSuggestions(query)
+            ])
+                .then(this.onAutocompleteLoaded)
                 .catch(error => {
-                    console.error('Unable to load tags autocomplete for query: ' + query)
+                    console.error('Unable to load charge title autocomplete for query: ' + query)
                     console.debug(error)
                 })
                 .finally(() => {
@@ -144,9 +171,18 @@ export default class ChargeTitleFormInput extends Vue {
         }, 500)
     }
 
+    protected onAutocompleteLoaded(responses: Array<AxiosResponse>) {
+        this.onTagsAutocompleteLoaded(responses[0])
+        this.onChargeTitlesAutocompleteLoaded(responses[1])
+        this.autocompleteActive = this.hasAutocompleteData
+    }
+
     protected onTagsAutocompleteLoaded(response: AxiosResponse<TagsResponseInterface>) {
         this.autocomplete = response.data.data
-        this.autocompleteActive = this.autocompleteFiltered.length > 0
+    }
+
+    protected onChargeTitlesAutocompleteLoaded(response: AxiosResponse<ChargeTitlesResponseInterface>) {
+        this.chargeTitleAutocomplete = response.data.data
     }
 
     protected onSelected(tag: TagInterface) {
@@ -160,13 +196,25 @@ export default class ChargeTitleFormInput extends Vue {
 
         this.onAutocomplete()
 
-        this.autocompleteActive = this.autocompleteFiltered.length > 0
+        this.autocompleteActive = this.hasAutocompleteData
 
         console.log(tag)
     }
 
+    protected onTitleSelected(title: ChargeTitleInterface) {
+        this.name = title.title
+
+        this.onInputChanged()
+
+        this.onAutocomplete()
+
+        this.autocompleteActive = this.hasAutocompleteData
+
+        console.log(title)
+    }
+
     protected onInputActive() {
-        this.autocompleteActive = this.autocompleteFiltered.length > 0
+        this.autocompleteActive = this.hasAutocompleteData
     }
 
     protected onInputInactive() {
@@ -180,6 +228,7 @@ export default class ChargeTitleFormInput extends Vue {
     @Watch('resetState')
     protected onReset() {
         this.autocomplete = []
+        this.chargeTitleAutocomplete = []
         this.autocompleteActive = false
     }
 }
@@ -203,6 +252,8 @@ export default class ChargeTitleFormInput extends Vue {
         width: 100%;
         box-shadow: rgb(238 238 238) 0 4px 4px;
         margin-top: -3px;
+        border-top-right-radius: 0;
+        border-top-left-radius: 0;
 
         .list-container {
             margin-right: 5px;
@@ -222,6 +273,26 @@ export default class ChargeTitleFormInput extends Vue {
             position: relative;
             width: 100%;
             padding-right: 28px;
+
+            &+.list-group-item {
+                padding: 0;
+                max-height: 155px;
+                overflow-y: scroll;
+            }
+        }
+
+        .items-container {
+            .list-group-item {
+                padding: 6px 10px;
+                font-size: 14px;
+                border-left-width: 0;
+                border-right-width: 0;
+                overflow: visible;
+
+                &:last-child {
+                    border-bottom-width: 0;
+                }
+            }
         }
     }
 }

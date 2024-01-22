@@ -26,12 +26,21 @@ export interface ChargeInterface {
     tags: Array<TagInterface>;
 }
 
+export interface ChargeTitleInterface {
+    title: string;
+    count: number;
+}
+
 export interface ChargesResponseInterface extends PaginatedResponseInterface{
     data: Array<ChargeInterface>;
 }
 
 export interface ChargeResponseInterface {
     data: ChargeInterface;
+}
+
+export interface ChargeTitlesResponseInterface {
+    data: Array<ChargeTitleInterface>;
 }
 
 export interface ChargeCreateRequestInterface {
@@ -135,4 +144,8 @@ export function walletChargesMove(
     return client().post(`/api/wallets/${walletId}/charges/move/${targetWalletId}`, {
         chargeIds: chargeIds,
     })
+}
+
+export function chargeTitleGetSuggestions(query: string): Promise<AxiosResponse<ChargeTitlesResponseInterface>> {
+    return client().get<ChargeTitlesResponseInterface>(`/api/charges/title/suggestions/${query}`)
 }
