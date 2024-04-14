@@ -1,6 +1,6 @@
 module.exports = {
     devServer: {
-        disableHostCheck: true,
+        allowedHosts: 'all',
         https: (() => process.env.HTTPS_ENABLED === 'true' ? {
             key: process.env.HTTPS_KEY_PATH,
             cert: process.env.HTTPS_CRT_PATH,

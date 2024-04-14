@@ -77,8 +77,7 @@ export interface UpdateProfilePhotoRequestInterface {
 export function profilePutPhoto(request: UpdateProfilePhotoRequestInterface): Promise<AxiosResponse<ProfilePhotoResponseInterface>> {
     const form = new FormData();
 
-    // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
-    // @ts-ignore
+    // @ts-expect-error unknown file type
     form.set('photo', request.photo);
 
     return client().put<ProfilePhotoResponseInterface>('/api/profile/photo', form, {

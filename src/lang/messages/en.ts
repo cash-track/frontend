@@ -11,6 +11,7 @@ export default {
     loadingData: 'Loading Data..',
     cookiePolicy: 'Cookie Policy',
     privacyPolicy: 'Privacy Policy',
+    unknownError: 'Unknown error, please try again later.',
 
     currency: {
         USD: 'United States dollar',
@@ -53,6 +54,32 @@ export default {
         newPasswordConfirmation: 'Confirm New Password',
         newPasswordConfirmationDescription: 'Repeat new password here just for sure',
         updatePassword: 'Update Password',
+    },
+
+    passkeySettings: {
+        passkeys: 'Passkeys',
+        yourPasskeys: 'Your Passkeys',
+
+        featureSupports: 'Cash Track supports',
+        featureSupportsPasskeys: 'Passkeys',
+        featureSupportsIdentity: 'as a second option to confirm your identity. Also known as "Passwordless" login.',
+        featureSupportsInfo: 'As soon as you add passkey to your account - you will be able to log in with just a single click. Usually passkeys are using identity verification (such as FaceID, TouchID, Windows Hello etc..) or physical USB keys.',
+
+        keyName: 'Key Name',
+        keyNameDescription: 'Name of the passkey or device',
+        addPasskey: 'Add Passkey',
+        addClientError: 'Passkey was not created. Please try again.',
+        addClientErrorAgain: 'Not able to create passkey. Your device or browser might not be supported or other error happened during passkey creation. Please consider using other authentication method.',
+        delete: 'Delete',
+        deleteConfirm: 'Are you sure you want to delete PassKey "{name}"? Key still might be stored on your device.',
+        created: 'Created',
+        used: 'Used',
+        usedAtNever: 'never',
+
+        infoNotSupported: 'Please use another authentication method. Your browser or device does not support Passkeys.',
+        infoNotSupportedSee: 'See',
+        infoNotSupportedDeviceSupport: 'Device Support',
+        infoNotSupportedMoreInfo: 'for more info',
     },
 
     profileSettings: {

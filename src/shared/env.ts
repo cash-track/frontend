@@ -1,5 +1,4 @@
 export default function getEnv(name: string) {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
-    // @ts-ignore
+    // @ts-expect-error no configs type
     return window?.configs?.[name] || process.env[name]
 }
