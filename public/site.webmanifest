@@ -1,6 +1,84 @@
 {
-    "name": "",
-    "short_name": "",
+    "name": "Cash Track",
+    "short_name": "Cash Track",
+    "description": "Funds manager that helps tracking income and expenses.",
+    "categories": ["finance", "productivity", "utilities"],
+    "orientation": "portrait-primary",
+    "start_url": "/wallets",
+    "theme_color": "#f5f5f5",
+    "background_color": "#f5f5f5",
+    "display_override": ["window-controls-overlay", "fullscreen", "minimal-ui", "standalone"],
+    "display": "standalone",
+    "shortcuts" : [
+      {
+        "name": "Wallets",
+        "url": "/wallets",
+        "description": "See your active wallets",
+        "icons": [
+            {
+                "src": "/img/icons/android-chrome-96x96.png",
+                "sizes": "96x96",
+                "type": "image/png"
+            }
+        ]
+      },
+      {
+        "name": "Profile",
+        "url": "/profile",
+        "description": "Profile overview with quick stats",
+        "icons": [
+            {
+                "src": "/img/icons/android-chrome-96x96.png",
+                "sizes": "96x96",
+                "type": "image/png"
+            }
+        ]
+      },
+      {
+        "name": "Settings",
+        "url": "/settings",
+        "description": "Profile preferences and security settings",
+        "icons": [
+            {
+                "src": "/img/icons/android-chrome-96x96.png",
+                "sizes": "96x96",
+                "type": "image/png"
+            }
+        ]
+      }
+    ],
+    "screenshots": [
+        {
+            "src": "/img/screenshots/mobile/1.jpg",
+            "sizes": "1080x1920",
+            "form_factor": "narrow",
+            "label": "Join Cash Track for free."
+        },
+        {
+            "src": "/img/screenshots/mobile/2.jpg",
+            "sizes": "1080x1920",
+            "form_factor": "narrow",
+            "label": "Organise your funds by grouping to Wallets."
+        },
+        {
+            "src": "/img/screenshots/mobile/3.jpg",
+            "sizes": "1080x1920",
+            "form_factor": "narrow",
+            "label": "Quick info for your Wallet."
+        },
+        {
+            "src": "/img/screenshots/mobile/4.jpg",
+            "sizes": "1080x1920",
+            "form_factor": "narrow",
+            "label": "Scroll down till first created operation."
+        },
+        {
+            "src": "/img/screenshots/mobile/5.jpg",
+            "sizes": "1080x1920",
+            "form_factor": "narrow",
+            "label": "Best user experience to save your time."
+        }
+    ],
     "icons": [
         {
             "src": "/img/icons/android-chrome-36x36.png",
@@ -47,8 +125,5 @@
             "sizes": "512x512",
             "type": "image/png"
         }
-    ],
-    "theme_color": "#ffffff",
-    "background_color": "#ffffff",
-    "display": "standalone"
+    ]
 }

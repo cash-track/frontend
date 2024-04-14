@@ -92,6 +92,7 @@ export default class ProfilePhoto extends Mixins(Loader, Messager, Validator) {
 
     successMessage = ''
 
+    // eslint-disable-next-line @typescript-eslint/ban-types
     unsubscribeFromStore: Function|null = null
 
     mounted() {

@@ -100,6 +100,7 @@ export default class WalletCreate extends Mixins(Loader, Messager, Validator) {
 
     currencies: Array<CurrencyInterface> = []
 
+    // eslint-disable-next-line @typescript-eslint/ban-types
     unsubscribeFromStore: Function|null = null
 
     mounted() {

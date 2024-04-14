@@ -5,8 +5,7 @@ import VueMoment from 'vue-moment'
 import moment from 'moment';
 import 'moment/locale/uk';
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-ignore
-// @ts-ignore
+// @ts-expect-error no declaration
 import ClickOutside from 'vue-click-outside'
 
 import 'bootstrap/dist/css/bootstrap.css'

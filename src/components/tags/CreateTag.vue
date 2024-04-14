@@ -7,6 +7,7 @@ import { Vue, Component, Prop } from 'vue-property-decorator';
 import { tagCreate, TagInterface, TagResponseInterface } from '@/api/tags';
 import Tag from '@/components/tags/Tag.vue';
 import { AxiosError, AxiosResponse } from 'axios';
+import { ValidationResponseInterface } from '@/api/responses';
 
 export const EMOJI_REGEX = /[\p{Extended_Pictographic}\u{1F3FB}-\u{1F3FF}\u{1F9B0}-\u{1F9B3}]+/gu
 
@@ -67,7 +68,7 @@ export default class CreateTag extends Vue {
         this.$emit('selected', response.data.data)
     }
 
-    protected onError(error: AxiosError) {
+    protected onError(error: AxiosError<ValidationResponseInterface>) {
         this.state = 'creatable'
         let message = '';
 

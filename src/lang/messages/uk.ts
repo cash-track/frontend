@@ -11,6 +11,7 @@ export default {
     loadingData: 'Завантаження даних..',
     cookiePolicy: 'Про Cookie',
     privacyPolicy: 'Про Конфіденційність',
+    unknownError: 'Невідома помилка, будь ласка, спробуйте пізніше.',
 
     currency: {
         USD: 'Долар США',
@@ -53,6 +54,32 @@ export default {
         newPasswordConfirmation: 'Новий Пароль ще раз',
         newPasswordConfirmationDescription: 'Повторіть новий пароль, просто щоб переконатись',
         updatePassword: 'Змінити Пароль',
+    },
+
+    passkeySettings: {
+        passkeys: 'Ключі Доступу',
+        yourPasskeys: 'Ваші ключі',
+
+        featureSupports: 'Cash Track підтримує',
+        featureSupportsPasskeys: 'Ключі Доступу (Passkeys)',
+        featureSupportsIdentity: 'як ще один спосіб підтвердження вашої особи. За допомогою ключів доступу можливий "Безпарольний" вхід.',
+        featureSupportsInfo: 'Щойно ви додасте новий ключ доступу до вашого профілю - ви зможете входити у ваш профіль в один клік. Ключі доступу зазвичай використовують перевірку особи (FaceID, TouchID, Windows Hello та інші..) або ж фізичні USB ключі.',
+
+        keyName: 'Назва',
+        keyNameDescription: 'Назва ключа доступу або і\'мя пристрою',
+        addPasskey: 'Додати Ключ Доступу',
+        addClientError: 'Ключ Доступу не був створений. Будь ласка, спробуйте ще раз.',
+        addClientErrorAgain: 'Неможливо створити ключ доступу. Ваш пристрій або браузер не підтримується або виникла інша помилка під час створення ключа доступу. Будь ласка, обирайте інші способи автентифікації.',
+        delete: 'Видалити',
+        deleteConfirm: 'Ви справді хочете видалити ключ доступу "{name}"? Ключ все ще існуватиме на вашому пристрої.',
+        created: 'Створений',
+        used: 'Використаний',
+        usedAtNever: 'ніколи',
+
+        infoNotSupported: 'Будь ласка, використовуйте інший спосіб автентифікації. Ваш браузер або пристрій не підтримує Ключі Доступу.',
+        infoNotSupportedSee: 'Подивитись',
+        infoNotSupportedDeviceSupport: 'Перелік підтримуванийх пристроїв',
+        infoNotSupportedMoreInfo: 'для додаткової інформації',
     },
 
     profileSettings: {

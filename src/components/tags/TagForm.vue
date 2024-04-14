@@ -87,7 +87,7 @@ export default class TagForm extends Mixins(Loader, Messager, Validator) {
     }
 
     get isEdit(): boolean {
-        return typeof this.tag !== undefined && this.tag !== null
+        return typeof this.tag !== "undefined" && this.tag !== null
     }
 
     get preview(): TagInterface {

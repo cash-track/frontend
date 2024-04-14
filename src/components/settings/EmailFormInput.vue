@@ -46,6 +46,7 @@ import { MutationPayload } from 'vuex';
 
 @Component
 export default class EmailFormInput extends Mixins(Loader, Messager, Validator) {
+    // eslint-disable-next-line @typescript-eslint/ban-types
     unsubscribeFromStore: Function|null = null
 
     emailConfirmation: EmailConfirmationInterface|null = null

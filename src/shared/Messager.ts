@@ -4,6 +4,7 @@ import {
     ErrorResponseInterface,
     ValidationResponseInterface,
 } from '@/api/responses'
+import { ErrorWithMessage, toErrorWithMessage, } from '@/shared/errors';
 
 @Component
 export default class Messager extends Vue {
@@ -40,24 +41,42 @@ export default class Messager extends Vue {
         if (error.response) {
             switch (error.response.status) {
                 case 400:
+                    // @ts-expect-error no response data declaration
                     this.onBadRequestResponse(error.response.data)
                     break
                 case 401:
+                    // @ts-expect-error no response data declaration
                     this.onUnauthorisedResponse(error.response.data)
                     break
                 case 403:
+                    // @ts-expect-error no response data declaration
                     this.onForbiddenResponse(error.response.data)
                     break
                 case 422:
+                    // @ts-expect-error no response data declaration
                     this.onUnprocessableEntityResponse(error.response.data)
                     break
                 case 500:
+                    // @ts-expect-error no response data declaration
                     this.onInternalServerError(error.response.data)
                     break
+                default:
+                    console.info('Unhandled error', error)
+                    this.onUnknownError({message: this.$t('unknownError').toString()})
+                    break;
             }
         }
 
         return error
+    }
+
+    protected dispatchException(error: unknown) {
+        if (error instanceof AxiosError) {
+            this.dispatchError(error)
+            return
+        }
+
+        this.onUnknownError(toErrorWithMessage(error))
     }
 
     protected onBadRequestResponse(response: ErrorResponseInterface) {
@@ -81,5 +100,9 @@ export default class Messager extends Vue {
 
     protected onInternalServerError(response: ErrorResponseInterface) {
         this.setMessage(response.message)
+    }
+
+    protected onUnknownError(error: ErrorWithMessage) {
+        this.setMessage(error.message)
     }
 }
