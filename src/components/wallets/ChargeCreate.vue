@@ -242,7 +242,7 @@ export default class ChargeCreate extends Mixins(Loader, Messager, Validator) {
         this.setFormDateTime()
     }
 
-    protected onTypeChangedExpense(event: Event) {
+    public onTypeChangedExpense(event: Event) {
         event.preventDefault()
         event.stopPropagation()
 
@@ -250,7 +250,7 @@ export default class ChargeCreate extends Mixins(Loader, Messager, Validator) {
         this.onTypeChanged(TypeExpense)
     }
 
-    protected onTypeChangedIncome(event: Event) {
+    public onTypeChangedIncome(event: Event) {
         event.preventDefault()
         event.stopPropagation()
 
@@ -266,12 +266,12 @@ export default class ChargeCreate extends Mixins(Loader, Messager, Validator) {
         this.form.type = type
     }
 
-    protected onTagSelected(tag: TagInterface) {
+    public onTagSelected(tag: TagInterface) {
         this.form.tags.unshift(tag)
         this.resetValidationMessage('tags')
     }
 
-    protected onTagRemoved(tag: TagInterface) {
+    public onTagRemoved(tag: TagInterface) {
         const index = this.form.tags.indexOf(tag)
 
         if (index === -1) {
@@ -281,7 +281,7 @@ export default class ChargeCreate extends Mixins(Loader, Messager, Validator) {
         this.form.tags.splice(index, 1)
     }
 
-    protected onSubmit(event: Event) {
+    public onSubmit(event: Event) {
         event.preventDefault()
         event.stopPropagation()
 
