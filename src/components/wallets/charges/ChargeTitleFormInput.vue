@@ -21,16 +21,13 @@
         ></b-input>
         <b-list-group class="autocomplete" v-show="autocompleteActive">
             <b-list-group-item>
-                <span v-if="autocompleteFiltered.length" class="list-container">
+                <span class="list-container" v-if="autocompleteFiltered.length">
                     <tag v-for="tag of autocompleteFiltered"
                          :tag="tag"
                          :key="tag.id"
                          @selected="onSelected"
                     ></tag>
                 </span>
-                <span v-else-if="!autocompleteFiltered.length"
-                      class="text-notice text-muted"
-                >{{ $t('tags.autocompleteHint') }}</span>
             </b-list-group-item>
             <b-list-group-item>
                 <b-list-group class="items-container">
@@ -39,6 +36,7 @@
                                        v-for="item of chargeTitleAutocompleteFiltered"
                                        @click="onTitleSelected(item)"
                                        class="d-flex justify-content-between align-items-center"
+                                       :class="{'selected':item.selected}"
                     >
                         {{ item.title }}
                         <b-badge>{{ item.count }}</b-badge>
@@ -55,6 +53,10 @@ import { Vue, Component, Prop, Watch } from 'vue-property-decorator'
 import { tagGetSuggestions, TagInterface, TagsResponseInterface } from '@/api/tags';
 import Tag from '@/components/tags/Tag.vue';
 import { chargeTitleGetSuggestions, ChargeTitleInterface, ChargeTitlesResponseInterface } from '@/api/charges';
+
+interface ChargeTitleSelectedInterface extends ChargeTitleInterface {
+    selected: boolean
+}
 
 @Component({
     components: {Tag}
@@ -116,13 +118,27 @@ export default class ChargeTitleFormInput extends Vue {
         return this.autocomplete.filter(tag => addedTags.indexOf(tag.name) === -1)
     }
 
-    get chargeTitleAutocompleteFiltered(): Array<ChargeTitleInterface> {
+    get chargeTitleAutocompleteFiltered(): Array<ChargeTitleSelectedInterface> {
         const title = this.name.trim().toLowerCase()
-        return this.chargeTitleAutocomplete.filter(item => item.title.toLowerCase() !== title)
+        return this.chargeTitleAutocomplete.map<ChargeTitleSelectedInterface>(item => {
+            return {
+                count: item.count,
+                title: item.title,
+                selected: title === item.title.toLowerCase()
+            }
+        })
     }
 
     get hasAutocompleteData(): boolean {
-        return this.autocompleteFiltered.length > 0 || this.chargeTitleAutocompleteFiltered.length > 0
+        if (this.autocompleteFiltered.length > 0) {
+            return true
+        }
+
+        if (this.chargeTitleAutocompleteFiltered.length > 0 && this.name === '') {
+            return true
+        }
+
+        return this.chargeTitleAutocompleteFiltered.length > 1
     }
 
     @Watch('value')
@@ -133,7 +149,7 @@ export default class ChargeTitleFormInput extends Vue {
         this.name = this.value
     }
 
-    protected onAutocomplete() {
+    public onAutocomplete() {
         const query = this.name
 
         if (query.trim() === '') {
@@ -185,7 +201,7 @@ export default class ChargeTitleFormInput extends Vue {
         this.chargeTitleAutocomplete = response.data.data
     }
 
-    protected onSelected(tag: TagInterface) {
+    public onSelected(tag: TagInterface) {
         for (const addedTag of this.tags) {
             if (addedTag.name === tag.name) {
                 return
@@ -201,7 +217,11 @@ export default class ChargeTitleFormInput extends Vue {
         console.log(tag)
     }
 
-    protected onTitleSelected(title: ChargeTitleInterface) {
+    public onTitleSelected(title: ChargeTitleInterface) {
+        if (this.name === title.title) {
+            return this.onInputInactive()
+        }
+
         this.name = title.title
 
         this.onInputChanged()
@@ -213,15 +233,15 @@ export default class ChargeTitleFormInput extends Vue {
         console.log(title)
     }
 
-    protected onInputActive() {
+    public onInputActive() {
         this.autocompleteActive = this.hasAutocompleteData
     }
 
-    protected onInputInactive() {
+    public onInputInactive() {
         this.autocompleteActive = false
     }
 
-    protected onInputChanged() {
+    public onInputChanged() {
         this.$emit('input', this.name)
     }
 
@@ -288,6 +308,10 @@ export default class ChargeTitleFormInput extends Vue {
                 border-left-width: 0;
                 border-right-width: 0;
                 overflow: visible;
+
+                &.selected {
+                    background-color: #eee;
+                }
 
                 &:last-child {
                     border-bottom-width: 0;
