@@ -138,6 +138,7 @@ export default {
         noWallets: 'No Wallets',
         noWalletsMessage: 'You don\'t have any wallets yet. Good time to create one.',
         noWalletsCreate: 'Create',
+        clear: 'Clear',
 
         loadingError: 'Unable to load your wallet. Please try again later.',
         edit: 'Edit',

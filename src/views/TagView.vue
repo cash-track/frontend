@@ -126,6 +126,7 @@ export default class TagView extends Mixins(Loader) {
         totalIncomeAmount: 0,
         totalExpenseAmount: 0,
         currency: undefined,
+        tags: undefined,
     }
 
     loadFailed = false
@@ -236,7 +237,7 @@ export default class TagView extends Mixins(Loader) {
         })
     }
 
-    protected onTagSelected(tag: TagInterface) {
+    public onTagSelected(tag: TagInterface) {
         this.$router.push({
             name: 'tags.show',
             params: {
@@ -245,17 +246,17 @@ export default class TagView extends Mixins(Loader) {
         })
     }
 
-    protected onChargeUpdated() {
+    public onChargeUpdated() {
         this.loadTotal()
         this.loadChart()
     }
 
-    protected onChargeDeleted() {
+    public onChargeDeleted() {
         this.loadTotal()
         this.loadChart()
     }
 
-    protected onFilterChanged(event: FilterChangeEvent) {
+    public onFilterChanged(event: FilterChangeEvent) {
         this.filter.dateFrom = event.dateFrom
         this.filter.dateTo = event.dateTo
         this.loadTotal()
