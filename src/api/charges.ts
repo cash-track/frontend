@@ -89,20 +89,6 @@ export function tagChargesGetPaginated(tagId: number, page: number, filter?: Fil
     })
 }
 
-export function walletTagChargesGet(walletId: number, tagId: number, filter?: FilterInterface): Promise<AxiosResponse<ChargesResponseInterface>> {
-    return client().get<ChargesResponseInterface>(`/api/wallets/${walletId}/tags/${tagId}/charges`, {
-        params: filter?.getQuery()
-    })
-}
-
-export function walletTagChargesGetPaginated(walletId: number, tagId: number, page: number, filter?: FilterInterface): Promise<AxiosResponse<ChargesResponseInterface>> {
-    return client().get<ChargesResponseInterface>(`/api/wallets/${walletId}/tags/${tagId}/charges`, {
-        params: filter?.getQuery({
-            'page': page
-        })
-    })
-}
-
 export function walletChargeCreate(walletId: number, request: ChargeCreateRequestInterface): Promise<AxiosResponse<ChargeResponseInterface>> {
     return client().post<ChargeResponseInterface>(`/api/wallets/${walletId}/charges`, {
         type: request.type,

@@ -98,8 +98,6 @@ import {
     walletChargesGet,
     walletChargesGetPaginated,
     walletChargesMove,
-    walletTagChargesGet,
-    walletTagChargesGetPaginated
 } from '@/api/charges';
 import { emptyPagination, PaginationInterface } from '@/api/pagination';
 import WarningMessage from '@/components/shared/WarningMessage.vue';
@@ -213,12 +211,6 @@ export default class ChargesList extends Mixins(Loader) {
     }
 
     private buildLoader(page: number|null): Promise<AxiosResponse<ChargesResponseInterface>>|null {
-        if (this.wallet !== undefined && this.tag !== undefined) {
-            return page === null ?
-                walletTagChargesGet(this.wallet.id, this.tag.id, Filter.createFromData(this.filter)) :
-                walletTagChargesGetPaginated(this.wallet.id, this.tag.id, page, Filter.createFromData(this.filter))
-        }
-
         if (this.wallet !== undefined) {
             return page === null ?
                 walletChargesGet(this.wallet.id, Filter.createFromData(this.filter)) :
@@ -257,7 +249,7 @@ export default class ChargesList extends Mixins(Loader) {
         this.pagination = response.data.pagination
     }
 
-    protected onLoadMoreCharges(event: boolean) {
+    public onLoadMoreCharges(event: boolean) {
         if (typeof this.pagination === 'undefined') {
             return
         }
@@ -279,7 +271,7 @@ export default class ChargesList extends Mixins(Loader) {
     }
 
     // forward event
-    protected onChargeCreated(event: ChargeCreatedEvent) {
+    public onChargeCreated(event: ChargeCreatedEvent) {
         const charges = Array.from<ChargeInterface>(this.charges)
         const index = charges.findIndex(charge => charge.dateTime < event.charge.dateTime)
 
@@ -294,7 +286,7 @@ export default class ChargesList extends Mixins(Loader) {
     }
 
     // forward event
-    protected onChargeUpdated(event: ChargeUpdatedEvent) {
+    public onChargeUpdated(event: ChargeUpdatedEvent) {
         const charges = Array.from<ChargeInterface>(this.charges)
         const index = charges.findIndex(charge => charge.id === event.id)
 
@@ -319,7 +311,7 @@ export default class ChargesList extends Mixins(Loader) {
     }
 
     // forward event
-    protected onChargeDeleted(event: ChargeDeletedEvent) {
+    public onChargeDeleted(event: ChargeDeletedEvent) {
         const index = this.charges.findIndex(charge => charge.id === event.id)
 
         if (index === -1) {
@@ -332,14 +324,14 @@ export default class ChargesList extends Mixins(Loader) {
         this.$emit('deleted', event)
     }
 
-    protected onTagSelected(tag: TagInterface) {
+    public onTagSelected(tag: TagInterface) {
         this.$emit('tag-selected', tag)
     }
 
-    protected onChargeSelected(event: ChargeSelectedEvent) {
+    public onChargeSelected(event: ChargeSelectedEvent) {
         this.selectedCharges.push(event.charge)
     }
-    protected onChargeUnSelected(event: ChargeUnSelectedEvent) {
+    public onChargeUnSelected(event: ChargeUnSelectedEvent) {
         const index = this.selectedCharges.findIndex(charge => charge.id === event.id)
 
         if (index === -1) {
@@ -349,7 +341,7 @@ export default class ChargesList extends Mixins(Loader) {
         this.selectedCharges.splice(index, 1)
     }
 
-    protected onMoveTo(targetWallet: WalletInterface) {
+    public onMoveTo(targetWallet: WalletInterface) {
         if (this.selectedCharges.length === 0) {
             return
         }
@@ -372,18 +364,18 @@ export default class ChargesList extends Mixins(Loader) {
             })
     }
 
-    protected onMoveToError() {
+    public onMoveToError() {
         this.moveErrorMessage.content = this.$t('charges.moveError').toString()
         this.$root.$emit('bv::show::popover', this.moveErrorMessage.id)
 
     }
 
-    protected onMoveToErrorClear() {
+    public onMoveToErrorClear() {
         this.moveErrorMessage.content = ''
         this.$root.$emit('bv::hide::popover', this.moveErrorMessage.id)
     }
 
-    protected onMovedTo(event: ChargesMovedEvent) {
+    public onMovedTo(event: ChargesMovedEvent) {
         for (const movedCharge of event.charges) {
             const index = this.charges.findIndex(charge => charge.id === movedCharge.id)
 

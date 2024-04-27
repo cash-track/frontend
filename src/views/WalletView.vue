@@ -50,13 +50,13 @@
             </div>
 
             <div class="wallet-details d-flex justify-content-center align-items-end">
-                 <span class="wallet-total" v-if="!hasTag">
+                 <span class="wallet-total">
                     <span class="text-muted wallet-total-title">{{ $t('wallets.available') }}</span>
                     <span class="text-success wallet-total-value">
                         {{ walletTotal.totalAmount | money(wallet.defaultCurrency) }}
                     </span>
                 </span>
-                <span class="wallet-total" :class="{'wallet-total-small': !hasTag || !isIncomeGreaterThanExpense}" v-if="hasIncome && isIncomeGreaterThanExpense">
+                <span class="wallet-total wallet-total-small">
                     <span class="text-muted wallet-total-title">
                         {{ $t('wallets.income') }}
                     </span>
@@ -65,7 +65,7 @@
                         {{ walletTotal.totalIncomeAmount | money(wallet.defaultCurrency) }}
                     </span>
                 </span>
-                <span class="wallet-total" :class="{'wallet-total-small': !hasTag || isIncomeGreaterThanExpense}" v-if="hasExpense">
+                <span class="wallet-total wallet-total-small">
                     <span class="text-muted wallet-total-title">
                         {{ $t('wallets.expense') }}
                     </span>
@@ -74,25 +74,58 @@
                         {{ walletTotal.totalExpenseAmount | money(wallet.defaultCurrency) }}
                     </span>
                 </span>
-                <span class="wallet-total" :class="{'wallet-total-small': !hasTag}" v-if="hasIncome && !isIncomeGreaterThanExpense">
-                    <span class="text-muted wallet-total-title">
-                        {{ $t('wallets.income') }}
-                    </span>
-                    <span class="text-primary wallet-total-value">
-                        <b-icon-arrow-up variant="primary" scale="1" class="d-none d-sm-inline"></b-icon-arrow-up>
-                        {{ walletTotal.totalIncomeAmount | money(wallet.defaultCurrency) }}
-                    </span>
-                </span>
             </div>
 
             <div class="wallet-tags list-ltr" v-show="tags.length">
                 <tag v-for="tag of tags"
+                     v-show="!isTagSelected(tag.id)"
                      :tag="tag"
                      :key="tag.id"
                      @selected="onTagSelected"
-                     :state="tag.id === tagIDParsed ? 'closable' : undefined"
-                     :active="tag.id === tagIDParsed"
                 ></tag>
+                <div>
+                    <b-button
+                        v-show="totalPerTags.length"
+                        variant="outline-secondary"
+                        size="sm"
+                        class="align-text-icon mt-3"
+                        @click="onSelectedTagsClear"
+                    >
+                        {{ $t('wallets.clear') }}
+                        <b-icon icon="x"></b-icon>
+                    </b-button>
+                </div>
+            </div>
+
+            <div class="wallet-tags-total">
+                <div class="wallet-details justify-content-between align-items-end d-sm-flex block"
+                       v-for="total of totalPerTags"
+                       :key="total.tagId">
+                    <div>
+                        <tag :tag="total.tag" state="closable" @selected="onTagSelected"></tag>
+                    </div>
+                    <div class="tags-total-amounts text-left text-sm-right">
+                        <span class="wallet-total wallet-total-small" v-if="total.hasIncome">
+                            <span class="text-primary wallet-total-value">
+                                <b-icon-arrow-up variant="primary" scale="1" class="d-none d-sm-inline"></b-icon-arrow-up>
+                                {{ total.totalIncomeAmount | money(wallet.defaultCurrency) }}
+                                <span class="wallet-total-value-percent">/ {{ total.incomePercent }}%</span>
+                            </span>
+                        </span>
+                        <span class="wallet-total wallet-total-small" v-if="total.hasExpense">
+                            <span class="text-danger wallet-total-value">
+                                <b-icon-arrow-down variant="danger" scale="1" class="d-none d-sm-inline"></b-icon-arrow-down>
+                                {{ total.totalExpenseAmount | money(wallet.defaultCurrency) }}
+                                <span class="wallet-total-value-percent">/ {{ total.expensePercent }}%</span>
+                            </span>
+                        </span>
+                        <span class="wallet-total wallet-total-small" v-if="!total.hasIncome && !total.hasExpense">
+                            <span class="text-muted wallet-total-value">
+                                {{ 0 | money(wallet.defaultCurrency) }}
+                            </span>
+                        </span>
+                    </div>
+                </div>
             </div>
 
             <div class="wallet-tools-ctrl">
@@ -137,7 +170,12 @@
                             </b-input-group>
                         </div>
                     </div>
-                    <charges-flow-chart :currency="wallet.defaultCurrency" :dataset="graphData" :group="graphGroupBy"></charges-flow-chart>
+                    <charges-flow-chart
+                        :currency="wallet.defaultCurrency"
+                        :dataset="graphData"
+                        :group="graphGroupBy"
+                        :tags="selectedTags"
+                    ></charges-flow-chart>
                 </div>
             </b-collapse>
 
@@ -147,7 +185,6 @@
                 </b-collapse>
                 <charges-list
                     :wallet="wallet"
-                    :tag="this.hasTag ? tag : undefined"
                     :filter="filter"
                     @created="onChargesListChanged"
                     @updated="onChargesListChanged"
@@ -187,11 +224,19 @@ import ChargesFlowChart from '@/components/wallets/charges/ChargesFlowChart.vue'
 import Tag from '@/components/tags/Tag.vue';
 import Loader from '@/shared/Loader';
 import { TagInterface } from '@/api/tags';
-import { TotalInterface, walletTagTotalGet, walletTotalGet } from '@/api/total';
-import { GraphDataEntry, GROUP_BY_DAY, GROUP_BY_MONTH, GROUP_BY_YEAR, walletGraphGet, walletTagGraphGet } from '@/api/graph';
+import { TagTotalInterface, TotalInterface, walletTotalGet } from '@/api/total';
+import { GraphDataEntry, GROUP_BY_DAY, GROUP_BY_MONTH, GROUP_BY_YEAR, walletGraphGet } from '@/api/graph';
 import { emptyFilterData, Filter, FilterDataInterface } from '@/api/filters';
 import EmailIsNotConfirmedAlert from '@/components/profile/EmailIsNotConfirmedAlert.vue';
 import WalletsActiveShortList from '@/components/wallets/WalletsActiveShortList.vue';
+
+interface TagTotal extends TagTotalInterface {
+    tag: TagInterface
+    hasIncome: boolean
+    hasExpense: boolean
+    incomePercent: string
+    expensePercent: string
+}
 
 @Component({
     components: {
@@ -212,9 +257,6 @@ export default class WalletView extends Mixins(Loader) {
     @Prop()
     walletID!: number
 
-    @Prop()
-    tagID!: string
-
     wallet: WalletInterface = emptyWallet()
 
     walletTotal: TotalInterface = {
@@ -222,6 +264,7 @@ export default class WalletView extends Mixins(Loader) {
         totalIncomeAmount: 0,
         totalExpenseAmount: 0,
         currency: undefined,
+        tags: undefined,
     }
 
     loadFailed = false
@@ -230,7 +273,7 @@ export default class WalletView extends Mixins(Loader) {
 
     tags: Array<TagInterface> = []
 
-    tag: TagInterface|undefined = undefined
+    selectedTags: Array<TagInterface> = []
 
     filter: FilterDataInterface = emptyFilterData()
 
@@ -259,24 +302,63 @@ export default class WalletView extends Mixins(Loader) {
         ]
     }
 
-    get tagIDParsed(): number {
-        return parseInt(this.tagID, 10)
+    get totalPerTags(): Array<TagTotal> {
+        if (this.walletTotal.tags === undefined) {
+            return []
+        }
+
+        const tagsTotal: Record<number, TagTotal> = {}
+
+        for (const total of this.walletTotal.tags) {
+            const tag = this.findTagById(total.tagId)
+            if (tag === null) {
+                continue
+            }
+
+            tagsTotal[total.tagId] = Object.assign(total, {
+                tag: tag,
+                hasIncome: total.totalIncomeAmount !== 0,
+                hasExpense: total.totalExpenseAmount !== 0,
+                incomePercent: ((total.totalIncomeAmount / this.walletTotal.totalIncomeAmount) * 100).toFixed(2),
+                expensePercent: ((total.totalExpenseAmount / this.walletTotal.totalExpenseAmount) * 100).toFixed(2),
+            })
+        }
+
+        const list = new Array<TagTotal>()
+
+        for (const tag of this.selectedTags) {
+            if (Object.prototype.hasOwnProperty.call(tagsTotal, tag.id)) {
+                list.push(tagsTotal[tag.id])
+                continue
+            }
+
+            list.push({
+                tagId: tag.id,
+                totalIncomeAmount: 0,
+                totalExpenseAmount: 0,
+                tag: tag,
+                hasIncome: false,
+                hasExpense: false,
+                incomePercent: '0.00',
+                expensePercent: '0.00',
+            })
+        }
+
+        return list
     }
 
-    get hasTag(): boolean {
-        return this.tagID !== undefined
+    private findTagById(id: number): TagInterface|null {
+        for (const tag of this.tags) {
+            if (tag.id === id) {
+                return tag
+            }
+        }
+
+        return null;
     }
 
-    get isIncomeGreaterThanExpense(): boolean {
-        return this.walletTotal.totalIncomeAmount > this.walletTotal.totalExpenseAmount
-    }
-
-    get hasIncome(): boolean {
-        return this.walletTotal.totalIncomeAmount !== 0
-    }
-
-    get hasExpense(): boolean {
-        return this.walletTotal.totalExpenseAmount !== 0
+    public isTagSelected(id: number): boolean {
+        return this.selectedTags.map(tag => tag.id).indexOf(id) !== -1
     }
 
     @Watch('walletID')
@@ -288,9 +370,9 @@ export default class WalletView extends Mixins(Loader) {
         this.loadChart()
     }
 
-    @Watch('tagID')
-    protected onTagChange() {
-        this.setByTagIfPresent()
+    @Watch('selectedTags')
+    protected onSelectedTagsChange() {
+        this.filter.tags = this.selectedTags.map(tag => tag.id).join(',')
         this.loadTotal()
         this.loadChart()
     }
@@ -306,15 +388,12 @@ export default class WalletView extends Mixins(Loader) {
     }
 
     protected loadTotal() {
-        (
-            this.hasTag ?
-                walletTagTotalGet(this.walletID, this.tagIDParsed, Filter.createFromData(this.filter)) :
-                walletTotalGet(this.walletID, Filter.createFromData(this.filter))
-        ).then(response => {
-            this.walletTotal = response.data.data
-        }).catch(() => {
-            this.loadFailed = true;
-        })
+        walletTotalGet(this.walletID, Filter.createFromData(this.filter))
+            .then(response => {
+                this.walletTotal = response.data.data
+            }).catch(() => {
+                this.loadFailed = true;
+            })
     }
 
     protected loadUsers() {
@@ -328,34 +407,17 @@ export default class WalletView extends Mixins(Loader) {
     protected loadTags() {
         walletTagsGet(this.walletID).then(response => {
             this.tags = response.data.data
-            this.setByTagIfPresent()
         })
     }
 
-    protected setByTagIfPresent() {
-        if (!this.hasTag) {
-            this.tag = undefined
-            return
-        }
-
-        for(const tag of this.tags) {
-            if (tag.id === this.tagIDParsed) {
-                this.tag = tag
-                return
-            }
-        }
-
-        this.loadFailed = true
-    }
-
-    protected onChargesListChanged() {
+    public onChargesListChanged() {
         this.loadTotal()
         this.loadTags()
         this.loadChart()
         this.$store.dispatch('loadActiveWallets')
     }
 
-    protected onLastChargeRemoved() {
+    public onLastChargeRemoved() {
         this.$router.push({
             name: 'wallets.show',
             params: {
@@ -364,7 +426,7 @@ export default class WalletView extends Mixins(Loader) {
         })
     }
 
-    protected onDelete(event: Event) {
+    public onDelete(event: Event) {
         event.preventDefault()
         event.stopPropagation()
 
@@ -378,7 +440,7 @@ export default class WalletView extends Mixins(Loader) {
         })
     }
 
-    protected onActivate(event: Event) {
+    public onActivate(event: Event) {
         event.preventDefault()
         event.stopPropagation()
 
@@ -390,7 +452,7 @@ export default class WalletView extends Mixins(Loader) {
         })
     }
 
-    protected onDisable(event: Event) {
+    public onDisable(event: Event) {
         event.preventDefault()
         event.stopPropagation()
 
@@ -402,7 +464,7 @@ export default class WalletView extends Mixins(Loader) {
         })
     }
 
-    protected onArchive(event: Event) {
+    public onArchive(event: Event) {
         event.preventDefault()
         event.stopPropagation()
 
@@ -414,7 +476,7 @@ export default class WalletView extends Mixins(Loader) {
         })
     }
 
-    protected onUnArchive(event: Event) {
+    public onUnArchive(event: Event) {
         event.preventDefault()
         event.stopPropagation()
 
@@ -426,37 +488,31 @@ export default class WalletView extends Mixins(Loader) {
         })
     }
 
-    protected onTagSelected(tag: TagInterface) {
-        if (this.hasTag && this.tag?.id === tag.id) {
-            this.$router.push({
-                name: 'wallets.show',
-                params: {
-                    'walletID': this.walletID.toString(),
-                }
-            })
-            return
-        }
+    public onTagSelected(tag: TagInterface) {
+        const index = this.selectedTags.map(tag => tag.id).indexOf(tag.id)
 
-        this.$router.push({
-            name: 'wallets.tags.show',
-            params: {
-                'walletID': this.walletID.toString(),
-                'tagID': tag.id.toString(),
-            }
-        })
+        if (index === -1) {
+            this.selectedTags.push(tag)
+        } else {
+            this.selectedTags.splice(index, 1)
+        }
     }
 
-    protected onFilterChanged(event: FilterChangeEvent) {
+    public onFilterChanged(event: FilterChangeEvent) {
         this.filter.dateFrom = event.dateFrom
         this.filter.dateTo = event.dateTo
         this.loadTotal()
         this.loadChart()
     }
 
+    public onSelectedTagsClear() {
+        this.selectedTags = []
+    }
+
     @Watch('selectedGroupBy')
     @Watch('graphVisible')
     protected loadChart() {
-        if (this.tagIDParsed === 0 || !this.graphVisible) {
+        if (!this.graphVisible) {
             return
         }
 
@@ -466,19 +522,18 @@ export default class WalletView extends Mixins(Loader) {
         const filter = Filter.createFromData(this.filter)
         filter.groupBy = this.selectedGroupBy;
 
-        (
-            this.hasTag ?
-                walletTagGraphGet(this.walletID, this.tagIDParsed, filter) :
-                walletGraphGet(this.walletID, filter)
-        ).then(response => {
-            this.graphData = response.data.data
-            this.graphGroupBy = this.selectedGroupBy
-        }).catch((error) => {
-            this.setLoadingFailedMessageFor('chart', this.$t('wallets.chartLoadingError').toString())
-            console.error(error)
-        }).finally(() => {
-            this.setLoadedFor('chart')
-        })
+        walletGraphGet(this.walletID, filter)
+            .then(response => {
+                this.graphData = response.data.data
+                this.graphGroupBy = this.selectedGroupBy
+            })
+            .catch((error) => {
+                this.setLoadingFailedMessageFor('chart', this.$t('wallets.chartLoadingError').toString())
+                console.error(error)
+            })
+            .finally(() => {
+                this.setLoadedFor('chart')
+            })
     }
 }
 </script>
@@ -487,6 +542,10 @@ export default class WalletView extends Mixins(Loader) {
 @import "node_modules/bootstrap/scss/functions";
 @import "node_modules/bootstrap/scss/variables";
 @import "node_modules/bootstrap/scss/mixins/_breakpoints";
+
+button.align-text-icon > svg {
+    margin-bottom: -1px;
+}
 
 h3 .badge {
     font-size: 12px;
@@ -530,6 +589,10 @@ h3 .badge {
             white-space: nowrap;
             font-size: 40px;
             line-height: 40px;
+
+            .wallet-total-value-percent {
+                font-size: 12px;
+            }
         }
 
         &.wallet-total-small {
@@ -539,6 +602,10 @@ h3 .badge {
             }
         }
     }
+}
+
+.wallet-tags-total .wallet-details {
+    border-top: none;
 }
 
 .wallet-tags {
@@ -595,6 +662,14 @@ h3 .badge {
         .wallet-total:not(.wallet-total-small) {
             display: block;
             width: 100%;
+        }
+    }
+
+    .wallet-tags-total .wallet-details .tags-total-amounts {
+        padding-top: 15px;
+
+        &>span:first-child {
+            margin-left: 0;
         }
     }
 }

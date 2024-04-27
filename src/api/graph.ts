@@ -6,11 +6,15 @@ export const GROUP_BY_DAY = 'day'
 export const GROUP_BY_MONTH = 'month'
 export const GROUP_BY_YEAR = 'year'
 
-export interface GraphDataEntry {
+export interface GraphDataEntry extends ValuesDataEntry {
     date: string;
     timestamp: number;
-    income: number;
-    expense: number;
+    tags: Record<number, ValuesDataEntry>|undefined;
+}
+
+export interface ValuesDataEntry {
+    income: number|undefined;
+    expense: number|undefined;
 }
 
 export interface GraphResponseInterface {
@@ -25,12 +29,6 @@ export function tagGraphGet(tagId: number, filter?: FilterInterface): Promise<Ax
 
 export function walletGraphGet(walletId: number, filter?: FilterInterface): Promise<AxiosResponse<GraphResponseInterface>> {
     return client().get<GraphResponseInterface>(`/api/wallets/${walletId}/charges/graph`, {
-        params: filter?.getQuery()
-    })
-}
-
-export function walletTagGraphGet(walletId: number, tagId: number, filter?: FilterInterface): Promise<AxiosResponse<GraphResponseInterface>> {
-    return client().get<GraphResponseInterface>(`/api/wallets/${walletId}/tags/${tagId}/charges/graph`, {
         params: filter?.getQuery()
     })
 }
