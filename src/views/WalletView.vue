@@ -76,59 +76,28 @@
                 </span>
             </div>
 
-            <div class="wallet-tags list-ltr" v-show="tags.length">
-                <tag v-for="tag of tags"
-                     v-show="!isTagSelected(tag.id)"
-                     :tag="tag"
-                     :key="tag.id"
-                     @selected="onTagSelected"
-                ></tag>
-                <div>
-                    <b-button
-                        v-show="totalPerTags.length"
-                        variant="outline-secondary"
-                        size="sm"
-                        class="align-text-icon mt-3"
-                        @click="onSelectedTagsClear"
-                    >
-                        {{ $t('wallets.clear') }}
-                        <b-icon icon="x"></b-icon>
-                    </b-button>
-                </div>
-            </div>
-
-            <div class="wallet-tags-total">
-                <div class="wallet-details justify-content-between align-items-end d-sm-flex block"
-                       v-for="total of totalPerTags"
-                       :key="total.tagId">
-                    <div>
-                        <tag :tag="total.tag" state="closable" @selected="onTagSelected"></tag>
-                    </div>
-                    <div class="tags-total-amounts text-left text-sm-right">
-                        <span class="wallet-total wallet-total-small" v-if="total.hasIncome">
-                            <span class="text-primary wallet-total-value">
-                                <b-icon-arrow-up variant="primary" scale="1" class="d-none d-sm-inline"></b-icon-arrow-up>
-                                {{ total.totalIncomeAmount | money(wallet.defaultCurrency) }}
-                                <span class="wallet-total-value-percent">/ {{ total.incomePercent }}%</span>
-                            </span>
-                        </span>
-                        <span class="wallet-total wallet-total-small" v-if="total.hasExpense">
-                            <span class="text-danger wallet-total-value">
-                                <b-icon-arrow-down variant="danger" scale="1" class="d-none d-sm-inline"></b-icon-arrow-down>
-                                {{ total.totalExpenseAmount | money(wallet.defaultCurrency) }}
-                                <span class="wallet-total-value-percent">/ {{ total.expensePercent }}%</span>
-                            </span>
-                        </span>
-                        <span class="wallet-total wallet-total-small" v-if="!total.hasIncome && !total.hasExpense">
-                            <span class="text-muted wallet-total-value">
-                                {{ 0 | money(wallet.defaultCurrency) }}
-                            </span>
-                        </span>
-                    </div>
-                </div>
-            </div>
-
             <div class="wallet-tools-ctrl">
+                <b-button
+                    v-b-toggle.wallet-tags
+                    variant="outline-secondary"
+                    size="sm"
+                    class="mr-2"
+                    :pressed="tagsVisible"
+                    :disabled="!tags.length"
+                >
+                    {{ $t('wallets.tags') }}
+                    <b-icon icon="tags-fill"></b-icon>
+                </b-button>
+                <b-button
+                    v-b-toggle.wallet-limits
+                    variant="outline-secondary"
+                    size="sm"
+                    class="mr-2"
+                    :pressed="limitsVisible"
+                >
+                    {{ $t('wallets.limits') }}
+                    <b-icon icon="sliders"></b-icon>
+                </b-button>
                 <b-button
                     v-b-toggle.wallet-chart
                     variant="outline-secondary"
@@ -149,6 +118,84 @@
                     <b-icon icon="funnel"></b-icon>
                 </b-button>
             </div>
+
+            <b-collapse id="wallet-tags" v-model="tagsVisible">
+                <div class="wallet-tags list-ltr" v-show="tags.length">
+                    <tag v-for="tag of tags"
+                         v-show="!isTagSelected(tag.id)"
+                         :tag="tag"
+                         :key="tag.id"
+                         @selected="onTagSelected"
+                    ></tag>
+                    <div>
+                        <b-button
+                            v-show="totalPerTags.length"
+                            variant="outline-secondary"
+                            size="sm"
+                            class="align-text-icon mt-3"
+                            @click="onSelectedTagsClear"
+                        >
+                            {{ $t('wallets.clear') }}
+                            <b-icon icon="x"></b-icon>
+                        </b-button>
+                    </div>
+                </div>
+
+                <div class="wallet-tags-total">
+                    <div class="wallet-details justify-content-between align-items-end d-sm-flex block"
+                         v-for="total of totalPerTags"
+                         :key="total.tagId">
+                        <div>
+                            <tag :tag="total.tag" state="closable" @selected="onTagSelected"></tag>
+                        </div>
+                        <div class="tags-total-amounts text-left text-sm-right">
+                        <span class="wallet-total wallet-total-small" v-if="total.hasIncome">
+                            <span class="text-primary wallet-total-value">
+                                <b-icon-arrow-up variant="primary" scale="1" class="d-none d-sm-inline"></b-icon-arrow-up>
+                                {{ total.totalIncomeAmount | money(wallet.defaultCurrency) }}
+                                <span class="wallet-total-value-percent">/ {{ total.incomePercent }}%</span>
+                            </span>
+                        </span>
+                            <span class="wallet-total wallet-total-small" v-if="total.hasExpense">
+                            <span class="text-danger wallet-total-value">
+                                <b-icon-arrow-down variant="danger" scale="1" class="d-none d-sm-inline"></b-icon-arrow-down>
+                                {{ total.totalExpenseAmount | money(wallet.defaultCurrency) }}
+                                <span class="wallet-total-value-percent">/ {{ total.expensePercent }}%</span>
+                            </span>
+                        </span>
+                            <span class="wallet-total wallet-total-small" v-if="!total.hasIncome && !total.hasExpense">
+                            <span class="text-muted wallet-total-value">
+                                {{ 0 | money(wallet.defaultCurrency) }}
+                            </span>
+                        </span>
+                        </div>
+                    </div>
+                </div>
+            </b-collapse>
+
+            <b-collapse id="wallet-limits" v-model="limitsVisible">
+                <div class="wallet-limits">
+                    <div class="wallet-limits-list">
+                        <wallet-limit-item v-for="walletLimit of limits"
+                                           :key="walletLimit.limit.id"
+                                           :wallet-limit="walletLimit"
+                                           :wallet="wallet"
+                                           @updated="onLimitsListChanged"
+                                           @deleted="onLimitsListChanged"
+                        />
+                    </div>
+                    <div class="wallet-limits-create">
+                        <b-button variant="outline-primary" size="sm" class="mt-2 mb-2" v-b-toggle.wallet-limit-create>
+                            {{ $t('limits.createLimit') }}
+                        </b-button>
+                        <b-collapse id="wallet-limit-create">
+                            <div class="wallet-limit-create">
+                                <limit-form :wallet="wallet" @created="onLimitCreated" @cancelled="onLimitCreateCancelled"/>
+                            </div>
+                        </b-collapse>
+                    </div>
+                </div>
+            </b-collapse>
 
             <b-collapse id="wallet-chart" v-model="graphVisible">
                 <div class="wallet-chart">
@@ -229,6 +276,9 @@ import { GraphDataEntry, GROUP_BY_DAY, GROUP_BY_MONTH, GROUP_BY_YEAR, walletGrap
 import { emptyFilterData, Filter, FilterDataInterface } from '@/api/filters';
 import EmailIsNotConfirmedAlert from '@/components/profile/EmailIsNotConfirmedAlert.vue';
 import WalletsActiveShortList from '@/components/wallets/WalletsActiveShortList.vue';
+import { WalletLimitInterface, walletLimitsGet } from '@/api/limits';
+import LimitForm from '@/components/wallets/limits/LimitForm.vue';
+import WalletLimitItem from '@/components/wallets/limits/WalletLimitItem.vue';
 
 interface TagTotal extends TagTotalInterface {
     tag: TagInterface
@@ -240,6 +290,8 @@ interface TagTotal extends TagTotalInterface {
 
 @Component({
     components: {
+        WalletLimitItem,
+        LimitForm,
         WalletsActiveShortList,
         EmailIsNotConfirmedAlert,
         ChargesList,
@@ -275,12 +327,18 @@ export default class WalletView extends Mixins(Loader) {
 
     selectedTags: Array<TagInterface> = []
 
+    limits: Array<WalletLimitInterface> = []
+
     filter: FilterDataInterface = emptyFilterData()
 
     graphData: Array<GraphDataEntry> = []
 
     selectedGroupBy = GROUP_BY_DAY
     graphGroupBy = GROUP_BY_DAY
+
+    tagsVisible = false
+
+    limitsVisible = false
 
     graphVisible = false
 
@@ -367,6 +425,7 @@ export default class WalletView extends Mixins(Loader) {
         this.loadTotal()
         this.loadUsers()
         this.loadTags()
+        this.loadLimits()
         this.loadChart()
     }
 
@@ -405,16 +464,37 @@ export default class WalletView extends Mixins(Loader) {
     }
 
     protected loadTags() {
+        this.selectedTags = []
         walletTagsGet(this.walletID).then(response => {
             this.tags = response.data.data
+        })
+    }
+
+    protected loadLimits() {
+        walletLimitsGet(this.walletID).then(response => {
+            this.limits = response.data.data
         })
     }
 
     public onChargesListChanged() {
         this.loadTotal()
         this.loadTags()
+        this.loadLimits()
         this.loadChart()
         this.$store.dispatch('loadActiveWallets')
+    }
+
+    public onLimitCreateCancelled() {
+        this.$root.$emit('bv::toggle::collapse', 'wallet-limit-create')
+    }
+
+    public onLimitCreated() {
+        this.$root.$emit('bv::toggle::collapse', 'wallet-limit-create')
+        this.onLimitsListChanged()
+    }
+
+    public onLimitsListChanged() {
+        this.loadLimits()
     }
 
     public onLastChargeRemoved() {
@@ -614,6 +694,17 @@ h3 .badge {
 
     .wallet-tags-label {
         font-size: 12px;
+    }
+}
+
+.wallet-limits {
+    padding: 7px 0;
+    border-bottom: 1px solid #eee;
+
+    .wallet-limit-create {
+        padding: 25px 0;
+        border-top: 1px solid #eee;
+        margin-top: 7px;
     }
 }
 

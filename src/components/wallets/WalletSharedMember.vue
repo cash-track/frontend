@@ -50,7 +50,7 @@ export default class WalletSharedMember extends Mixins(Loader, Messager) {
     isAllowedToRemove!: false
 
     errorMessage = {
-        id: `wallet-shared-member-message-${this.wallet.id}-${this.user.id}`,
+        id: `wallet-shared-member-message-${this.wallet?.id}-${this.user?.id}`,
         variant: 'warning',
         placement: 'right',
         trigger: 'hover focus',

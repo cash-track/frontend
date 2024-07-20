@@ -152,6 +152,8 @@ export default {
         available: 'Доступно',
         income: 'Доходи',
         expense: 'Витрати',
+        tags: 'Теги',
+        limits: 'Ліміти',
         graph: 'Графік',
         filters: 'Фільтри',
 
@@ -227,5 +229,17 @@ export default {
 
         stats: 'Статистика за тегами',
         statsLoadingError: 'Помилка під час завантаження тегів. Ремонтна бригада вже виїхала. Будь ласка, спробуйте пізніше.',
-    }
+    },
+
+    limits: {
+        createLimit: 'Створити Ліміт',
+        amount: 'Сума',
+        create: 'Створити',
+        update: 'Змінити',
+        cancel: 'Відміна',
+
+        edit: 'Змінити',
+        delete: 'Видалити',
+        deletingConfirm: 'Ви впевнені?',
+    },
 };

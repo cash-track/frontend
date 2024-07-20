@@ -251,7 +251,7 @@ export default class TagFormInput extends Vue {
 
     .autocomplete {
         position: absolute;
-        z-index: 1;
+        z-index: 3;
         width: 100%;
         box-shadow: rgb(238 238 238) 0 4px 4px;
         margin-top: -3px;

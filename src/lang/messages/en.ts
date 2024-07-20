@@ -152,6 +152,8 @@ export default {
         available: 'Available',
         income: 'Income',
         expense: 'Expense',
+        tags: 'Tags',
+        limits: 'Limits',
         graph: 'Graph',
         filters: 'Filters',
 
@@ -227,5 +229,17 @@ export default {
 
         stats: 'Analyse tags usage',
         statsLoadingError: 'Unable to load tag. Please try again later',
+    },
+
+    limits: {
+        createLimit: 'Create Limit',
+        amount: 'Amount',
+        create: 'Create',
+        update: 'Update',
+        cancel: 'Cancel',
+
+        edit: 'Edit',
+        delete: 'Delete',
+        deletingConfirm: 'Are you sure?',
     },
 };
