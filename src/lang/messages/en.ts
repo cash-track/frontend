@@ -181,6 +181,8 @@ export default {
         shareInvite: 'Invite',
         shareSearchError: 'User not found',
         shareCancelInvite: 'Stop sharing wallet {0} for this user',
+
+        deletingConfirm: 'Related charges will be deleted as well. Are you sure you want to delete this wallet? This action cannot be undone.',
     },
 
     charges: {
