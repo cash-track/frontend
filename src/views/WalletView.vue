@@ -7,13 +7,12 @@
         <warning-message :message="$t('wallets.loadingError')" :show="loadFailed"></warning-message>
 
         <div v-if="wallet.id">
+            <div>
+                <b-badge variant="primary" v-if="wallet.isActive">{{ $t('wallets.active') }}</b-badge>
+                <b-badge variant="secondary" v-if="wallet.isArchived">{{ $t('wallets.archived') }}</b-badge>
+            </div>
             <div class="wallet-header d-flex justify-content-between">
-                <h3>
-                    {{ wallet.name }}
-
-                    <b-badge class="float-right" variant="primary" v-if="wallet.isActive">{{ $t('wallets.active') }}</b-badge>
-                    <b-badge class="float-right" variant="secondary" v-if="wallet.isArchived">{{ $t('wallets.archived') }}</b-badge>
-                </h3>
+                <h3>{{ wallet.name }}</h3>
 
                 <div>
                     <b-btn-group>
@@ -37,7 +36,7 @@
 
                             <b-dropdown-divider></b-dropdown-divider>
 
-                            <b-dropdown-item @click="onDelete" :disabled="!isEmailConfirmed">{{ $t('wallets.delete') }}</b-dropdown-item>
+                            <b-dropdown-item variant="danger" @click="onDelete" :disabled="!isEmailConfirmed">{{ $t('wallets.delete') }}</b-dropdown-item>
                         </b-dropdown>
                     </b-btn-group>
                 </div>
@@ -510,6 +509,10 @@ export default class WalletView extends Mixins(Loader) {
         event.preventDefault()
         event.stopPropagation()
 
+        if (! confirm(this.$t('wallets.deletingConfirm').toString())) {
+            return
+        }
+
         walletDelete(this.walletID).then(() => {
             this.$store.dispatch('loadActiveWallets')
             this.$router.push({
@@ -709,8 +712,12 @@ h3 .badge {
 }
 
 .wallet-tools-ctrl {
-    padding: 15px 0 15px;
+    padding: 15px 0 7px;
     border-bottom: 1px solid #eee;
+
+    button {
+        margin-bottom: 8px;
+    }
 }
 
 .wallet-chart {
