@@ -235,6 +235,7 @@ export default {
 
     limits: {
         createLimit: 'Створити Ліміт',
+        copyFrom: 'Скопіювати',
         amount: 'Сума',
         create: 'Створити',
         update: 'Змінити',

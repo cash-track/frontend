@@ -94,6 +94,10 @@ export function walletsArchivedGet(): Promise<AxiosResponse<WalletsFullResponseI
     return client().get<WalletsFullResponseInterface>('/api/wallets/archived')
 }
 
+export function walletsHasLimitsGet(archived: boolean): Promise<AxiosResponse<WalletsResponseInterface>> {
+    return client().get<WalletsResponseInterface>('/api/wallets/has-limits' + (archived ? '?archived' : ''))
+}
+
 export function walletGet(walletId: number): Promise<AxiosResponse<WalletResponseInterface>> {
     return client().get<WalletResponseInterface>(`/api/wallets/${walletId}`)
 }

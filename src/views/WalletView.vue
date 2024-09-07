@@ -184,9 +184,29 @@
                         />
                     </div>
                     <div class="wallet-limits-create">
-                        <b-button variant="outline-primary" size="sm" class="mt-2 mb-2" v-b-toggle.wallet-limit-create>
+                        <b-button variant="outline-primary" size="sm" class="mt-2 mr-2 mb-2" v-b-toggle.wallet-limit-create>
                             {{ $t('limits.createLimit') }}
                         </b-button>
+
+                        <b-dropdown variant="outline-primary"
+                                    size="sm"
+                                    class="mt-2 mb-2"
+                                    v-if="limits.length === 0 && walletsHasLimits.length > 0"
+                        >
+                            <template #button-content>
+                                {{ $t('limits.copyFrom') }}
+                                <b-spinner small v-show="isLoadingFor('walletsHasLimits')"></b-spinner>
+                            </template>
+                            <b-dropdown-item-button
+                                :key="wallet.id"
+                                v-for="wallet of walletsHasLimits"
+                                :disabled="isLoadingFor('walletsHasLimits')"
+                                @click="onWalletLimitsCopy(wallet)"
+                            >
+                                {{ wallet.name }}
+                            </b-dropdown-item-button>
+                        </b-dropdown>
+
                         <b-collapse id="wallet-limit-create">
                             <div class="wallet-limit-create">
                                 <limit-form :wallet="wallet" @created="onLimitCreated" @cancelled="onLimitCreateCancelled"/>
@@ -256,7 +276,8 @@ import {
     walletArchive,
     walletUnArchive,
     walletTagsGet,
-    WalletInterface
+    walletsHasLimitsGet,
+    WalletInterface,
 } from '@/api/wallets';
 import { UserInterface } from '@/api/users';
 import WarningMessage from '@/components/shared/WarningMessage.vue';
@@ -275,7 +296,7 @@ import { GraphDataEntry, GROUP_BY_DAY, GROUP_BY_MONTH, GROUP_BY_YEAR, walletGrap
 import { emptyFilterData, Filter, FilterDataInterface } from '@/api/filters';
 import EmailIsNotConfirmedAlert from '@/components/profile/EmailIsNotConfirmedAlert.vue';
 import WalletsActiveShortList from '@/components/wallets/WalletsActiveShortList.vue';
-import { WalletLimitInterface, walletLimitsGet } from '@/api/limits';
+import { WalletLimitInterface, walletLimitsCopy, walletLimitsGet } from '@/api/limits';
 import LimitForm from '@/components/wallets/limits/LimitForm.vue';
 import WalletLimitItem from '@/components/wallets/limits/WalletLimitItem.vue';
 
@@ -327,6 +348,8 @@ export default class WalletView extends Mixins(Loader) {
     selectedTags: Array<TagInterface> = []
 
     limits: Array<WalletLimitInterface> = []
+
+    walletsHasLimits: Array<WalletInterface> = []
 
     filter: FilterDataInterface = emptyFilterData()
 
@@ -472,6 +495,24 @@ export default class WalletView extends Mixins(Loader) {
     protected loadLimits() {
         walletLimitsGet(this.walletID).then(response => {
             this.limits = response.data.data
+
+            if (this.limits.length === 0) {
+                this.loadWalletsHasLimits(false)
+            }
+        })
+    }
+
+    protected loadWalletsHasLimits(archived: boolean) {
+        this.setLoadingFor('walletsHasLimits')
+
+        walletsHasLimitsGet(archived).then(response => {
+            this.walletsHasLimits = response.data.data
+
+            if (!archived && this.walletsHasLimits.length === 0) {
+                this.loadWalletsHasLimits(true)
+            }
+        }).finally(() => {
+            this.setLoadedFor('walletsHasLimits')
         })
     }
 
@@ -617,6 +658,12 @@ export default class WalletView extends Mixins(Loader) {
             .finally(() => {
                 this.setLoadedFor('chart')
             })
+    }
+
+    public onWalletLimitsCopy(sourceWallet: WalletInterface) {
+        walletLimitsCopy(this.wallet.id, sourceWallet.id).then(response => {
+            this.limits = response.data.data
+        })
     }
 }
 </script>
