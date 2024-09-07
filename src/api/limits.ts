@@ -61,3 +61,10 @@ export function walletLimitDelete(
 ): Promise<AxiosResponse> {
     return client().delete(`/api/wallets/${walletId}/limits/${limitId}`)
 }
+
+export function walletLimitsCopy(
+    walletId: number,
+    sourceWalletId: number,
+): Promise<AxiosResponse<WalletLimitsResponseInterface>> {
+    return client().post<WalletLimitsResponseInterface>(`/api/wallets/${walletId}/limits/copy/${sourceWalletId}`)
+}

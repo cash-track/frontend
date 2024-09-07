@@ -235,6 +235,7 @@ export default {
 
     limits: {
         createLimit: 'Create Limit',
+        copyFrom: 'Copy From',
         amount: 'Amount',
         create: 'Create',
         update: 'Update',
