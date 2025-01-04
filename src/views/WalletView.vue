@@ -183,6 +183,9 @@
                                            @deleted="onLimitsListChanged"
                         />
                     </div>
+                    <div class="wallet-limits-total">
+                        <wallet-limits-total :wallet="wallet" :total-expense-amount="totalExpenseAmount" :total-expense-limit-amount="totalExpenseLimitAmount"></wallet-limits-total>
+                    </div>
                     <div class="wallet-limits-create">
                         <b-button variant="outline-primary" size="sm" class="mt-2 mr-2 mb-2" v-b-toggle.wallet-limit-create>
                             {{ $t('limits.createLimit') }}
@@ -299,6 +302,7 @@ import WalletsActiveShortList from '@/components/wallets/WalletsActiveShortList.
 import { WalletLimitInterface, walletLimitsCopy, walletLimitsGet } from '@/api/limits';
 import LimitForm from '@/components/wallets/limits/LimitForm.vue';
 import WalletLimitItem from '@/components/wallets/limits/WalletLimitItem.vue';
+import WalletLimitsTotal from '@/components/wallets/limits/WalletLimitsTotal.vue';
 
 interface TagTotal extends TagTotalInterface {
     tag: TagInterface
@@ -311,6 +315,7 @@ interface TagTotal extends TagTotalInterface {
 @Component({
     components: {
         WalletLimitItem,
+        WalletLimitsTotal,
         LimitForm,
         WalletsActiveShortList,
         EmailIsNotConfirmedAlert,
@@ -425,6 +430,14 @@ export default class WalletView extends Mixins(Loader) {
         }
 
         return list
+    }
+
+    get totalExpenseAmount(): number {
+        return this.limits.map(limit => limit.limit.amount).reduce((sum, value) => sum + value, 0)
+    }
+
+    get totalExpenseLimitAmount(): number {
+        return this.limits.map(limit => limit.amount).reduce((sum, value) => sum + value, 0)
     }
 
     private findTagById(id: number): TagInterface|null {

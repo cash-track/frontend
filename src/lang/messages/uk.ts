@@ -244,5 +244,7 @@ export default {
         edit: 'Змінити',
         delete: 'Видалити',
         deletingConfirm: 'Ви впевнені?',
+
+        total: 'Всього',
     },
 };

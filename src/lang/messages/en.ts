@@ -244,5 +244,7 @@ export default {
         edit: 'Edit',
         delete: 'Delete',
         deletingConfirm: 'Are you sure?',
+
+        total: 'Total',
     },
 };
