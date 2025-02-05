@@ -64,7 +64,12 @@ import Loader from '@/shared/Loader';
 import Messager from '@/shared/Messager';
 import WarningMessage from '@/components/shared/WarningMessage.vue';
 import Validator from '@/shared/Validator';
-import { tagCreate, tagDelete, TagInterface, TagResponseInterface, tagUpdate } from '@/api/tags';
+import {
+    TagInterface,
+    TagResponseInterface,
+    TagsRepository,
+    TagsRepositoryInterface
+} from '@/api/tags';
 import Tag from '@/components/tags/Tag.vue';
 import { AxiosResponse } from 'axios';
 import { getEmojiFromString } from '@/shared/strings';
@@ -75,6 +80,8 @@ import { getEmojiFromString } from '@/shared/strings';
 export default class TagForm extends Mixins(Loader, Messager, Validator) {
     @Prop()
     tag!: TagInterface
+
+    repository: TagsRepositoryInterface = new TagsRepository()
 
     input = ''
 
@@ -165,7 +172,7 @@ export default class TagForm extends Mixins(Loader, Messager, Validator) {
         this.resetLoadingFailedMessageFor('deleting')
         this.setLoadingFor('deleting');
 
-        tagDelete(this.tag.id).then(this.onDeleteSuccess).catch(error => {
+        this.repository.delete(this.tag.id).then(this.onDeleteSuccess).catch(error => {
             this.setLoadingFailedMessageFor('deleting', error?.response?.data?.message)
         }).finally(() => this.setLoadedFor('deleting'))
     }
@@ -176,7 +183,7 @@ export default class TagForm extends Mixins(Loader, Messager, Validator) {
     }
 
     protected create() {
-        return tagCreate({
+        return this.repository.create({
             name: this.preview.name,
             icon: this.preview.icon,
             color: this.preview.color,
@@ -190,7 +197,7 @@ export default class TagForm extends Mixins(Loader, Messager, Validator) {
     }
 
     protected update() {
-        return tagUpdate(this.tag?.id, {
+        return this.repository.update(this.tag?.id, {
             name: this.preview.name,
             icon: this.preview.icon,
             color: this.preview.color,

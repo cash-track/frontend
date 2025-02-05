@@ -15,7 +15,7 @@
 <script lang="ts">
 import { Component, Prop, Mixins } from 'vue-property-decorator';
 import Loader from '@/shared/Loader';
-import { walletsArchivedGet, WalletFullInterface } from '@/api/wallets';
+import { WalletFullInterface, WalletsRepositoryInterface, WalletsRepository } from '@/api/wallets';
 import WarningMessage from '@/components/shared/WarningMessage.vue';
 import WalletCard from '@/components/wallets/WalletCard.vue';
 import EmailIsNotConfirmedAlert from '@/components/profile/EmailIsNotConfirmedAlert.vue';
@@ -26,6 +26,8 @@ import EmailIsNotConfirmedAlert from '@/components/profile/EmailIsNotConfirmedAl
 export default class WalletsGridList extends Mixins(Loader) {
     @Prop()
     byArchived!: boolean
+
+    repository: WalletsRepositoryInterface = new WalletsRepository()
 
     wallets: Array<WalletFullInterface> = []
 
@@ -43,7 +45,7 @@ export default class WalletsGridList extends Mixins(Loader) {
         this.setLoading();
         this.loadFailed = false;
 
-        walletsArchivedGet().then(response => {
+        this.repository.getArchived().then(response => {
             this.wallets = response.data.data
         }).catch(() => {
             this.loadFailed = true;

@@ -51,12 +51,18 @@ import { Mixins, Component, Prop } from 'vue-property-decorator'
 import Loader from '@/shared/Loader';
 import Messager from '@/shared/Messager';
 import Validator from '@/shared/Validator';
-import { passkeyDelete, PasskeyInterface } from '@/api/profile/passkeys';
+import {
+    PasskeyInterface,
+    PasskeysRepository,
+    PasskeysRepositoryInterface
+} from '@/api/profile/passkeys';
 
 @Component({})
 export default class PasskeyItem extends Mixins(Loader, Messager, Validator) {
     @Prop()
     passkey!: PasskeyInterface
+
+    repository: PasskeysRepositoryInterface = new PasskeysRepository()
 
     detailsVisible = false
 
@@ -82,7 +88,7 @@ export default class PasskeyItem extends Mixins(Loader, Messager, Validator) {
         this.setLoading()
 
         try {
-            await passkeyDelete(this.passkey.id)
+            await this.repository.delete(this.passkey.id)
             this.onDeleted()
         } catch (exception) {
             this.dispatchException(exception)

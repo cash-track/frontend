@@ -1,12 +1,24 @@
 import Vue from 'vue'
 import Vuex from 'vuex'
 import Cookies from 'js-cookie'
-import { emptyProfile, profileGet, ProfileInterface } from '@/api/profile';
-import { walletsUnArchivedGet, WalletFullInterface } from '@/api/wallets';
+import {
+    emptyProfile,
+    ProfileInterface,
+    ProfileRepository,
+    ProfileRepositoryInterface
+} from '@/api/profile';
+import {
+    WalletFullInterface,
+    WalletsRepositoryInterface,
+    WalletsRepository
+} from '@/api/wallets';
 
 Vue.use(Vuex)
 
 const LOCALE_COOKIE_NAME = 'cshtrkl'
+
+const profileRepository: ProfileRepositoryInterface = new ProfileRepository()
+const walletsRepository: WalletsRepositoryInterface = new WalletsRepository()
 
 export default new Vuex.Store({
     state: {
@@ -76,7 +88,7 @@ export default new Vuex.Store({
         },
 
         loadProfile() {
-            return profileGet().then(res => {
+            return profileRepository.get().then(res => {
                 if (res.status === 401) {
                     this.commit('logout')
                     return
@@ -93,7 +105,7 @@ export default new Vuex.Store({
 
         loadActiveWallets() {
             this.commit('activeWalletsLoadingChanged', false)
-            return walletsUnArchivedGet().then(res => {
+            return walletsRepository.getUnArchived().then(res => {
                 this.commit('activeWalletsChanged', res.data.data)
                 this.commit('activeWalletsLoadingChanged', true)
             }).catch(() => {

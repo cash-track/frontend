@@ -97,10 +97,17 @@ import ChargesFilter, { FilterChangeEvent } from '@/components/wallets/charges/C
 import ChargesFlowChart from '@/components/wallets/charges/ChargesFlowChart.vue';
 import Tag from '@/components/tags/Tag.vue';
 import Loader from '@/shared/Loader';
-import { TagInterface, tagsGetCommon } from '@/api/tags';
-import { tagTotalGet, TotalInterface } from '@/api/total';
+import { TagInterface, TagsRepository, TagsRepositoryInterface } from '@/api/tags';
+import { TotalInterface, TotalRepository, TotalRepositoryInterface } from '@/api/total';
 import { emptyFilterData, Filter, FilterDataInterface } from '@/api/filters';
-import { GraphDataEntry, GROUP_BY_DAY, GROUP_BY_MONTH, GROUP_BY_YEAR, tagGraphGet } from '@/api/graph';
+import {
+    GraphDataEntry,
+    GraphRepository,
+    GraphRepositoryInterface,
+    GROUP_BY_DAY,
+    GROUP_BY_MONTH,
+    GROUP_BY_YEAR
+} from '@/api/graph';
 import WalletsActiveShortList from '@/components/wallets/WalletsActiveShortList.vue';
 
 @Component({
@@ -120,6 +127,10 @@ import WalletsActiveShortList from '@/components/wallets/WalletsActiveShortList.
 export default class TagView extends Mixins(Loader) {
     @Prop()
     tagID!: string
+
+    tagsRepository: TagsRepositoryInterface = new TagsRepository()
+    graphRepository: GraphRepositoryInterface = new GraphRepository()
+    totalRepository: TotalRepositoryInterface = new TotalRepository()
 
     total: TotalInterface = {
         totalAmount: 0,
@@ -173,7 +184,7 @@ export default class TagView extends Mixins(Loader) {
     protected loadTags() {
         this.loadFailed = false;
 
-        tagsGetCommon().then(response => {
+        this.tagsRepository.getCommons().then(response => {
             this.tags = response.data.data
             this.onTagChange();
         }).catch(() => {
@@ -207,7 +218,7 @@ export default class TagView extends Mixins(Loader) {
             return
         }
 
-        tagTotalGet(this.tagIDParsed, Filter.createFromData(this.filter)).then(response => {
+        this.totalRepository.getTagTotal(this.tagIDParsed, Filter.createFromData(this.filter)).then(response => {
             this.total = response.data.data
         }).catch(() => {
             this.loadFailed = true;
@@ -226,7 +237,7 @@ export default class TagView extends Mixins(Loader) {
         const filter = Filter.createFromData(this.filter)
         filter.groupBy = this.selectedGroupBy
 
-        tagGraphGet(this.tagIDParsed, filter).then(response => {
+        this.graphRepository.getTagGraph(this.tagIDParsed, filter).then(response => {
             this.graphData = response.data.data
             this.graphGroupBy = this.selectedGroupBy
         }).catch((error) => {

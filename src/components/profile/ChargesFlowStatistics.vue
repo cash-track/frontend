@@ -24,7 +24,8 @@ import ChargesStatsCard from '@/components/profile/ChargesStatsCard.vue';
 import {
     ChargesFlowStatisticsResponseInterface,
     ChargesFlowTypeStatisticsInterface,
-    profileStatisticsChargesFlowGet
+    ProfileRepository,
+    ProfileRepositoryInterface
 } from '@/api/profile/profile';
 import { TypeIncome, TypeExpense } from '@/api/charges';
 import { CurrencyInterface } from '@/api/currency';
@@ -34,6 +35,8 @@ import WarningMessage from '@/components/shared/WarningMessage.vue';
     components: {WarningMessage, ChargesStatsCard}
 })
 export default class ChargesFlowStatistics extends Vue {
+    repository: ProfileRepositoryInterface = new ProfileRepository()
+
     incomeStatistics: ChargesFlowTypeStatisticsInterface|null = null;
     expenseStatistics: ChargesFlowTypeStatisticsInterface|null = null;
     currency: CurrencyInterface|null = null;
@@ -55,7 +58,7 @@ export default class ChargesFlowStatistics extends Vue {
     protected load() {
         this.loadFailed = false;
 
-        profileStatisticsChargesFlowGet()
+        this.repository.getStatisticsChargesFlow()
             .then(response => {
                 this.onLoaded(response.data);
 

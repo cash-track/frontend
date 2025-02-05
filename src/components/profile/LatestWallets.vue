@@ -14,13 +14,15 @@
 import { Component, Vue } from 'vue-property-decorator'
 import WarningMessage from '@/components/shared/WarningMessage.vue';
 import WalletCard from '@/components/wallets/WalletCard.vue';
-import { profileWalletsLatestGet } from '@/api/profile/profile';
+import { ProfileRepository, ProfileRepositoryInterface } from '@/api/profile/profile';
 import { WalletFullInterface, WalletsFullResponseInterface } from '@/api/wallets';
 
 @Component({
     components: {WalletCard, WarningMessage}
 })
 export default class LatestWallets extends Vue {
+    repository: ProfileRepositoryInterface = new ProfileRepository()
+
     wallets: Array<WalletFullInterface> = []
 
     loadFailed = false
@@ -36,7 +38,7 @@ export default class LatestWallets extends Vue {
     protected load() {
         this.loadFailed = false;
 
-        profileWalletsLatestGet()
+        this.repository.getWalletsLatest()
             .then(response => {
                 this.onLoaded(response.data);
 

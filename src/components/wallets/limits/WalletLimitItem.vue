@@ -55,7 +55,7 @@
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator'
 import Tag from '@/components/tags/Tag.vue';
-import { walletLimitDelete, WalletLimitInterface } from '@/api/limits';
+import { LimitsRepository, LimitsRepositoryInterface, WalletLimitInterface } from '@/api/limits';
 import { WalletInterface } from '@/api/wallets';
 import LimitForm, { LimitUpdatedEvent } from '@/components/wallets/limits/LimitForm.vue';
 
@@ -68,6 +68,8 @@ export default class WalletLimitItem extends Vue {
 
     @Prop()
     walletLimit!: WalletLimitInterface
+
+    repository: LimitsRepositoryInterface = new LimitsRepository()
 
     selected: boolean = false
     isEdit: boolean = false
@@ -107,7 +109,7 @@ export default class WalletLimitItem extends Vue {
             return
         }
 
-        walletLimitDelete(this.wallet.id, this.walletLimit.limit.id).then(() => {
+        this.repository.delete(this.wallet.id, this.walletLimit.limit.id).then(() => {
             this.$emit('deleted', {
                 limit: this.walletLimit.limit,
             })

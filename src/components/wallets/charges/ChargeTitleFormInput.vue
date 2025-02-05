@@ -50,9 +50,19 @@
 <script lang="ts">
 import { AxiosResponse } from 'axios';
 import { Vue, Component, Prop, Watch } from 'vue-property-decorator'
-import { tagGetSuggestions, TagInterface, TagsResponseInterface } from '@/api/tags';
+import {
+    TagInterface,
+    TagsRepository,
+    TagsRepositoryInterface,
+    TagsResponseInterface
+} from '@/api/tags';
 import Tag from '@/components/tags/Tag.vue';
-import { chargeTitleGetSuggestions, ChargeTitleInterface, ChargeTitlesResponseInterface } from '@/api/charges';
+import {
+    ChargesRepository,
+    ChargesRepositoryInterface,
+    ChargeTitleInterface,
+    ChargeTitlesResponseInterface
+} from '@/api/charges';
 
 interface ChargeTitleSelectedInterface extends ChargeTitleInterface {
     selected: boolean
@@ -102,6 +112,9 @@ export default class ChargeTitleFormInput extends Vue {
         default: false,
     })
     resetState!: boolean|null
+
+    chargesRepository: ChargesRepositoryInterface = new ChargesRepository()
+    tagsRepository: TagsRepositoryInterface = new TagsRepository()
 
     name = ''
 
@@ -173,8 +186,8 @@ export default class ChargeTitleFormInput extends Vue {
             this.autocompleteDebounceHandle = null
 
             Promise.all([
-                tagGetSuggestions(query),
-                chargeTitleGetSuggestions(query)
+                this.tagsRepository.getSuggestions(query),
+                this.chargesRepository.getSuggestions(query)
             ])
                 .then(this.onAutocompleteLoaded)
                 .catch(error => {

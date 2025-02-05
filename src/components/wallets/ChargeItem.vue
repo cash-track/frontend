@@ -66,7 +66,11 @@
 
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator'
-import { walletChargeDelete, ChargeInterface } from '@/api/charges';
+import {
+    ChargeInterface,
+    ChargesRepository,
+    ChargesRepositoryInterface
+} from '@/api/charges';
 import { WalletInterface } from '@/api/wallets';
 import ProfileAvatar from '../profile/ProfileAvatar.vue';
 import ChargeEdit, { ChargeUpdatedEvent } from '@/components/wallets/ChargeEdit.vue';
@@ -112,6 +116,8 @@ export default class ChargeItem extends Vue {
         type: Boolean,
     })
     showWallet!: boolean
+
+    repository: ChargesRepositoryInterface = new ChargesRepository()
 
     isActive = false
     isEdit = false
@@ -173,7 +179,7 @@ export default class ChargeItem extends Vue {
             return
         }
 
-        walletChargeDelete(this.wallet.id, this.charge.id).then(() => {
+        this.repository.delete(this.wallet.id, this.charge.id).then(() => {
             this.toggleEdit()
             this.$emit('deleted', {
                 id: this.charge.id,

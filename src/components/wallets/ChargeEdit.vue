@@ -145,11 +145,13 @@ import Messager from '@/shared/Messager';
 import Validator from '@/shared/Validator';
 import { WalletInterface } from '@/api/wallets';
 import {
-    walletChargeUpdate,
     TypeIncome,
     TypeExpense,
     ChargeResponseInterface,
-    ChargeInterface, ChargeUpdateRequestInterface
+    ChargeInterface,
+    ChargeUpdateRequestInterface,
+    ChargesRepositoryInterface,
+    ChargesRepository
 } from '@/api/charges';
 import { TagInterface } from '@/api/tags';
 import WarningMessage from '@/components/shared/WarningMessage.vue';
@@ -175,6 +177,8 @@ export default class ChargeEdit extends Mixins(Loader, Messager, Validator) {
 
     @Prop()
     charge!: ChargeInterface
+
+    repository: ChargesRepositoryInterface = new ChargesRepository()
 
     form: ChargeUpdateRequestInterface = {
         type: TypeExpense,
@@ -288,7 +292,7 @@ export default class ChargeEdit extends Mixins(Loader, Messager, Validator) {
         this.resetMessage()
         this.setLoading()
 
-        walletChargeUpdate(this.wallet.id, this.charge.id, this.form)
+        this.repository.update(this.wallet.id, this.charge.id, this.form)
             .then(this.onSuccess)
             .catch(this.dispatchError)
             .finally(this.setLoaded)

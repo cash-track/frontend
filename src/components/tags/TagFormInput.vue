@@ -53,7 +53,7 @@
 <script lang="ts">
 import { Vue, Component, Prop, Watch } from 'vue-property-decorator'
 import { AxiosResponse } from 'axios';
-import { walletTagSearch, walletTagsGet } from '@/api/wallets';
+import { WalletsRepository, WalletsRepositoryInterface } from '@/api/wallets';
 import { TagInterface, TagsResponseInterface } from '@/api/tags';
 import Tag from '@/components/tags/Tag.vue';
 import CreateTag, { parseEmoji } from '@/components/tags/CreateTag.vue';
@@ -102,6 +102,8 @@ export default class TagFormInput extends Vue {
         default: false,
     })
     resetState!: boolean|null
+
+    walletsRepository: WalletsRepositoryInterface = new WalletsRepository()
 
     name = ''
 
@@ -154,7 +156,7 @@ export default class TagFormInput extends Vue {
             return
         }
 
-        walletTagsGet(this.walletId).then(response => {
+        this.walletsRepository.getTags(this.walletId).then(response => {
             this.suggestions = response.data.data
         }).catch(error => {
             console.error('Unable to load tags suggestions')
@@ -187,7 +189,7 @@ export default class TagFormInput extends Vue {
         this.autocompleteDebounceHandle = window.setTimeout(() => {
             this.autocompleteDebounceHandle = null
 
-            walletTagSearch(this.walletId, query)
+            this.walletsRepository.searchTags(this.walletId, query)
                 .then(this.onTagsAutocompleteLoaded)
                 .catch(error => {
                     console.error('Unable to load tags autocomplete for query: ' + query)

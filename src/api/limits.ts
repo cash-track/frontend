@@ -1,7 +1,51 @@
 import { AxiosResponse } from 'axios';
-import { client } from '@/api/client';
+import { ApiCall, Repository } from '@/api/client';
 import { WalletInterface } from '@/api/wallets';
 import { TagInterface } from '@/api/tags';
+
+export interface LimitsRepositoryInterface {
+    get(walletId: number): Promise<AxiosResponse<WalletLimitsResponseInterface>>
+    create(walletId: number, request: LimitRequestInterface): Promise<AxiosResponse<LimitResponseInterface>>
+    update(walletId: number, limitId: number, request: LimitRequestInterface): Promise<AxiosResponse<LimitResponseInterface>>
+    delete(walletId: number, limitId: number): Promise<AxiosResponse>
+    copy(walletId: number, sourceWalletId: number): Promise<AxiosResponse<WalletLimitsResponseInterface>>
+}
+
+export class LimitsRepository extends Repository implements LimitsRepositoryInterface {
+
+    @ApiCall()
+    public get(walletId: number): Promise<AxiosResponse<WalletLimitsResponseInterface>> {
+        return this.client.get<WalletLimitsResponseInterface>(`/api/wallets/${walletId}/limits`)
+    }
+
+    @ApiCall()
+    public create(walletId: number, request: LimitRequestInterface): Promise<AxiosResponse<LimitResponseInterface>> {
+        return this.client.post<LimitResponseInterface>(`/api/wallets/${walletId}/limits`, {
+            type: request.type,
+            amount: request.amount,
+            tags: request.tags.map(tag => tag.id),
+        })
+    }
+
+    @ApiCall()
+    public update(walletId: number, limitId: number, request: LimitRequestInterface): Promise<AxiosResponse<LimitResponseInterface>> {
+        return this.client.put<LimitResponseInterface>(`/api/wallets/${walletId}/limits/${limitId}`, {
+            type: request.type,
+            amount: request.amount,
+            tags: request.tags.map(tag => tag.id),
+        })
+    }
+
+    @ApiCall()
+    public delete(walletId: number, limitId: number): Promise<AxiosResponse> {
+        return this.client.delete(`/api/wallets/${walletId}/limits/${limitId}`)
+    }
+
+    @ApiCall()
+    public copy(walletId: number, sourceWalletId: number): Promise<AxiosResponse<WalletLimitsResponseInterface>> {
+        return this.client.post<WalletLimitsResponseInterface>(`/api/wallets/${walletId}/limits/copy/${sourceWalletId}`)
+    }
+}
 
 export interface LimitInterface {
     id: number;
@@ -33,38 +77,4 @@ export interface LimitRequestInterface {
     type: string;
     amount: number|null;
     tags: Array<TagInterface>;
-}
-
-export function walletLimitsGet(walletId: number): Promise<AxiosResponse<WalletLimitsResponseInterface>> {
-    return client().get<WalletLimitsResponseInterface>(`/api/wallets/${walletId}/limits`)
-}
-
-export function walletLimitCreate(walletId: number, request: LimitRequestInterface): Promise<AxiosResponse<LimitResponseInterface>> {
-    return client().post<LimitResponseInterface>(`/api/wallets/${walletId}/limits`, {
-        type: request.type,
-        amount: request.amount,
-        tags: request.tags.map(tag => tag.id),
-    })
-}
-
-export function walletLimitUpdate(walletId: number, limitId: number, request: LimitRequestInterface): Promise<AxiosResponse<LimitResponseInterface>> {
-    return client().put<LimitResponseInterface>(`/api/wallets/${walletId}/limits/${limitId}`, {
-        type: request.type,
-        amount: request.amount,
-        tags: request.tags.map(tag => tag.id),
-    })
-}
-
-export function walletLimitDelete(
-    walletId: number,
-    limitId: number,
-): Promise<AxiosResponse> {
-    return client().delete(`/api/wallets/${walletId}/limits/${limitId}`)
-}
-
-export function walletLimitsCopy(
-    walletId: number,
-    sourceWalletId: number,
-): Promise<AxiosResponse<WalletLimitsResponseInterface>> {
-    return client().post<WalletLimitsResponseInterface>(`/api/wallets/${walletId}/limits/copy/${sourceWalletId}`)
 }

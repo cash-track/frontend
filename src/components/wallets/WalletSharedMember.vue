@@ -29,7 +29,7 @@ import Loader from '@/shared/Loader';
 import Messager from '@/shared/Messager';
 import ProfileAvatarBadge from '@/components/profile/ProfileAvatarBadge.vue';
 import { UserInterface } from '@/api/users';
-import { WalletInterface, walletUsersDelete } from '@/api/wallets';
+import { WalletInterface, WalletsRepository, WalletsRepositoryInterface } from '@/api/wallets';
 
 export interface WalletSharedMemberDeletedEvent {
     id: number;
@@ -48,6 +48,8 @@ export default class WalletSharedMember extends Mixins(Loader, Messager) {
 
     @Prop({required: true})
     isAllowedToRemove!: false
+
+    repository: WalletsRepositoryInterface = new WalletsRepository()
 
     errorMessage = {
         id: `wallet-shared-member-message-${this.wallet?.id}-${this.user?.id}`,
@@ -87,7 +89,7 @@ export default class WalletSharedMember extends Mixins(Loader, Messager) {
         this.resetMessage()
         this.setLoading()
 
-        walletUsersDelete(this.wallet.id, this.user).then(() => {
+        this.repository.deleteUser(this.wallet.id, this.user).then(() => {
             this.$emit('deleted', {
                 id: this.user.id,
                 user: this.user,

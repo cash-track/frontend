@@ -84,8 +84,16 @@ import { Component, Mixins, Prop, Watch } from 'vue-property-decorator'
 import Loader from '@/shared/Loader';
 import Messager from '@/shared/Messager';
 import Validator from '@/shared/Validator';
-import { WalletInterface, walletUsersGet, walletUsersAdd } from '@/api/wallets';
-import { userFindByEmail, usersFindByCommonWallets, UserInterface } from '@/api/users'
+import {
+    WalletInterface,
+    WalletsRepositoryInterface,
+    WalletsRepository
+} from '@/api/wallets';
+import {
+    UserInterface,
+    UsersRepositoryInterface,
+    UsersRepository
+} from '@/api/users'
 import WarningMessage from '@/components/shared/WarningMessage.vue';
 import ProfileAvatarBadge from '@/components/profile/ProfileAvatarBadge.vue';
 import WalletSharedMember, { WalletSharedMemberDeletedEvent } from '@/components/wallets/WalletSharedMember.vue';
@@ -100,6 +108,9 @@ export default class WalletShare extends Mixins(Loader, Messager, Validator) {
     })
     wallet!: WalletInterface
     isWalletLoaded = false
+
+    walletsRepository: WalletsRepositoryInterface = new WalletsRepository()
+    usersRepository: UsersRepositoryInterface = new UsersRepository()
 
     users: Array<UserInterface> = []
     loadUsersFailed = false
@@ -151,7 +162,7 @@ export default class WalletShare extends Mixins(Loader, Messager, Validator) {
     protected loadUsers() {
         this.loadUsersFailed = false
 
-        walletUsersGet(this.wallet.id).then(response => {
+        this.walletsRepository.getUsers(this.wallet.id).then(response => {
             this.users = response.data.data
         }).catch(() => {
             this.loadUsersFailed = true;
@@ -159,7 +170,7 @@ export default class WalletShare extends Mixins(Loader, Messager, Validator) {
     }
 
     protected loadCommonUsers() {
-        usersFindByCommonWallets().then(response => {
+        this.usersRepository.findByCommonWallets().then(response => {
             this.commonUsers = response.data.data
         }).catch(() => {
             //
@@ -174,7 +185,7 @@ export default class WalletShare extends Mixins(Loader, Messager, Validator) {
         this.resetMessage()
         this.setLoading()
 
-        userFindByEmail(this.inviteUserEmail).then(response => {
+        this.usersRepository.findByEmail(this.inviteUserEmail).then(response => {
             this.inviteUser = response.data.data
         }).catch(() => {
             this.setValidationMessage('email', this.$t('wallets.shareSearchError').toString())
@@ -199,7 +210,7 @@ export default class WalletShare extends Mixins(Loader, Messager, Validator) {
         this.resetMessage()
         this.setLoading()
 
-        walletUsersAdd(this.wallet.id, this.inviteUser).then(() => {
+        this.walletsRepository.addUser(this.wallet.id, this.inviteUser).then(() => {
             this.$store.dispatch('loadActiveWallets')
             this.users.push(user)
             this.inviteUser = null

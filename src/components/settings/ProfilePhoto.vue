@@ -79,11 +79,18 @@ import { MutationPayload } from "vuex";
 import Loader from '@/shared/Loader';
 import Messager from '@/shared/Messager';
 import Validator from '@/shared/Validator';
-import {ProfilePhotoResponseInterface, profilePutPhoto, UpdateProfilePhotoRequestInterface} from '@/api/profile';
+import {
+    ProfilePhotoResponseInterface,
+    ProfileRepository,
+    ProfileRepositoryInterface,
+    UpdateProfilePhotoRequestInterface
+} from '@/api/profile';
 import {AxiosResponse} from "axios";
 
 @Component
 export default class ProfilePhoto extends Mixins(Loader, Messager, Validator) {
+    repository: ProfileRepositoryInterface = new ProfileRepository()
+
     form: UpdateProfilePhotoRequestInterface = {
         photo: null,
     }
@@ -130,7 +137,7 @@ export default class ProfilePhoto extends Mixins(Loader, Messager, Validator) {
         this.setLoading()
         this.successMessage = ''
 
-        profilePutPhoto(this.form)
+        this.repository.putPhoto(this.form)
             .then(this.onSuccess)
             .catch(this.dispatchError)
             .finally(this.setLoaded)

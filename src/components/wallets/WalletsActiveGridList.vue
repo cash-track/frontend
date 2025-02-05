@@ -31,7 +31,11 @@
 import { Component, Watch, Mixins } from 'vue-property-decorator';
 import draggable from 'vuedraggable';
 import Loader from '@/shared/Loader';
-import { walletsUnArchivedSort, WalletFullInterface } from '@/api/wallets';
+import {
+    WalletFullInterface,
+    WalletsRepositoryInterface,
+    WalletsRepository
+} from '@/api/wallets';
 import WarningMessage from '@/components/shared/WarningMessage.vue';
 import WalletCard from '@/components/wallets/WalletCard.vue';
 import EmailIsNotConfirmedAlert from '@/components/profile/EmailIsNotConfirmedAlert.vue';
@@ -40,6 +44,8 @@ import EmailIsNotConfirmedAlert from '@/components/profile/EmailIsNotConfirmedAl
     components: {draggable, WalletCard, WarningMessage, EmailIsNotConfirmedAlert}
 })
 export default class WalletsActiveGridList extends Mixins(Loader) {
+    repository: WalletsRepositoryInterface = new WalletsRepository()
+
     drag = false
     isJustLoaded = true
 
@@ -91,7 +97,7 @@ export default class WalletsActiveGridList extends Mixins(Loader) {
 
         this.$store.commit('activeWalletsChanged', this.wallets)
 
-        walletsUnArchivedSort({
+        this.repository.sortUnArchived({
             sort: this.wallets.map(wallet => wallet.id),
         })
     }

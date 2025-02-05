@@ -179,13 +179,16 @@ import Loader from '@/shared/Loader';
 import Messager from '@/shared/Messager';
 import Validator from '@/shared/Validator';
 import EmailFormInput from '@/components/settings/EmailFormInput.vue';
-import { currenciesGet, CurrencyInterface } from '@/api/currency';
-import { profilePut, profileCheckNickName, profileGetSocial, UpdateProfileRequestInterface} from '@/api/profile';
+import { CurrencyInterface, CurrenciesRepository, CurrenciesRepositoryInterface } from '@/api/currency';
+import { ProfileRepository, ProfileRepositoryInterface, UpdateProfileRequestInterface} from '@/api/profile';
 
 @Component({
     components: {EmailFormInput}
 })
 export default class ProfileSettings extends Mixins(Loader, Messager, Validator) {
+    profileRepository: ProfileRepositoryInterface = new ProfileRepository()
+    currenciesRepository: CurrenciesRepositoryInterface = new CurrenciesRepository()
+
     form: UpdateProfileRequestInterface = {
         name: '',
         lastName: '',
@@ -242,13 +245,13 @@ export default class ProfileSettings extends Mixins(Loader, Messager, Validator)
     }
 
     protected loadCurrencies() {
-        currenciesGet().then(response => {
+        this.currenciesRepository.get().then(response => {
             this.currencies = response.data.data
         }).catch(this.dispatchError)
     }
 
     protected loadSocial() {
-        profileGetSocial().then(response => {
+        this.profileRepository.getSocial().then(response => {
             this.isGoogleEnabled = response.data.data.google
         }).catch(this.dispatchError)
     }
@@ -272,7 +275,7 @@ export default class ProfileSettings extends Mixins(Loader, Messager, Validator)
     }
 
     protected validateNickName() {
-        profileCheckNickName({
+        this.profileRepository.checkNickName({
             nickName: this.form.nickName
         }).then(() => {
             this.isNickNameValid = true
@@ -300,7 +303,7 @@ export default class ProfileSettings extends Mixins(Loader, Messager, Validator)
         this.setLoading()
         this.successMessage = ''
 
-        profilePut(this.form)
+        this.profileRepository.put(this.form)
             .then(this.onSuccess)
             .catch(this.dispatchError)
             .finally(this.setLoaded)

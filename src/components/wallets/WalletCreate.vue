@@ -82,8 +82,13 @@ import { AxiosResponse } from 'axios';
 import Loader from '@/shared/Loader';
 import Messager from '@/shared/Messager';
 import Validator from '@/shared/Validator';
-import { walletCreate, WalletCreateRequestInterface, WalletResponseInterface } from '@/api/wallets';
-import { currenciesGet, CurrencyInterface } from '@/api/currency';
+import {
+    WalletCreateRequestInterface,
+    WalletResponseInterface,
+    WalletsRepository,
+    WalletsRepositoryInterface
+} from '@/api/wallets';
+import { CurrencyInterface, CurrenciesRepository, CurrenciesRepositoryInterface } from '@/api/currency';
 import WarningMessage from '@/components/shared/WarningMessage.vue';
 import EmailIsNotConfirmedAlert from '@/components/profile/EmailIsNotConfirmedAlert.vue';
 
@@ -91,6 +96,9 @@ import EmailIsNotConfirmedAlert from '@/components/profile/EmailIsNotConfirmedAl
     components: {EmailIsNotConfirmedAlert, WarningMessage}
 })
 export default class WalletCreate extends Mixins(Loader, Messager, Validator) {
+    walletsRepository: WalletsRepositoryInterface = new WalletsRepository()
+    currenciesRepository: CurrenciesRepositoryInterface = new CurrenciesRepository()
+
     form: WalletCreateRequestInterface = {
         name: '',
         slug: '',
@@ -118,7 +126,7 @@ export default class WalletCreate extends Mixins(Loader, Messager, Validator) {
     }
 
     protected loadCurrencies() {
-        currenciesGet().then(response => {
+        this.currenciesRepository.get().then(response => {
             this.currencies = response.data.data
         }).catch(this.dispatchError)
     }
@@ -139,7 +147,7 @@ export default class WalletCreate extends Mixins(Loader, Messager, Validator) {
         this.resetMessage()
         this.setLoading()
 
-        walletCreate(this.form)
+        this.walletsRepository.create(this.form)
             .then(this.onSuccess)
             .catch(this.dispatchError)
             .finally(this.setLoaded)

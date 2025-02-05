@@ -4,7 +4,12 @@
 
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator';
-import { tagCreate, TagInterface, TagResponseInterface } from '@/api/tags';
+import {
+    TagInterface,
+    TagResponseInterface,
+    TagsRepository,
+    TagsRepositoryInterface
+} from '@/api/tags';
 import Tag from '@/components/tags/Tag.vue';
 import { AxiosError, AxiosResponse } from 'axios';
 import { ValidationResponseInterface } from '@/api/responses';
@@ -34,6 +39,8 @@ export default class CreateTag extends Vue {
     })
     name!: string
 
+    repository: TagsRepositoryInterface = new TagsRepository()
+
     state = 'creatable'
 
     error = ''
@@ -56,7 +63,7 @@ export default class CreateTag extends Vue {
         this.state = 'loading'
         this.error = ''
 
-        tagCreate({
+        this.repository.create({
             name: tag.name,
             icon: tag.icon,
             color: tag.color,

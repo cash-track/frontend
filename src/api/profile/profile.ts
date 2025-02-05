@@ -1,8 +1,32 @@
 import { CurrencyInterface } from '@/api/currency';
 import { AxiosResponse } from 'axios';
-import { client } from '@/api/client';
+import { ApiCall, Repository } from '@/api/client';
 import { TypeExpense, TypeIncome } from '@/api/charges';
 import { WalletsFullResponseInterface } from '@/api/wallets';
+
+export interface ProfileRepositoryInterface {
+    getStatisticsChargesFlow(): Promise<AxiosResponse<ChargesFlowStatisticsResponseInterface>>
+    getStatisticsCounters(): Promise<AxiosResponse<CountersStatisticsResponseInterface>>
+    getWalletsLatest(): Promise<AxiosResponse<WalletsFullResponseInterface>>
+}
+
+export class ProfileRepository extends Repository implements ProfileRepositoryInterface {
+
+    @ApiCall()
+    public getStatisticsChargesFlow(): Promise<AxiosResponse<ChargesFlowStatisticsResponseInterface>> {
+        return this.client.get<ChargesFlowStatisticsResponseInterface>(`/api/profile/statistics/charges-flow`)
+    }
+
+    @ApiCall()
+    public getStatisticsCounters(): Promise<AxiosResponse<CountersStatisticsResponseInterface>> {
+        return this.client.get<CountersStatisticsResponseInterface>(`/api/profile/statistics/counters`)
+    }
+
+    @ApiCall()
+    public getWalletsLatest(): Promise<AxiosResponse<WalletsFullResponseInterface>> {
+        return this.client.get<WalletsFullResponseInterface>(`/api/profile/wallets/latest`)
+    }
+}
 
 export interface ChargesFlowStatisticsResponseInterface {
     data: {
@@ -20,10 +44,6 @@ export interface ChargesFlowTypeStatisticsInterface {
     lastMonth: number;
 }
 
-export function profileStatisticsChargesFlowGet(): Promise<AxiosResponse<ChargesFlowStatisticsResponseInterface>> {
-    return client().get<ChargesFlowStatisticsResponseInterface>(`/api/profile/statistics/charges-flow`)
-}
-
 export interface CountersStatisticsResponseInterface {
     data: CountersStatisticsInterface;
 }
@@ -33,12 +53,4 @@ export interface CountersStatisticsInterface {
     walletsArchived: number;
     charges: number;
     chargesIncome: number;
-}
-
-export function profileStatisticsCountersGet(): Promise<AxiosResponse<CountersStatisticsResponseInterface>> {
-    return client().get<CountersStatisticsResponseInterface>(`/api/profile/statistics/counters`)
-}
-
-export function profileWalletsLatestGet(): Promise<AxiosResponse<WalletsFullResponseInterface>> {
-    return client().get<WalletsFullResponseInterface>(`/api/profile/wallets/latest`)
 }
