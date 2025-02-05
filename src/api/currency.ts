@@ -1,5 +1,23 @@
 import { AxiosResponse } from 'axios';
-import { client } from '@/api/client';
+import { ApiCall, Repository } from '@/api/client';
+
+export interface CurrenciesRepositoryInterface {
+    get(): Promise<AxiosResponse<CurrenciesResponseInterface>>
+    getFeatured(): Promise<AxiosResponse<CurrenciesResponseInterface>>
+}
+
+export class CurrenciesRepository extends Repository implements CurrenciesRepositoryInterface {
+
+    @ApiCall()
+    public get(): Promise<AxiosResponse<CurrenciesResponseInterface>> {
+        return this.client.get<CurrenciesResponseInterface>('/api/currencies')
+    }
+
+    @ApiCall()
+    public getFeatured(): Promise<AxiosResponse<CurrenciesResponseInterface>> {
+        return this.client.get<CurrenciesResponseInterface>('/api/currencies/featured')
+    }
+}
 
 export interface CurrenciesResponseInterface {
     data: Array<CurrencyInterface>;
@@ -23,12 +41,4 @@ export function emptyCurrency(): CurrencyInterface {
         rate: 0,
         updatedAt: '',
     }
-}
-
-export function currenciesGet(): Promise<AxiosResponse<CurrenciesResponseInterface>> {
-    return client().get<CurrenciesResponseInterface>('/api/currencies')
-}
-
-export function featuredCurrenciesGet(): Promise<AxiosResponse<CurrenciesResponseInterface>> {
-    return client().get<CurrenciesResponseInterface>('/api/currencies/featured')
 }

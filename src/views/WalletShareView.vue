@@ -13,7 +13,7 @@
 
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator'
-import { emptyWallet, walletGet, WalletInterface } from '@/api/wallets';
+import { emptyWallet, WalletInterface, WalletsRepository, WalletsRepositoryInterface } from '@/api/wallets';
 import WarningMessage from '@/components/shared/WarningMessage.vue';
 import WalletShare from '@/components/wallets/WalletShare.vue';
 import WalletsActiveShortList from '@/components/wallets/WalletsActiveShortList.vue';
@@ -24,6 +24,8 @@ import WalletsActiveShortList from '@/components/wallets/WalletsActiveShortList.
 export default class WalletShareView extends Vue {
     @Prop()
     walletID!: number
+
+    repository: WalletsRepositoryInterface = new WalletsRepository()
 
     wallet: WalletInterface = emptyWallet()
 
@@ -36,7 +38,7 @@ export default class WalletShareView extends Vue {
     protected load() {
         this.loadFailed = false
 
-        walletGet(this.walletID).then(response => {
+        this.repository.get(this.walletID).then(response => {
             this.wallet = response.data.data
         }).catch(() => {
             this.loadFailed = true

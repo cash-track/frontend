@@ -145,12 +145,13 @@ import Messager from '@/shared/Messager';
 import Validator from '@/shared/Validator';
 import { WalletInterface } from '@/api/wallets';
 import {
-    walletChargeCreate,
     TypeIncome,
     TypeExpense,
     ChargeCreateRequestInterface,
     ChargeResponseInterface,
-    ChargeInterface
+    ChargeInterface,
+    ChargesRepositoryInterface,
+    ChargesRepository,
 } from '@/api/charges';
 import { TagInterface } from '@/api/tags';
 import WarningMessage from '@/components/shared/WarningMessage.vue';
@@ -174,6 +175,8 @@ const PARENT_COLLAPSE_ID = 'charge-create'
 export default class ChargeCreate extends Mixins(Loader, Messager, Validator) {
     @Prop()
     wallet!: WalletInterface
+
+    repository: ChargesRepositoryInterface = new ChargesRepository()
 
     form: ChargeCreateRequestInterface = {
         type: TypeExpense,
@@ -289,7 +292,7 @@ export default class ChargeCreate extends Mixins(Loader, Messager, Validator) {
         this.resetMessage()
         this.setLoading()
 
-        walletChargeCreate(this.wallet.id, this.form)
+        this.repository.create(this.wallet.id, this.form)
             .then(this.onSuccess)
             .catch(this.dispatchError)
             .finally(this.setLoaded)

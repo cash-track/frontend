@@ -83,13 +83,14 @@ import Loader from '@/shared/Loader';
 import Messager from '@/shared/Messager';
 import Validator from '@/shared/Validator';
 import {
-    walletUpdate,
     WalletInterface,
     WalletResponseInterface,
-    WalletUpdateRequestInterface
+    WalletUpdateRequestInterface,
+    WalletsRepository,
+    WalletsRepositoryInterface
 } from '@/api/wallets';
 import WarningMessage from '@/components/shared/WarningMessage.vue';
-import { currenciesGet, CurrencyInterface } from '@/api/currency';
+import { CurrencyInterface, CurrenciesRepository, CurrenciesRepositoryInterface } from '@/api/currency';
 import EmailIsNotConfirmedAlert from '@/components/profile/EmailIsNotConfirmedAlert.vue';
 
 @Component({
@@ -100,6 +101,9 @@ export default class WalletEdit extends Mixins(Loader, Messager, Validator) {
         required: true
     })
     wallet!: WalletInterface
+
+    walletsRepository: WalletsRepositoryInterface = new WalletsRepository();
+    currenciesRepository: CurrenciesRepositoryInterface = new CurrenciesRepository()
 
     form: WalletUpdateRequestInterface = {
         name: '',
@@ -127,7 +131,7 @@ export default class WalletEdit extends Mixins(Loader, Messager, Validator) {
     }
 
     protected loadCurrencies() {
-        currenciesGet().then(response => {
+        this.currenciesRepository.get().then(response => {
             this.currencies = response.data.data
         }).catch(this.dispatchError)
     }
@@ -140,7 +144,7 @@ export default class WalletEdit extends Mixins(Loader, Messager, Validator) {
         this.resetMessage()
         this.setLoading()
 
-        walletUpdate(this.wallet.id, this.form)
+        this.walletsRepository.update(this.wallet.id, this.form)
             .then(this.onSuccess)
             .catch(this.dispatchError)
             .finally(this.setLoaded)

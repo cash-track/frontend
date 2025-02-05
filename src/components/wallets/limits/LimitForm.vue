@@ -88,8 +88,8 @@ import {
     LimitInterface,
     LimitRequestInterface,
     LimitResponseInterface,
-    walletLimitCreate,
-    walletLimitUpdate
+    LimitsRepository,
+    LimitsRepositoryInterface
 } from '@/api/limits';
 
 export interface LimitCreatedEvent {
@@ -109,6 +109,8 @@ export default class LimitCreate extends Mixins(Loader, Messager, Validator) {
 
     @Prop()
     edit: LimitInterface|undefined = undefined;
+
+    repository: LimitsRepositoryInterface = new LimitsRepository()
 
     form: LimitRequestInterface = {
         type: TypeExpense,
@@ -192,12 +194,12 @@ export default class LimitCreate extends Mixins(Loader, Messager, Validator) {
         this.setLoading()
 
         if (this.isEdit) {
-            walletLimitUpdate(this.wallet.id, this.edit?.id ?? 0, this.form)
+            this.repository.update(this.wallet.id, this.edit?.id ?? 0, this.form)
                 .then(this.onUpdated)
                 .catch(this.dispatchError)
                 .finally(this.setLoaded)
         } else {
-            walletLimitCreate(this.wallet.id, this.form)
+            this.repository.create(this.wallet.id, this.form)
                 .then(this.onCreated)
                 .catch(this.dispatchError)
                 .finally(this.setLoaded)

@@ -107,13 +107,16 @@ import Loader from '@/shared/Loader';
 import Messager from '@/shared/Messager';
 import Validator from '@/shared/Validator';
 import {
-    passwordChange,
-    ChangePasswordRequestInterface
+    ChangePasswordRequestInterface,
+    PasswordRepositoryInterface,
+    PasswordRepository
 } from '@/api/profile/password'
 import { MessageResponseInterface } from '@/api/responses';
 
 @Component
 export default class SecuritySettings extends Mixins(Loader, Messager, Validator) {
+    repository: PasswordRepositoryInterface = new PasswordRepository()
+
     form: ChangePasswordRequestInterface = {
         currentPassword: '',
         newPassword: '',
@@ -130,7 +133,7 @@ export default class SecuritySettings extends Mixins(Loader, Messager, Validator
         this.setLoading()
         this.successMessage = ''
 
-        passwordChange(this.form)
+        this.repository.change(this.form)
             .then(this.onSuccess)
             .catch(this.dispatchError)
             .finally(this.setLoaded)

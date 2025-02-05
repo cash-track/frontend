@@ -75,7 +75,11 @@ import { browserSupportsWebAuthn, startRegistration, WebAuthnError } from '@simp
 import Loader from '@/shared/Loader';
 import Messager from '@/shared/Messager';
 import Validator from '@/shared/Validator';
-import { passkeyInit, PasskeyInterface, passkeysGet, passkeyStore } from '@/api/profile/passkeys';
+import {
+    PasskeyInterface,
+    PasskeysRepository,
+    PasskeysRepositoryInterface
+} from '@/api/profile/passkeys';
 import PasskeyItem from '@/components/settings/passkeys/PasskeyItem.vue';
 import WarningMessage from '@/components/shared/WarningMessage.vue';
 
@@ -85,6 +89,8 @@ const ACTION_ADD = 'add'
     components: {WarningMessage, PasskeyItem}
 })
 export default class PasskeysSecuritySettings extends Mixins(Loader, Messager, Validator) {
+    repository: PasskeysRepositoryInterface = new PasskeysRepository()
+
     // eslint-disable-next-line @typescript-eslint/ban-types
     unsubscribeFromStore: Function|null = null
 
@@ -126,7 +132,7 @@ export default class PasskeysSecuritySettings extends Mixins(Loader, Messager, V
         this.setLoading();
 
         try {
-            const response = await passkeysGet()
+            const response = await this.repository.get()
             this.keys = response.data.data
         } catch (exception) {
             this.dispatchException(exception)
@@ -141,7 +147,7 @@ export default class PasskeysSecuritySettings extends Mixins(Loader, Messager, V
         this.resetValidationMessages()
 
         try {
-            const init = await passkeyInit({
+            const init = await this.repository.init({
                 name: this.form.name,
             })
 
@@ -151,7 +157,7 @@ export default class PasskeysSecuritySettings extends Mixins(Loader, Messager, V
 
             console.info('Passkey created on the device', keyCredentials.id)
 
-            const storeResponse = await passkeyStore({
+            const storeResponse = await this.repository.store({
                 challenge: init.data.challenge,
                 data: keyCredentials,
             })

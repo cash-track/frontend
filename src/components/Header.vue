@@ -55,9 +55,9 @@
 
 <script lang="ts">
 import { Component, Vue, Watch } from 'vue-property-decorator';
-import { logout } from '@/api/auth';
+import { AuthRepository, AuthRepositoryInterface } from '@/api/auth';
 import { webSiteLink } from '@/shared/links';
-import { ProfileInterface, profilePutLocale } from '@/api/profile';
+import { ProfileInterface, ProfileRepository, ProfileRepositoryInterface } from '@/api/profile';
 import ProfileAvatar from '@/components/profile/ProfileAvatar.vue';
 import Logo from '@/components/Logo.vue';
 import { loadLanguageAsync, locales } from '@/lang';
@@ -66,6 +66,9 @@ import { loadLanguageAsync, locales } from '@/lang';
     components: {ProfileAvatar, Logo}
 })
 export default class Header extends Vue {
+    authRepository: AuthRepositoryInterface = new AuthRepository()
+    profileRepository: ProfileRepositoryInterface = new ProfileRepository()
+
     getWebSiteLink(path: string): string {
         return webSiteLink(path)
     }
@@ -102,7 +105,7 @@ export default class Header extends Vue {
         event.preventDefault()
         event.stopPropagation()
 
-        logout().then(res => {
+        this.authRepository.logout().then(res => {
             this.$store.commit('logout')
 
             window.location.href = res.data.redirectUrl ? res.data.redirectUrl : webSiteLink('/login');
@@ -123,7 +126,7 @@ export default class Header extends Vue {
         this.$moment.locale(this.currentLocale)
 
         if (this.isLogged) {
-            profilePutLocale({
+            this.profileRepository.putLocale({
                 locale: this.currentLocale
             }).then(() => {
                 console.info('Profile locale has been updated')

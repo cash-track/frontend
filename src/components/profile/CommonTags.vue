@@ -19,13 +19,15 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator'
-import { TagInterface, tagsGetCommon, TagsResponseInterface } from '@/api/tags'
+import { TagInterface, TagsRepository, TagsRepositoryInterface, TagsResponseInterface } from '@/api/tags'
 import Tag from '@/components/tags/Tag.vue'
 
 @Component({
     components: {Tag},
 })
 export default class CommonTags extends Vue {
+    repository: TagsRepositoryInterface = new TagsRepository()
+
     tags: Array<TagInterface>|null = null
 
     loadFailed = false
@@ -41,7 +43,7 @@ export default class CommonTags extends Vue {
     protected load() {
         this.loadFailed = false;
 
-        tagsGetCommon()
+        this.repository.getCommons()
             .then(response => {
                 this.onLoaded(response.data);
 

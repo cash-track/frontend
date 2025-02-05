@@ -36,9 +36,10 @@ import Loader from '@/shared/Loader';
 import Messager from '@/shared/Messager';
 import Validator from '@/shared/Validator';
 import {
-    EmailConfirmationInterface, EmailConfirmationResponseInterface,
-    profileGetEmailConfirmation,
-    profileResendEmailConfirmation
+    EmailConfirmationInterface,
+    EmailConfirmationRepository,
+    EmailConfirmationRepositoryInterface,
+    EmailConfirmationResponseInterface,
 } from '@/api/profile/email';
 import { AxiosResponse } from 'axios';
 import { ErrorResponseInterface } from '@/api/responses';
@@ -46,6 +47,8 @@ import { MutationPayload } from 'vuex';
 
 @Component
 export default class EmailFormInput extends Mixins(Loader, Messager, Validator) {
+    repository: EmailConfirmationRepositoryInterface = new EmailConfirmationRepository();
+
     // eslint-disable-next-line @typescript-eslint/ban-types
     unsubscribeFromStore: Function|null = null
 
@@ -92,7 +95,7 @@ export default class EmailFormInput extends Mixins(Loader, Messager, Validator) 
             this.unsubscribeFromStore()
         }
 
-        profileGetEmailConfirmation().then(this.onLoadedSuccess).catch(this.dispatchError);
+        this.repository.get().then(this.onLoadedSuccess).catch(this.dispatchError);
     }
 
     protected onLoadedSuccess(res: AxiosResponse<EmailConfirmationResponseInterface>) {
@@ -117,7 +120,7 @@ export default class EmailFormInput extends Mixins(Loader, Messager, Validator) 
 
         this.setLoading();
 
-        profileResendEmailConfirmation()
+        this.repository.resend()
             .then(this.onSuccess)
             .catch(this.dispatchError)
             .finally(this.setLoaded);

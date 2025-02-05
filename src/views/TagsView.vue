@@ -36,7 +36,7 @@
 
 <script lang="ts">
 import { Component, Mixins } from 'vue-property-decorator'
-import { TagInterface, tagsGet } from '@/api/tags';
+import { TagInterface, TagsRepository, TagsRepositoryInterface } from '@/api/tags';
 import Loader from '@/shared/Loader';
 import Messager from '@/shared/Messager';
 import WarningMessage from '@/components/shared/WarningMessage.vue';
@@ -53,6 +53,8 @@ import WalletsActiveShortList from '@/components/wallets/WalletsActiveShortList.
     }
 })
 export default class TagView extends Mixins(Loader, Messager) {
+    repository: TagsRepositoryInterface = new TagsRepository()
+
     tags: Array<TagInterface> = []
 
     activeTag: TagInterface|null = null
@@ -71,7 +73,7 @@ export default class TagView extends Mixins(Loader, Messager) {
         this.setLoading();
         this.resetMessage();
 
-        tagsGet().then(response => {
+        this.repository.get().then(response => {
             this.tags = response.data.data
         }).catch((err) => {
             this.setMessage(err.errorMessage)

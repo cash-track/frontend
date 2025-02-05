@@ -1,5 +1,5 @@
 import { AxiosResponse } from 'axios';
-import { client } from '@/api/client';
+import { ApiCall, Repository } from '@/api/client';
 
 export interface TagInterface {
     id: number;
@@ -9,6 +9,62 @@ export interface TagInterface {
     userId: number;
     createdAt: string;
     updatedAt: string;
+}
+
+export interface TagsRepositoryInterface {
+    get(): Promise<AxiosResponse<TagsResponseInterface>>
+    getCommons(): Promise<AxiosResponse<TagsResponseInterface>>
+    getCommon(tagId: number): Promise<AxiosResponse<TagResponseInterface>>
+    getSuggestions(query: string): Promise<AxiosResponse<TagsResponseInterface>>
+    create(request: TagCreateRequestInterface): Promise<AxiosResponse<TagResponseInterface>>
+    update(tagId: number, request: TagUpdateRequestInterface): Promise<AxiosResponse<TagResponseInterface>>
+    delete(tagId: number): Promise<AxiosResponse>
+}
+
+export class TagsRepository extends Repository implements TagsRepositoryInterface {
+
+    @ApiCall()
+    public get(): Promise<AxiosResponse<TagsResponseInterface>> {
+        return this.client.get<TagsResponseInterface>(`/api/tags`)
+    }
+
+    @ApiCall()
+    public getCommons(): Promise<AxiosResponse<TagsResponseInterface>> {
+        return this.client.get<TagsResponseInterface>(`/api/tags/common`)
+    }
+
+    @ApiCall()
+    public getCommon(tagId: number): Promise<AxiosResponse<TagResponseInterface>> {
+        return this.client.get<TagResponseInterface>(`/api/tags/common/${tagId}`)
+    }
+
+    @ApiCall()
+    public getSuggestions(query: string): Promise<AxiosResponse<TagsResponseInterface>> {
+        return this.client.get<TagsResponseInterface>(`/api/tags/suggestions/${query}`)
+    }
+
+    @ApiCall()
+    public create(request: TagCreateRequestInterface): Promise<AxiosResponse<TagResponseInterface>> {
+        return this.client.post<TagResponseInterface>(`/api/tags`, {
+            name: request.name,
+            icon: request.icon,
+            color: request.color,
+        })
+    }
+
+    @ApiCall()
+    public update(tagId: number, request: TagUpdateRequestInterface): Promise<AxiosResponse<TagResponseInterface>> {
+        return this.client.put<TagResponseInterface>(`/api/tags/${tagId}`, {
+            name: request.name,
+            icon: request.icon,
+            color: request.color,
+        })
+    }
+
+    @ApiCall()
+    public delete(tagId: number): Promise<AxiosResponse> {
+        return this.client.delete(`/api/tags/${tagId}`)
+    }
 }
 
 export interface TagsResponseInterface {
@@ -29,43 +85,4 @@ export interface TagUpdateRequestInterface {
     name: string;
     icon: string|null;
     color: string|null;
-}
-
-export function tagsGet(): Promise<AxiosResponse<TagsResponseInterface>> {
-    return client().get<TagsResponseInterface>(`/api/tags`)
-}
-
-export function tagsGetCommon(): Promise<AxiosResponse<TagsResponseInterface>> {
-    return client().get<TagsResponseInterface>(`/api/tags/common`)
-}
-
-export function tagGetCommon(tagId: number): Promise<AxiosResponse<TagResponseInterface>> {
-    return client().get<TagResponseInterface>(`/api/tags/common/${tagId}`)
-}
-
-export function tagGetSuggestions(query: string): Promise<AxiosResponse<TagsResponseInterface>> {
-    return client().get<TagsResponseInterface>(`/api/tags/suggestions/${query}`)
-}
-
-export function tagCreate(request: TagCreateRequestInterface): Promise<AxiosResponse<TagResponseInterface>> {
-    return client().post<TagResponseInterface>(`/api/tags`, {
-        name: request.name,
-        icon: request.icon,
-        color: request.color,
-    })
-}
-
-export function tagUpdate(
-    tagId: number,
-    request: TagUpdateRequestInterface
-): Promise<AxiosResponse<TagResponseInterface>> {
-    return client().put<TagResponseInterface>(`/api/tags/${tagId}`, {
-        name: request.name,
-        icon: request.icon,
-        color: request.color,
-    })
-}
-
-export function tagDelete(tagId: number): Promise<AxiosResponse> {
-    return client().delete(`/api/tags/${tagId}`)
 }

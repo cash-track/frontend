@@ -93,11 +93,8 @@ import { WalletInterface } from '@/api/wallets';
 import {
     ChargeInterface,
     ChargesResponseInterface,
-    tagChargesGet,
-    tagChargesGetPaginated,
-    walletChargesGet,
-    walletChargesGetPaginated,
-    walletChargesMove,
+    ChargesRepository,
+    ChargesRepositoryInterface
 } from '@/api/charges';
 import { emptyPagination, PaginationInterface } from '@/api/pagination';
 import WarningMessage from '@/components/shared/WarningMessage.vue';
@@ -133,6 +130,8 @@ export default class ChargesList extends Mixins(Loader) {
 
     @Prop()
     filter!: FilterDataInterface
+
+    repository: ChargesRepositoryInterface = new ChargesRepository()
 
     selectedCharges: Array<ChargeInterface> = []
 
@@ -213,14 +212,14 @@ export default class ChargesList extends Mixins(Loader) {
     private buildLoader(page: number|null): Promise<AxiosResponse<ChargesResponseInterface>>|null {
         if (this.wallet !== undefined) {
             return page === null ?
-                walletChargesGet(this.wallet.id, Filter.createFromData(this.filter)) :
-                walletChargesGetPaginated(this.wallet.id, page, Filter.createFromData(this.filter))
+                this.repository.get(this.wallet.id, Filter.createFromData(this.filter)) :
+                this.repository.getPaginated(this.wallet.id, page, Filter.createFromData(this.filter))
         }
 
         if (this.tag !== undefined) {
             return page === null ?
-                tagChargesGet(this.tag.id, Filter.createFromData(this.filter)) :
-                tagChargesGetPaginated(this.tag.id, page, Filter.createFromData(this.filter))
+                this.repository.getByTag(this.tag.id, Filter.createFromData(this.filter)) :
+                this.repository.getByTagPaginated(this.tag.id, page, Filter.createFromData(this.filter))
         }
 
         return null;
@@ -349,7 +348,7 @@ export default class ChargesList extends Mixins(Loader) {
         this.onMoveToErrorClear()
         this.setLoadingFor('move')
 
-        walletChargesMove(this.wallet.id, targetWallet.id, this.selectedCharges.map(charge => charge.id))
+        this.repository.move(this.wallet.id, targetWallet.id, this.selectedCharges.map(charge => charge.id))
             .then(() => {
                 this.onMovedTo({
                     sourceWallet: this.wallet,

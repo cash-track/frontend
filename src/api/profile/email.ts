@@ -1,6 +1,24 @@
 import { AxiosResponse } from 'axios';
-import { client } from '@/api/client';
+import { ApiCall, Repository } from '@/api/client';
 import { MessageResponseInterface } from '@/api/responses';
+
+export interface EmailConfirmationRepositoryInterface {
+    get(): Promise<AxiosResponse<EmailConfirmationResponseInterface>>
+    resend(): Promise<AxiosResponse<MessageResponseInterface>>
+}
+
+export class EmailConfirmationRepository extends Repository implements EmailConfirmationRepositoryInterface {
+
+    @ApiCall()
+    public get(): Promise<AxiosResponse<EmailConfirmationResponseInterface>> {
+        return this.client.get<EmailConfirmationResponseInterface>(`/api/auth/email/confirmation`)
+    }
+
+    @ApiCall()
+    public resend(): Promise<AxiosResponse<MessageResponseInterface>> {
+        return this.client.post<MessageResponseInterface>(`/api/auth/email/confirmation/resend`)
+    }
+}
 
 export interface EmailConfirmationInterface {
     email: string;
@@ -14,12 +32,4 @@ export interface EmailConfirmationInterface {
 
 export interface EmailConfirmationResponseInterface {
     data: EmailConfirmationInterface;
-}
-
-export function profileGetEmailConfirmation(): Promise<AxiosResponse<EmailConfirmationResponseInterface>> {
-    return client().get<EmailConfirmationResponseInterface>(`/api/auth/email/confirmation`)
-}
-
-export function profileResendEmailConfirmation(): Promise<AxiosResponse<MessageResponseInterface>> {
-    return client().post<MessageResponseInterface>(`/api/auth/email/confirmation/resend`)
 }

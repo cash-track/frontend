@@ -271,16 +271,9 @@
 import { Component, Prop, Watch, Mixins } from 'vue-property-decorator'
 import {
     emptyWallet,
-    walletGet,
-    walletUsersGet,
-    walletDelete,
-    walletActivate,
-    walletDisable,
-    walletArchive,
-    walletUnArchive,
-    walletTagsGet,
-    walletsHasLimitsGet,
     WalletInterface,
+    WalletsRepositoryInterface,
+    WalletsRepository,
 } from '@/api/wallets';
 import { UserInterface } from '@/api/users';
 import WarningMessage from '@/components/shared/WarningMessage.vue';
@@ -294,12 +287,28 @@ import ChargesFlowChart from '@/components/wallets/charges/ChargesFlowChart.vue'
 import Tag from '@/components/tags/Tag.vue';
 import Loader from '@/shared/Loader';
 import { TagInterface } from '@/api/tags';
-import { TagTotalInterface, TotalInterface, walletTotalGet } from '@/api/total';
-import { GraphDataEntry, GROUP_BY_DAY, GROUP_BY_MONTH, GROUP_BY_YEAR, walletGraphGet } from '@/api/graph';
+import {
+    TagTotalInterface,
+    TotalInterface,
+    TotalRepository,
+    TotalRepositoryInterface
+} from '@/api/total';
+import {
+    GraphDataEntry,
+    GraphRepository,
+    GraphRepositoryInterface,
+    GROUP_BY_DAY,
+    GROUP_BY_MONTH,
+    GROUP_BY_YEAR
+} from '@/api/graph';
 import { emptyFilterData, Filter, FilterDataInterface } from '@/api/filters';
 import EmailIsNotConfirmedAlert from '@/components/profile/EmailIsNotConfirmedAlert.vue';
 import WalletsActiveShortList from '@/components/wallets/WalletsActiveShortList.vue';
-import { WalletLimitInterface, walletLimitsCopy, walletLimitsGet } from '@/api/limits';
+import {
+    LimitsRepository,
+    LimitsRepositoryInterface,
+    WalletLimitInterface
+} from '@/api/limits';
 import LimitForm from '@/components/wallets/limits/LimitForm.vue';
 import WalletLimitItem from '@/components/wallets/limits/WalletLimitItem.vue';
 import WalletLimitsTotal from '@/components/wallets/limits/WalletLimitsTotal.vue';
@@ -333,6 +342,11 @@ interface TagTotal extends TagTotalInterface {
 export default class WalletView extends Mixins(Loader) {
     @Prop()
     walletID!: number
+
+    walletsRepository: WalletsRepositoryInterface = new WalletsRepository()
+    graphRepository: GraphRepositoryInterface = new GraphRepository()
+    limitsRepository: LimitsRepositoryInterface = new LimitsRepository()
+    totalRepository: TotalRepositoryInterface = new TotalRepository()
 
     wallet: WalletInterface = emptyWallet()
 
@@ -474,7 +488,7 @@ export default class WalletView extends Mixins(Loader) {
     protected load() {
         this.loadFailed = false;
 
-        walletGet(this.walletID).then(response => {
+        this.walletsRepository.get(this.walletID).then(response => {
             this.wallet = response.data.data
         }).catch(() => {
             this.loadFailed = true;
@@ -482,7 +496,7 @@ export default class WalletView extends Mixins(Loader) {
     }
 
     protected loadTotal() {
-        walletTotalGet(this.walletID, Filter.createFromData(this.filter))
+        this.totalRepository.getWalletTotal(this.walletID, Filter.createFromData(this.filter))
             .then(response => {
                 this.walletTotal = response.data.data
             }).catch(() => {
@@ -491,7 +505,7 @@ export default class WalletView extends Mixins(Loader) {
     }
 
     protected loadUsers() {
-        walletUsersGet(this.walletID).then(response => {
+        this.walletsRepository.getUsers(this.walletID).then(response => {
             this.users = response.data.data
         }).catch(() => {
             this.loadFailed = true;
@@ -500,13 +514,13 @@ export default class WalletView extends Mixins(Loader) {
 
     protected loadTags() {
         this.selectedTags = []
-        walletTagsGet(this.walletID).then(response => {
+        this.walletsRepository.getTags(this.walletID).then(response => {
             this.tags = response.data.data
         })
     }
 
     protected loadLimits() {
-        walletLimitsGet(this.walletID).then(response => {
+       this.limitsRepository.get(this.walletID).then(response => {
             this.limits = response.data.data
 
             if (this.limits.length === 0) {
@@ -518,7 +532,7 @@ export default class WalletView extends Mixins(Loader) {
     protected loadWalletsHasLimits(archived: boolean) {
         this.setLoadingFor('walletsHasLimits')
 
-        walletsHasLimitsGet(archived).then(response => {
+        this.walletsRepository.getHasLimits(archived).then(response => {
             this.walletsHasLimits = response.data.data
 
             if (!archived && this.walletsHasLimits.length === 0) {
@@ -567,7 +581,7 @@ export default class WalletView extends Mixins(Loader) {
             return
         }
 
-        walletDelete(this.walletID).then(() => {
+        this.walletsRepository.delete(this.walletID).then(() => {
             this.$store.dispatch('loadActiveWallets')
             this.$router.push({
                 name: 'wallets'
@@ -581,7 +595,7 @@ export default class WalletView extends Mixins(Loader) {
         event.preventDefault()
         event.stopPropagation()
 
-        walletActivate(this.walletID).then(() => {
+        this.walletsRepository.activate(this.walletID).then(() => {
             this.wallet.isActive = true
             this.$store.dispatch('loadActiveWallets')
         }).catch(err => {
@@ -593,7 +607,7 @@ export default class WalletView extends Mixins(Loader) {
         event.preventDefault()
         event.stopPropagation()
 
-        walletDisable(this.walletID).then(() => {
+        this.walletsRepository.disable(this.walletID).then(() => {
             this.wallet.isActive = false
             this.$store.dispatch('loadActiveWallets')
         }).catch(err => {
@@ -605,7 +619,7 @@ export default class WalletView extends Mixins(Loader) {
         event.preventDefault()
         event.stopPropagation()
 
-        walletArchive(this.walletID).then(() => {
+        this.walletsRepository.archive(this.walletID).then(() => {
             this.wallet.isArchived = true
             this.$store.dispatch('loadActiveWallets')
         }).catch(err => {
@@ -617,7 +631,7 @@ export default class WalletView extends Mixins(Loader) {
         event.preventDefault()
         event.stopPropagation()
 
-        walletUnArchive(this.walletID).then(() => {
+        this.walletsRepository.unArchive(this.walletID).then(() => {
             this.wallet.isArchived = false
             this.$store.dispatch('loadActiveWallets')
         }).catch(err => {
@@ -659,7 +673,7 @@ export default class WalletView extends Mixins(Loader) {
         const filter = Filter.createFromData(this.filter)
         filter.groupBy = this.selectedGroupBy;
 
-        walletGraphGet(this.walletID, filter)
+        this.graphRepository.getWalletGraph(this.walletID, filter)
             .then(response => {
                 this.graphData = response.data.data
                 this.graphGroupBy = this.selectedGroupBy
@@ -674,7 +688,7 @@ export default class WalletView extends Mixins(Loader) {
     }
 
     public onWalletLimitsCopy(sourceWallet: WalletInterface) {
-        walletLimitsCopy(this.wallet.id, sourceWallet.id).then(response => {
+        this.limitsRepository.copy(this.wallet.id, sourceWallet.id).then(response => {
             this.limits = response.data.data
         })
     }

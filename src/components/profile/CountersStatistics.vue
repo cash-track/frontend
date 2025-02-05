@@ -58,11 +58,14 @@ import { Component, Vue } from 'vue-property-decorator'
 import {
     CountersStatisticsInterface,
     CountersStatisticsResponseInterface,
-    profileStatisticsCountersGet
+    ProfileRepository,
+    ProfileRepositoryInterface
 } from '@/api/profile/profile';
 
 @Component
 export default class CountersStatistics extends Vue {
+    repository: ProfileRepositoryInterface = new ProfileRepository()
+
     counters: CountersStatisticsInterface|null = null
 
     loadFailed = false
@@ -86,7 +89,7 @@ export default class CountersStatistics extends Vue {
     protected load() {
         this.loadFailed = false;
 
-        profileStatisticsCountersGet()
+        this.repository.getStatisticsCounters()
             .then(response => {
                 this.onLoaded(response.data);
 
