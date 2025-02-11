@@ -262,7 +262,7 @@
                     <div class="row">
                         <div class="col-md-6">
                             <h4>
-                                <b-icon-arrow-down variant="danger" scale="1" class="d-none d-sm-inline"></b-icon-arrow-down>
+                                <b-icon-arrow-down variant="danger" scale="1"></b-icon-arrow-down>
                                 {{ $t('wallets.expense') }}
                             </h4>
                             <charges-total-chart
@@ -275,7 +275,7 @@
                         </div>
                         <div class="col-md-6">
                             <h4>
-                                <b-icon-arrow-up variant="primary" scale="1" class="d-none d-sm-inline"></b-icon-arrow-up>
+                                <b-icon-arrow-up variant="primary" scale="1"></b-icon-arrow-up>
                                 {{ $t('wallets.income') }}
                             </h4>
                             <charges-total-chart

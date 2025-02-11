@@ -1,5 +1,6 @@
 <template>
     <Pie
+        class="pie-chart-container"
         :chart-options="chartOptions"
         :chart-data="chartData"
         :chart-id="chartId"
@@ -17,9 +18,11 @@ import {
     Legend,
     ArcElement,
     ChartData,
-    PieDataPoint, ChartOptions
+    PieDataPoint,
+    ChartOptions,
+    LegendOptions
 } from 'chart.js'
-import 'chartjs-adapter-moment';
+import { DeepPartial } from 'chart.js/types/utils';
 import { CurrencyInterface } from '@/api/currency';
 import { TotalGraphDataEntry } from '@/api/graph';
 import { TagInterface } from '@/api/tags';
@@ -149,13 +152,9 @@ export default class ChargesTotalChart extends Vue {
     get chartOptions(): ChartOptions {
         return {
             responsive: true,
-            maintainAspectRatio: true,
-            aspectRatio: 1.2,
+            maintainAspectRatio: false,
             plugins: {
-                legend: {
-                    fullSize: true,
-                    position: 'left',
-                },
+                legend: this.chartLegendOptions,
                 tooltip: {
                     callbacks: {
                         label: context => {
@@ -172,6 +171,28 @@ export default class ChargesTotalChart extends Vue {
                     }
                 }
             }
+        }
+    }
+
+    get isSmallScreen(): boolean {
+        const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0)
+        return vw > 0 && vw < 768
+    }
+
+    // eslint-disable-next-line
+    get chartLegendOptions(): DeepPartial<LegendOptions<any>> {
+        if (this.isSmallScreen) {
+            return {
+                fullSize: true,
+                position: 'top',
+                align: 'start',
+            }
+        }
+
+        return {
+            fullSize: true,
+            position: 'left',
+            align: 'center'
         }
     }
 
@@ -256,6 +277,19 @@ export default class ChargesTotalChart extends Vue {
 }
 </script>
 
-<style lang="scss" scoped>
+<style lang="scss">
+@import "node_modules/bootstrap/scss/functions";
+@import "node_modules/bootstrap/scss/variables";
+@import "node_modules/bootstrap/scss/mixins/_breakpoints";
 
+.pie-chart-container {
+    position: relative;
+    height: 450px;
+}
+
+@include media-breakpoint-down(sm) {
+    .pie-chart-container {
+        height: 578px;
+    }
+}
 </style>
