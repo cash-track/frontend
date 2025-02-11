@@ -27,7 +27,7 @@ import {
 import 'chartjs-adapter-moment';
 import { CurrencyInterface } from '@/api/currency';
 import { money } from '@/shared/numbers';
-import { GraphDataEntry, GROUP_BY_DAY, GROUP_BY_MONTH, GROUP_BY_YEAR } from '@/api/graph';
+import { AmountGraphDataEntry, GROUP_BY_DAY, GROUP_BY_MONTH, GROUP_BY_YEAR } from '@/api/graph';
 import { TypeExpense, TypeIncome } from '@/api/charges';
 import { TagInterface } from '@/api/tags';
 
@@ -44,7 +44,7 @@ export default class ChargesFlowChart extends Vue {
     currency!: CurrencyInterface
 
     @Prop()
-    dataset!: Array<GraphDataEntry>
+    dataset!: Array<AmountGraphDataEntry>
 
     @Prop()
     group!: string

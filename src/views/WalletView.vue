@@ -221,14 +221,14 @@
 
             <b-collapse id="wallet-chart" v-model="graphVisible">
                 <div class="wallet-chart">
-                    <div class="charge-loader-main d-flex justify-content-center align-items-center" v-if="isLoadingFor('chart') || hasLoadingFailedMessageFor('chart')">
-                        <div class="d-flex align-items-center" v-if="isLoadingFor('chart')">
+                    <div class="charge-loader-main d-flex justify-content-center align-items-center" v-if="isLoadingFor('amountChart') || hasLoadingFailedMessageFor('amountChart')">
+                        <div class="d-flex align-items-center" v-if="isLoadingFor('amountChart')">
                             <b-spinner variant="light"></b-spinner>
                             <span class="loading-text ml-2">{{ $t('loadingData') }}</span>
                         </div>
-                        <div class="d-flex align-items-center" v-if="hasLoadingFailedMessageFor('chart')">
+                        <div class="d-flex align-items-center" v-if="hasLoadingFailedMessageFor('amountChart')">
                             <b-icon-exclamation-circle></b-icon-exclamation-circle>
-                            <span class="loading-text ml-2">{{ getLoadingFailedMessageFor('chart') }}</span>
+                            <span class="loading-text ml-2">{{ getLoadingFailedMessageFor('amountChart') }}</span>
                         </div>
                     </div>
                     <div class="row">
@@ -245,6 +245,48 @@
                         :group="graphGroupBy"
                         :tags="selectedTags"
                     ></charges-flow-chart>
+                </div>
+
+                <div class="wallet-chart">
+                    <div class="charge-loader-main d-flex justify-content-center align-items-center" v-if="isLoadingFor('totalChart') || hasLoadingFailedMessageFor('totalChart')">
+                        <div class="d-flex align-items-center" v-if="isLoadingFor('totalChart')">
+                            <b-spinner variant="light"></b-spinner>
+                            <span class="loading-text ml-2">{{ $t('loadingData') }}</span>
+                        </div>
+                        <div class="d-flex align-items-center" v-if="hasLoadingFailedMessageFor('totalChart')">
+                            <b-icon-exclamation-circle></b-icon-exclamation-circle>
+                            <span class="loading-text ml-2">{{ getLoadingFailedMessageFor('totalChart') }}</span>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h4>
+                                <b-icon-arrow-down variant="danger" scale="1" class="d-none d-sm-inline"></b-icon-arrow-down>
+                                {{ $t('wallets.expense') }}
+                            </h4>
+                            <charges-total-chart
+                                :currency="wallet.defaultCurrency"
+                                charge-type="-"
+                                :tags-filtered="selectedTags"
+                                :tags="tags"
+                                :dataset="totalExpenseGraphData"
+                            ></charges-total-chart>
+                        </div>
+                        <div class="col-md-6">
+                            <h4>
+                                <b-icon-arrow-up variant="primary" scale="1" class="d-none d-sm-inline"></b-icon-arrow-up>
+                                {{ $t('wallets.income') }}
+                            </h4>
+                            <charges-total-chart
+                                :currency="wallet.defaultCurrency"
+                                charge-type="+"
+                                :tags-filtered="selectedTags"
+                                :tags="tags"
+                                :dataset="totalIncomeGraphData"
+                            ></charges-total-chart>
+                        </div>
+                    </div>
                 </div>
             </b-collapse>
 
@@ -284,6 +326,7 @@ import ChargeCreate from '@/components/wallets/ChargeCreate.vue';
 import ChargesList from "@/components/wallets/charges/ChargesList.vue";
 import ChargesFilter, { FilterChangeEvent } from '@/components/wallets/charges/ChargesFilter.vue';
 import ChargesFlowChart from '@/components/wallets/charges/ChargesFlowChart.vue';
+import ChargesTotalChart from '@/components/wallets/charges/ChargesTotalChart.vue';
 import Tag from '@/components/tags/Tag.vue';
 import Loader from '@/shared/Loader';
 import { TagInterface } from '@/api/tags';
@@ -294,14 +337,20 @@ import {
     TotalRepositoryInterface
 } from '@/api/total';
 import {
-    GraphDataEntry,
+    AmountGraphDataEntry,
     GraphRepository,
     GraphRepositoryInterface,
     GROUP_BY_DAY,
     GROUP_BY_MONTH,
-    GROUP_BY_YEAR
+    GROUP_BY_YEAR, TotalGraphDataEntry
 } from '@/api/graph';
-import { emptyFilterData, Filter, FilterDataInterface } from '@/api/filters';
+import {
+    emptyFilterData,
+    Filter,
+    FILTER_CHARGE_TYPE_EXPENSE,
+    FILTER_CHARGE_TYPE_INCOME,
+    FilterDataInterface
+} from '@/api/filters';
 import EmailIsNotConfirmedAlert from '@/components/profile/EmailIsNotConfirmedAlert.vue';
 import WalletsActiveShortList from '@/components/wallets/WalletsActiveShortList.vue';
 import {
@@ -337,6 +386,7 @@ interface TagTotal extends TagTotalInterface {
         Tag,
         ChargesFilter,
         ChargesFlowChart,
+        ChargesTotalChart,
     }
 })
 export default class WalletView extends Mixins(Loader) {
@@ -372,7 +422,9 @@ export default class WalletView extends Mixins(Loader) {
 
     filter: FilterDataInterface = emptyFilterData()
 
-    graphData: Array<GraphDataEntry> = []
+    graphData: Array<AmountGraphDataEntry> = []
+    totalIncomeGraphData: Array<TotalGraphDataEntry> = []
+    totalExpenseGraphData: Array<TotalGraphDataEntry> = []
 
     selectedGroupBy = GROUP_BY_DAY
     graphGroupBy = GROUP_BY_DAY
@@ -475,14 +527,16 @@ export default class WalletView extends Mixins(Loader) {
         this.loadUsers()
         this.loadTags()
         this.loadLimits()
-        this.loadChart()
+        this.loadAmountChart()
+        this.loadTotalChart()
     }
 
     @Watch('selectedTags')
     protected onSelectedTagsChange() {
         this.filter.tags = this.selectedTags.map(tag => tag.id).join(',')
         this.loadTotal()
-        this.loadChart()
+        this.loadAmountChart()
+        this.loadTotalChart()
     }
 
     protected load() {
@@ -547,7 +601,8 @@ export default class WalletView extends Mixins(Loader) {
         this.loadTotal()
         this.loadTags()
         this.loadLimits()
-        this.loadChart()
+        this.loadAmountChart()
+        this.loadTotalChart()
         this.$store.dispatch('loadActiveWallets')
     }
 
@@ -653,7 +708,8 @@ export default class WalletView extends Mixins(Loader) {
         this.filter.dateFrom = event.dateFrom
         this.filter.dateTo = event.dateTo
         this.loadTotal()
-        this.loadChart()
+        this.loadAmountChart()
+        this.loadTotalChart()
     }
 
     public onSelectedTagsClear() {
@@ -662,29 +718,67 @@ export default class WalletView extends Mixins(Loader) {
 
     @Watch('selectedGroupBy')
     @Watch('graphVisible')
-    protected loadChart() {
+    protected loadAmountChart() {
         if (!this.graphVisible) {
             return
         }
 
-        this.resetLoadingFailedMessageFor('chart')
-        this.setLoadingFor('chart')
+        this.resetLoadingFailedMessageFor('amountChart')
+        this.setLoadingFor('amountChart')
 
         const filter = Filter.createFromData(this.filter)
         filter.groupBy = this.selectedGroupBy;
 
-        this.graphRepository.getWalletGraph(this.walletID, filter)
+        this.graphRepository.getWalletGraphAmount(this.walletID, filter)
             .then(response => {
                 this.graphData = response.data.data
                 this.graphGroupBy = this.selectedGroupBy
             })
             .catch((error) => {
-                this.setLoadingFailedMessageFor('chart', this.$t('wallets.chartLoadingError').toString())
+                this.setLoadingFailedMessageFor('amountChart', this.$t('wallets.chartLoadingError').toString())
                 console.error(error)
             })
             .finally(() => {
-                this.setLoadedFor('chart')
+                this.setLoadedFor('amountChart')
             })
+    }
+
+    @Watch('graphVisible')
+    protected loadTotalChart() {
+        if (!this.graphVisible) {
+            return
+        }
+
+        this.resetLoadingFailedMessageFor('totalChart')
+        this.setLoadingFor('totalChart')
+
+        const incomeFilter = Filter.createFromData(this.filter, FILTER_CHARGE_TYPE_INCOME)
+        const expenseFilter = Filter.createFromData(this.filter, FILTER_CHARGE_TYPE_EXPENSE)
+
+        const incomePromise = this.graphRepository.getWalletGraphTotal(this.walletID, incomeFilter)
+            .then(response => {
+                this.totalIncomeGraphData = response.data.data
+            })
+            .catch((error) => {
+                this.setLoadingFailedMessageFor('totalChart', this.$t('wallets.chartLoadingError').toString())
+                console.error(error)
+            })
+
+        const expensePromise = this.graphRepository.getWalletGraphTotal(this.walletID, expenseFilter)
+            .then(response => {
+                this.totalExpenseGraphData = response.data.data
+            })
+            .catch((error) => {
+                this.setLoadingFailedMessageFor('totalChart', this.$t('wallets.chartLoadingError').toString())
+                console.error(error)
+            })
+
+        Promise.all([
+            incomePromise,
+            expensePromise
+        ]).finally(() => {
+            this.setLoadedFor('totalChart')
+        })
     }
 
     public onWalletLimitsCopy(sourceWallet: WalletInterface) {
