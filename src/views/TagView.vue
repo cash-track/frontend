@@ -101,7 +101,7 @@ import { TagInterface, TagsRepository, TagsRepositoryInterface } from '@/api/tag
 import { TotalInterface, TotalRepository, TotalRepositoryInterface } from '@/api/total';
 import { emptyFilterData, Filter, FilterDataInterface } from '@/api/filters';
 import {
-    GraphDataEntry,
+    AmountGraphDataEntry,
     GraphRepository,
     GraphRepositoryInterface,
     GROUP_BY_DAY,
@@ -148,7 +148,7 @@ export default class TagView extends Mixins(Loader) {
 
     tags: Array<TagInterface> = []
 
-    graphData: Array<GraphDataEntry> = []
+    graphData: Array<AmountGraphDataEntry> = []
 
     selectedGroupBy = GROUP_BY_MONTH
     graphGroupBy = GROUP_BY_MONTH

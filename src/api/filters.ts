@@ -1,9 +1,12 @@
+export const FILTER_CHARGE_TYPE_INCOME = 'income';
+export const FILTER_CHARGE_TYPE_EXPENSE = 'expense';
 
 export interface FilterDataInterface {
     dateFrom: string;
     dateTo: string;
     groupBy: string;
     tags: string;
+    chargeType: string;
 }
 
 export function emptyFilterData(): FilterDataInterface {
@@ -12,6 +15,7 @@ export function emptyFilterData(): FilterDataInterface {
         dateTo: '',
         groupBy: '',
         tags: '',
+        chargeType: ''
     }
 }
 
@@ -20,12 +24,15 @@ export interface FilterInterface extends FilterDataInterface {
 }
 
 export class Filter implements FilterInterface {
+    private CHARGE_TYPES = [FILTER_CHARGE_TYPE_INCOME, FILTER_CHARGE_TYPE_EXPENSE];
+
     dateFrom = '';
     dateTo = '';
     groupBy = '';
     tags = '';
+    chargeType = '';
 
-    static createFromData(data?: FilterDataInterface): FilterInterface {
+    static createFromData(data?: FilterDataInterface, chargeType?: string): FilterInterface {
         const filter = new Filter()
 
         if (data?.dateFrom) {
@@ -42,6 +49,12 @@ export class Filter implements FilterInterface {
 
         if (data?.tags) {
             filter.tags = data.tags
+        }
+
+        if (data?.chargeType && filter.CHARGE_TYPES.includes(data?.chargeType)) {
+            filter.chargeType = data.chargeType
+        } else if (chargeType && filter.CHARGE_TYPES.includes(chargeType)) {
+            filter.chargeType = chargeType
         }
 
         return filter
@@ -64,6 +77,10 @@ export class Filter implements FilterInterface {
 
         if (this.tags) {
             query.set('tags', this.tags)
+        }
+
+        if (this.chargeType) {
+            query.set('charge-type', this.chargeType)
         }
 
         for (const key in params) {

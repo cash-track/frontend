@@ -231,6 +231,9 @@ export default {
 
         stats: 'Analyse tags usage',
         statsLoadingError: 'Unable to load tag. Please try again later',
+
+        withoutTags: 'Without tags',
+        otherTags: 'Other {0} tags'
     },
 
     limits: {
