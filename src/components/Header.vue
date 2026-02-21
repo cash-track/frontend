@@ -1,165 +1,250 @@
-<template>
-    <div>
-        <b-navbar toggleable="lg" type="light">
-            <b-container>
-                <b-navbar-brand :href="getWebSiteLink('/')">
-                    <logo></logo>
-                </b-navbar-brand>
+<script setup lang="ts">
+import { computed, ref, watch } from 'vue'
+import { storeToRefs } from 'pinia'
+import { useI18n } from 'vue-i18n'
+import { useColorMode } from '@vueuse/core'
+import type { DropdownMenuItem } from '@nuxt/ui'
+import { useLocaleStore } from '@/stores/locale'
+import { webSiteLink } from '@/shared/links'
+import { locales, loadLocaleAsync, type LocaleInterface } from '@/lang'
+import LogoFull from '@/components/LogoFull.vue'
+import HamburgerMenu from '@/components/Shared/HamburgerMenu.vue'
 
-                <b-navbar-toggle target="nav-collapse"></b-navbar-toggle>
+const { t } = useI18n()
+const localeStore = useLocaleStore()
+const { locale } = storeToRefs(localeStore)
+const mode = useColorMode()
 
-                <b-collapse id="nav-collapse" is-nav>
-                    <b-navbar-nav>
-                        <b-nav-item :to="{name: 'wallets'}" exact-active-class="active">{{ $t('wallets.wallets') }}</b-nav-item>
-                        <b-nav-item :to="{name: 'tags'}" exact-active-class="active">{{ $t('tags.tags') }}</b-nav-item>
-                        <b-nav-item :to="{name: 'profile'}" exact-active-class="active">{{ $t('profile.profile') }}</b-nav-item>
-                        <b-nav-item :href="helpLink">{{ $t('help') }}</b-nav-item>
-                        <b-nav-item :href="aboutLink">{{ $t('about') }}</b-nav-item>
-                    </b-navbar-nav>
-
-                    <b-navbar-nav class="ml-auto">
-                        <b-nav-item-dropdown right>
-                            <template v-slot:button-content>
-                                <span class="current-locale">{{ $t('flag') }}</span>
-                            </template>
-                            <b-dropdown-item v-for="locale of locales"
-                                             :key="locale.code"
-                                             @click="onLocaleChange(locale.code, $event)"
-                                             :active="currentLocale === locale.code"
-                            >{{ locale.name }}</b-dropdown-item>
-                        </b-nav-item-dropdown>
-
-                        <b-navbar-nav v-if="!isLogged">
-                            <b-nav-item>{{ $t('myProfile') }}</b-nav-item>
-                        </b-navbar-nav>
-
-                        <b-nav-item-dropdown v-if="isLogged" right>
-                            <template v-slot:button-content>
-                                <profile-avatar :user="profile"></profile-avatar>
-                                {{ profile.name }}
-                            </template>
-                            <b-dropdown-item :to="{name: 'wallets'}">{{ $t('wallets.wallets') }}</b-dropdown-item>
-                            <b-dropdown-item :to="{name: 'wallets.create'}">{{ $t('wallets.newWallet') }}</b-dropdown-item>
-                            <b-dropdown-item :to="{name: 'tags'}">{{ $t('tags.tags') }}</b-dropdown-item>
-                            <b-dropdown-divider></b-dropdown-divider>
-                            <b-dropdown-item :to="{name: 'profile'}">{{ $t('profile.profile') }}</b-dropdown-item>
-                            <b-dropdown-item :to="{name: 'settings.profile'}">{{ $t('settings') }}</b-dropdown-item>
-                            <b-dropdown-item href="#" @click="onLogout">{{ $t('signOut') }}</b-dropdown-item>
-                        </b-nav-item-dropdown>
-                    </b-navbar-nav>
-                </b-collapse>
-            </b-container>
-        </b-navbar>
-    </div>
-</template>
-
-<script lang="ts">
-import { Component, Vue, Watch } from 'vue-property-decorator';
-import { AuthRepository, AuthRepositoryInterface } from '@/api/auth';
-import { webSiteLink } from '@/shared/links';
-import { ProfileInterface, ProfileRepository, ProfileRepositoryInterface } from '@/api/profile';
-import ProfileAvatar from '@/components/profile/ProfileAvatar.vue';
-import Logo from '@/components/Logo.vue';
-import { loadLanguageAsync, locales } from '@/lang';
-
-@Component({
-    components: {ProfileAvatar, Logo}
-})
-export default class Header extends Vue {
-    authRepository: AuthRepositoryInterface = new AuthRepository()
-    profileRepository: ProfileRepositoryInterface = new ProfileRepository()
-
-    getWebSiteLink(path: string): string {
-        return webSiteLink(path)
-    }
-
-    mounted() {
-        this.$moment.locale(this.currentLocale)
-    }
-
-    get isLogged(): boolean {
-        return this.$store.state.isLogged
-    }
-
-    get profile(): ProfileInterface {
-        return this.$store.state.profile
-    }
-
-    get helpLink(): string {
-        return webSiteLink('/help')
-    }
-
-    get aboutLink(): string {
-        return webSiteLink('/about')
-    }
-
-    get locales() {
-        return locales;
-    }
-
-    get currentLocale() {
-        return this.$store.state.locale
-    }
-
-    protected onLogout(event: Event) {
-        event.preventDefault()
-        event.stopPropagation()
-
-        this.authRepository.logout().then(res => {
-            this.$store.commit('logout')
-
-            window.location.href = res.data.redirectUrl ? res.data.redirectUrl : webSiteLink('/login');
-        })
-    }
-
-    protected onLocaleChange(locale: string, event: Event) {
-        event.preventDefault()
-        event.stopPropagation()
-
-        this.$store.commit('localeChange', locale)
-    }
-
-    @Watch('currentLocale')
-    protected localeChangeObserver() {
-        loadLanguageAsync(this.currentLocale)
-
-        this.$moment.locale(this.currentLocale)
-
-        if (this.isLogged) {
-            this.profileRepository.putLocale({
-                locale: this.currentLocale
-            }).then(() => {
-                console.info('Profile locale has been updated')
-            }).catch(err => {
-                console.error(err)
-            })
+const isHeaderOpened = ref(false)
+const availableLocales = computed<DropdownMenuItem[][]>(() => {
+    return [locales.map<DropdownMenuItem>(function(item): DropdownMenuItem {
+        return {
+            label: item.name ?? '',
+            disabled: item.code === locale.value,
+            class: 'cursor-pointer',
+            onSelect() {
+                onLocaleChange(item)
+            },
         }
-    }
+    })]
+})
+const currentLocale = computed(() => {
+    return locales.filter(i => i.code === locale.value).pop()
+})
+
+function onLocaleChange(changed: LocaleInterface) {
+    localeStore.localeChange(changed.code)
+}
+
+watch(locale, (newLocale) => {
+    loadLocaleAsync(newLocale)
+
+    // TODO. Set locale for moment.js
+
+    // if (isLogged.value) {
+    // profilePutLocale(changed.code)
+    // }
+})
+
+function onMobileHeaderClick() {
+    isHeaderOpened.value = !isHeaderOpened.value
 }
 </script>
 
-<style lang="scss" scoped>
-    .navbar {
-        background: #f5f5f5;
-        border-bottom: 1px solid #e5e5e5;
-        border-radius: 0;
-        margin-bottom: 20px;
+<template>
+    <div class="header">
+        <UContainer>
+            <div class="navbar">
+                <div class="navbar-mobile-head">
+                    <ULink class="logo-link" :to="webSiteLink('/')">
+                        <LogoFull />
+                    </ULink>
 
-        .navbar-brand {
-            padding-top: 0;
-            padding-bottom: 0;
-            height: 36px;
-            width: 162px;
-        }
+                    <UButton class="text-xl" variant="subtle" color="neutral" @click="onMobileHeaderClick">
+                        <HamburgerMenu />
+                    </UButton>
+                </div>
+                <UCollapsible v-model:open="isHeaderOpened" :unmountOnHide="false" class="collapse-root">
+                    <template #content>
+                        <div class="navbar-root">
+                            <div class="navbar-main">
+                                <ULink class="logo-link" :to="webSiteLink('/')">
+                                    <LogoFull />
+                                </ULink>
 
-        .b-avatar {
-            margin: -13px 5px -10px 0;
-        }
+                                <ul>
+                                    <li>
+                                        <ULink
+                                            :to="{name: 'wallets'}"
+                                            class="navbar-link"
+                                            exact
+                                            active-class="active"
+                                        >
+                                            {{ t('wallets.wallets') }}
+                                        </ULink>
+                                    </li>
+                                    <li>
+                                        <ULink
+                                            :to="{name: 'tags'}"
+                                            class="navbar-link"
+                                            exact
+                                            active-class="active"
+                                        >
+                                            {{ t('tags.tags') }}
+                                        </ULink>
+                                    </li>
+                                    <li>
+                                        <ULink
+                                            :to="{name: 'profile'}"
+                                            class="navbar-link"
+                                            exact
+                                            active-class="active"
+                                        >
+                                            {{ t('profile.profile') }}
+                                        </ULink>
+                                    </li>
+                                    <li>
+                                        <ULink
+                                            :to="webSiteLink('/help')"
+                                            class="navbar-link"
+                                        >
+                                            {{ t('help') }}
+                                        </ULink>
+                                    </li>
+                                    <li>
+                                        <ULink
+                                            :to="webSiteLink('/about')"
+                                            class="navbar-link truncate"
+                                        >
+                                            {{ t('about') }}
+                                        </ULink>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="navbar-right">
+                                <UButton
+                                    :icon="mode === 'dark' ? 'i-lucide-moon' : 'i-lucide-sun'"
+                                    color="neutral"
+                                    variant="subtle"
+                                    @click="mode = mode === 'dark' ? 'light' : 'dark'"
+                                    class="color-mode-selector cursor-pointer"
+                                />
+                                <UDropdownMenu
+                                    class="lang-selector"
+                                    :items="availableLocales"
+                                    :popper="{placement: 'bottom-start'}"
+                                >
+                                    <UButton
+                                        color="neutral"
+                                        :label="currentLocale?.flag"
+                                        variant="subtle"
+                                        trailing-icon="i-heroicons-chevron-down-20-solid"
+                                        class="cursor-pointer"
+                                    />
+                                </UDropdownMenu>
+                            </div>
+                        </div>
+                    </template>
+                </UCollapsible>
+            </div>
+        </UContainer>
+    </div>
+</template>
 
-        .current-locale {
-            color: rgba(0, 0, 0, 1);
-            line-height: 1;
-            font-size: 20px;
+<style>
+@import "tailwindcss";
+
+html.dark {
+    &, .footer, .header {
+        @apply bg-gray-800;
+
+        body {
+            @apply bg-gray-700;
         }
     }
+}
+
+html, .footer, .header {
+    @apply bg-gray-100;
+
+    body {
+        @apply bg-white;
+    }
+}
+
+@media (min-width: 768px) {
+    .header .navbar .collapse-root>div {
+        content-visibility: auto;
+    }
+}
+
+.header {
+    @apply mb-5 py-2 px-4 dark:border-gray-600;
+
+    border-bottom: 1px solid #e5e5e5;
+
+    .navbar {
+        .navbar-root {
+            @apply grid grid-flow-row justify-stretch md:grid-flow-col;
+        }
+
+        .navbar-mobile-head {
+            @apply flex justify-between md:hidden;
+        }
+
+        .navbar-main {
+            @apply flex justify-start;
+
+            .logo-link {
+                @apply hidden md:block;
+            }
+        }
+
+        .navbar-right {
+            @apply flex justify-start flex-col md:justify-end md:flex-row;
+        }
+
+        .logo-link {
+            width: 162px;
+
+            @apply inline-block my-0.5 mr-4 py-0 h-9;
+        }
+
+        .lang-selector {
+            @apply mr-4 text-xl ring-0;
+
+            & > div:first-child > button:first-child {
+                & > span:first-child {
+                    @apply mt-0.5 text-lg;
+                }
+
+                & > span:last-child {
+                    @apply text-black/50 hover:text-black/70 active:text-black/70 dark:text-white/80 dark:hover:text-green-500/100 dark:active:text-green-500/100;
+                }
+            }
+        }
+
+        .color-mode-selector {
+            @apply mr-4 ring-0;
+        }
+
+        .navbar-link {
+            @apply text-black/50 hover:text-black/70 active:text-black/70 dark:text-white/80 dark:hover:text-green-500/100 dark:active:text-green-500/100;
+        }
+
+        ul {
+            @apply flex flex-col md:flex-row;
+
+            li {
+                a {
+                    @apply block px-2 py-2 text-black/50 hover:text-black/70 active:text-black/70 dark:text-white/80 dark:hover:text-green-500/100 dark:active:text-green-500/100;
+
+                    &.active {
+                        @apply text-black/90 dark:text-green-500/80;
+                    }
+                }
+            }
+        }
+    }
+}
 </style>

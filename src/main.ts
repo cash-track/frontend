@@ -1,38 +1,19 @@
-import Vue from 'vue'
-import { BootstrapVue, BootstrapVueIcons } from 'bootstrap-vue'
-import VueVisibilityTrigger from 'vue-visibility-trigger'
-import VueMoment from 'vue-moment'
-import moment from 'moment';
-import 'moment/locale/uk';
+import './assets/main.css'
 
-// @ts-expect-error no declaration
-import ClickOutside from 'vue-click-outside'
-
-import 'bootstrap/dist/css/bootstrap.css'
-import 'bootstrap-vue/dist/bootstrap-vue.css'
+import { createApp } from 'vue'
+import { createPinia } from 'pinia'
+import ui from '@nuxt/ui/vue-plugin'
 
 import App from './App.vue'
-import './registerServiceWorker'
 import router from './router'
-import store from './store'
-import { money } from './shared/numbers'
 import i18n from './lang'
 
-Vue.config.productionTip = false
+const app = createApp(App)
 
-Vue.use(BootstrapVue)
-Vue.use(BootstrapVueIcons)
-Vue.use(VueMoment, {moment});
+app.use(createPinia())
+app.use(router)
+app.use(i18n)
+app.use(ui)
 
-Vue.component('vue-visibility-trigger', VueVisibilityTrigger)
 
-Vue.filter('money', money)
-
-Vue.directive('click-outside', ClickOutside)
-
-new Vue({
-  router,
-  store,
-  i18n,
-  render: h => h(App)
-}).$mount('#app')
+app.mount('#app')
