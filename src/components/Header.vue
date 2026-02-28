@@ -17,19 +17,21 @@ const mode = useColorMode()
 
 const isHeaderOpened = ref(false)
 const availableLocales = computed<DropdownMenuItem[][]>(() => {
-    return [locales.map<DropdownMenuItem>(function(item): DropdownMenuItem {
-        return {
-            label: item.name ?? '',
-            disabled: item.code === locale.value,
-            class: 'cursor-pointer',
-            onSelect() {
-                onLocaleChange(item)
-            },
-        }
-    })]
+    return [
+        locales.map<DropdownMenuItem>(function (item): DropdownMenuItem {
+            return {
+                label: item.name ?? '',
+                disabled: item.code === locale.value,
+                class: 'cursor-pointer',
+                onSelect() {
+                    onLocaleChange(item)
+                },
+            }
+        }),
+    ]
 })
 const currentLocale = computed(() => {
-    return locales.filter(i => i.code === locale.value).pop()
+    return locales.filter((i) => i.code === locale.value).pop()
 })
 
 function onLocaleChange(changed: LocaleInterface) {
@@ -46,9 +48,33 @@ watch(locale, (newLocale) => {
     // }
 })
 
+const profileMenuItems = computed<DropdownMenuItem[][]>(() => {
+    return [
+        [
+            {
+                label: t('profile.profile'),
+                icon: 'i-heroicons-user-circle-20-solid',
+                to: { name: 'profile' },
+            },
+            {
+                label: t('settings'),
+                icon: 'i-heroicons-cog-6-tooth-20-solid',
+                to: { name: 'settings.profile' },
+            },
+            {
+                label: t('signOut'),
+                icon: 'i-heroicons-arrow-right-on-rectangle-20-solid',
+                click: () => onLogout(),
+            },
+        ],
+    ]
+})
+
 function onMobileHeaderClick() {
     isHeaderOpened.value = !isHeaderOpened.value
 }
+
+function onLogout() {}
 </script>
 
 <template>
@@ -60,11 +86,20 @@ function onMobileHeaderClick() {
                         <LogoFull />
                     </ULink>
 
-                    <UButton class="text-xl" variant="subtle" color="neutral" @click="onMobileHeaderClick">
+                    <UButton
+                        class="text-xl"
+                        variant="subtle"
+                        color="neutral"
+                        @click="onMobileHeaderClick"
+                    >
                         <HamburgerMenu />
                     </UButton>
                 </div>
-                <UCollapsible v-model:open="isHeaderOpened" :unmountOnHide="false" class="collapse-root">
+                <UCollapsible
+                    v-model:open="isHeaderOpened"
+                    :unmountOnHide="false"
+                    class="collapse-root"
+                >
                     <template #content>
                         <div class="navbar-root">
                             <div class="navbar-main">
@@ -75,7 +110,7 @@ function onMobileHeaderClick() {
                                 <ul>
                                     <li>
                                         <ULink
-                                            :to="{name: 'wallets'}"
+                                            :to="{ name: 'wallets' }"
                                             class="navbar-link"
                                             exact
                                             active-class="active"
@@ -85,7 +120,7 @@ function onMobileHeaderClick() {
                                     </li>
                                     <li>
                                         <ULink
-                                            :to="{name: 'tags'}"
+                                            :to="{ name: 'tags' }"
                                             class="navbar-link"
                                             exact
                                             active-class="active"
@@ -95,7 +130,7 @@ function onMobileHeaderClick() {
                                     </li>
                                     <li>
                                         <ULink
-                                            :to="{name: 'profile'}"
+                                            :to="{ name: 'profile' }"
                                             class="navbar-link"
                                             exact
                                             active-class="active"
@@ -104,10 +139,7 @@ function onMobileHeaderClick() {
                                         </ULink>
                                     </li>
                                     <li>
-                                        <ULink
-                                            :to="webSiteLink('/help')"
-                                            class="navbar-link"
-                                        >
+                                        <ULink :to="webSiteLink('/help')" class="navbar-link">
                                             {{ t('help') }}
                                         </ULink>
                                     </li>
@@ -132,7 +164,7 @@ function onMobileHeaderClick() {
                                 <UDropdownMenu
                                     class="lang-selector"
                                     :items="availableLocales"
-                                    :popper="{placement: 'bottom-start'}"
+                                    :popper="{ placement: 'bottom-start' }"
                                 >
                                     <UButton
                                         color="neutral"
@@ -141,6 +173,35 @@ function onMobileHeaderClick() {
                                         trailing-icon="i-heroicons-chevron-down-20-solid"
                                         class="cursor-pointer"
                                     />
+                                </UDropdownMenu>
+                                <UDropdownMenu
+                                    class="profile-menu"
+                                    :items="profileMenuItems"
+                                    :popper="{ placement: 'bottom-start' }"
+                                >
+                                    <UButton
+                                        color="neutral"
+                                        variant="subtle"
+                                        trailing-icon="i-heroicons-chevron-down-20-solid"
+                                        class="cursor-pointer"
+                                        label="Volodymyr"
+                                    >
+                                        <template #leading>
+                                            <UAvatar
+                                                src="https://storage.cash-track.app/photos/20c3de50a626f1a5c580bc3b94a52bb0.jpg"
+                                                text="VK"
+                                                size="xs"
+                                            />
+                                        </template>
+                                    </UButton>
+
+                                    <template #item="{ item }">
+                                        <span class="truncate">{{ item.label }}</span>
+                                        <UIcon
+                                            :name="item.icon"
+                                            class="shrink-0 my-auto h-4 w-4 text-gray-400 dark:text-gray-500 ms-auto"
+                                        />
+                                    </template>
                                 </UDropdownMenu>
                             </div>
                         </div>
@@ -152,20 +213,36 @@ function onMobileHeaderClick() {
 </template>
 
 <style>
-@import "tailwindcss";
+@import 'tailwindcss';
 
 html.dark {
-    &, .footer, .header {
+    &,
+    .footer,
+    .header {
         @apply bg-gray-800;
+
+        border-bottom: 1px solid #474747;
 
         body {
             @apply bg-gray-700;
         }
     }
+
+    .header .navbar .navbar-link {
+        @apply text-white/80 hover:text-green-500 active:text-green-500;
+
+        &.active {
+            @apply text-green-500/80;
+        }
+    }
 }
 
-html, .footer, .header {
+html,
+.footer,
+.header {
     @apply bg-gray-100;
+
+    border-bottom: 1px solid #e5e5e5;
 
     body {
         @apply bg-white;
@@ -173,15 +250,13 @@ html, .footer, .header {
 }
 
 @media (min-width: 768px) {
-    .header .navbar .collapse-root>div {
+    .header .navbar .collapse-root > div {
         content-visibility: auto;
     }
 }
 
 .header {
     @apply mb-5 py-2 px-4 dark:border-gray-600;
-
-    border-bottom: 1px solid #e5e5e5;
 
     .navbar {
         .navbar-root {
@@ -212,24 +287,22 @@ html, .footer, .header {
 
         .lang-selector {
             @apply mr-4 text-xl ring-0;
-
-            & > div:first-child > button:first-child {
-                & > span:first-child {
-                    @apply mt-0.5 text-lg;
-                }
-
-                & > span:last-child {
-                    @apply text-black/50 hover:text-black/70 active:text-black/70 dark:text-white/80 dark:hover:text-green-500/100 dark:active:text-green-500/100;
-                }
-            }
         }
 
         .color-mode-selector {
             @apply mr-4 ring-0;
         }
 
+        .profile-menu {
+            @apply ring-0;
+        }
+
         .navbar-link {
-            @apply text-black/50 hover:text-black/70 active:text-black/70 dark:text-white/80 dark:hover:text-green-500/100 dark:active:text-green-500/100;
+            @apply text-black/50 hover:text-black/70 active:text-black/70 dark:text-white/80 dark:hover:text-green-500 dark:active:text-green-500;
+
+            &.active {
+                @apply text-black/90 dark:text-green-500/80;
+            }
         }
 
         ul {
@@ -237,11 +310,7 @@ html, .footer, .header {
 
             li {
                 a {
-                    @apply block px-2 py-2 text-black/50 hover:text-black/70 active:text-black/70 dark:text-white/80 dark:hover:text-green-500/100 dark:active:text-green-500/100;
-
-                    &.active {
-                        @apply text-black/90 dark:text-green-500/80;
-                    }
+                    @apply block px-2 py-2;
                 }
             }
         }
