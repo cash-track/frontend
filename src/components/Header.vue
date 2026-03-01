@@ -215,6 +215,8 @@ function onLogout() {}
 <style>
 @import 'tailwindcss';
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 html.dark {
     &,
     .footer,
@@ -225,14 +227,6 @@ html.dark {
 
         body {
             @apply bg-gray-700;
-        }
-    }
-
-    .header .navbar .navbar-link {
-        @apply text-white/80 hover:text-green-500 active:text-green-500;
-
-        &.active {
-            @apply text-green-500/80;
         }
     }
 }

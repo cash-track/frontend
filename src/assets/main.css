@@ -3,6 +3,8 @@
 
 @import './base.css';
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme static {
   --color-green-50: #f5fbf3;
   --color-green-100: #e4f8e2;

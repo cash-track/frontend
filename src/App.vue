@@ -14,7 +14,7 @@ const lang = computed(() => locales[locale.value].code)
 useHead({
     htmlAttrs: {
         lang,
-    }
+    },
 })
 </script>
 
@@ -25,8 +25,6 @@ useHead({
         <UContainer class="pb-1">
             <RouterView />
         </UContainer>
-
-
     </UApp>
 </template>
 
