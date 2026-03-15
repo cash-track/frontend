@@ -361,29 +361,29 @@ All three install groups passed `npm run build`, `npm run type-check`, and `npm 
 
 ---
 
-## Stage 2c: API Function Modules
+## Stage 2c: API Function Modules — 2026-03-15
 
 **Prerequisites:** Stage 2b
 **Estimated AI time:** ~1.5 h (1 session)
-**Files:** 11 API function modules
-**Status:** `[ ] Not started`
+**Files:** 12 API function modules
+**Status:** `[x] Done`
 
 **Goals:** Implement all API call functions as plain async functions returning typed model instances.
 
 ### Tasks
 
-- [ ] `src/api/currency.ts` — `getCurrencies(): Promise<Currency[]>`
-- [ ] `src/api/users.ts` — `getUser(id: number): Promise<UserShort>`
-- [ ] `src/api/auth.ts` — `login`, `loginPasskey`, `loginPasskeyInit`, `loginGoogle`, `register`, `logout`, `refreshToken`
-- [ ] `src/api/profile.ts` — `getProfile`, `updateProfile`, `uploadPhoto`, `updateLocale`, `checkNickName`, `getChargesFlowStats`, `getCounterStats`, `getLatestWallets`
-- [ ] `src/api/profile/email.ts` — `getEmailConfirmation`, `confirmEmail`, `resendEmailConfirmation`
-- [ ] `src/api/profile/password.ts` — `updatePassword`, `forgotPassword`, `resetPassword`
-- [ ] `src/api/profile/passkeys.ts` — `getPasskeys`, `initPasskey`, `storePasskey`, `deletePasskey`
-- [ ] `src/api/tags.ts` — `getTags`, `createTag`, `updateTag`, `deleteTag`, `getTagCharges`, `getTagTotals`, `getWalletTags`, `createWalletTag`, `updateWalletTag`, `deleteWalletTag`
-- [ ] `src/api/limits.ts` — `getLimits`, `createLimit`, `deleteLimit`
-- [ ] `src/api/charges.ts` — `getCharges`, `createCharge`, `getCharge`, `updateCharge`, `deleteCharge`, `getChargeTitles`
-- [ ] `src/api/wallets.ts` — `getWallets`, `getUnarchived`, `getArchived`, `getWallet`, `createWallet`, `updateWallet`, `deleteWallet`, `activateWallet`, `archiveWallet`, `getWalletTotals`, `sortWallets`, `shareWallet`, `unshareWallet`, `getWalletUsers`
-- [ ] `src/api/graph.ts` — `getChargesFlowByDate`
+- [x] `src/api/currency.ts` — `getCurrencies`, `getFeaturedCurrencies`
+- [x] `src/api/users.ts` — `findUserByEmail`, `findUsersByCommonWallets`
+- [x] `src/api/auth.ts` — `login`, `loginPasskey`, `loginPasskeyInit`, `loginGoogle`, `register`, `logout`, `refreshToken`
+- [x] `src/api/profile.ts` — `getProfile`, `updateProfile`, `uploadPhoto`, `updateLocale`, `checkNickName`, `getChargesFlowStats`, `getCounterStats`, `getLatestWallets`
+- [x] `src/api/profile/email.ts` — `getEmailConfirmation`, `confirmEmail`, `resendEmailConfirmation`
+- [x] `src/api/profile/password.ts` — `updatePassword`, `forgotPassword`, `resetPassword`
+- [x] `src/api/profile/passkeys.ts` — `getPasskeys`, `initPasskey`, `storePasskey`, `deletePasskey`
+- [x] `src/api/tags.ts` — `getTags`, `createTag`, `updateTag`, `deleteTag`, `getTagCharges`, `getTagTotals`, `getWalletTags`, `searchWalletTags`
+- [x] `src/api/limits.ts` — `getLimits`, `createLimit`, `updateLimit`, `deleteLimit`, `copyLimits`
+- [x] `src/api/charges.ts` — `getCharges`, `createCharge`, `updateCharge`, `deleteCharge`, `moveCharges`, `getChargeTitles`
+- [x] `src/api/wallets.ts` — `getWallets`, `getUnarchived`, `getArchived`, `getWallet`, `createWallet`, `updateWallet`, `deleteWallet`, `activateWallet`, `archiveWallet`, `unarchiveWallet`, `getWalletTotals`, `sortWallets`, `shareWallet`, `unshareWallet`, `getWalletUsers`
+- [x] `src/api/graph.ts` — `getChargesFlowByDate`
 
 ### Testing checkpoint
 
@@ -392,7 +392,12 @@ All three install groups passed `npm run build`, `npm run type-check`, and `npm 
 - `npm run build` — zero errors
 
 ### Notes
-<!-- Update after completing this stage -->
+
+- Plan listed `getUser(id)` for users.ts — no such endpoint in OAS; implemented `findUserByEmail` + `findUsersByCommonWallets` instead
+- Plan listed `createWalletTag`/`updateWalletTag`/`deleteWalletTag` — these don't exist in OAS (wallet tags are read-only derived views); implemented `getWalletTags` + `searchWalletTags` instead
+- Plan listed `getCharge` for charges.ts — no single-charge GET endpoint in OAS; skipped
+- Auth functions return `{ redirectUrl }` (gateway response), not raw JWT tokens — gateway sets cookies and wraps response
+- All 89 tests pass; build clean (chunk size warning is pre-existing)
 
 ---
 
