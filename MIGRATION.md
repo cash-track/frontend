@@ -278,12 +278,12 @@ All three install groups passed `npm run build`, `npm run type-check`, and `npm 
 
 ---
 
-## Stage 2a: API Client + Foundation Models
+## Stage 2a: API Client + Foundation Models — 2026-03-15
 
 **Prerequisites:** Stage 1
 **Estimated AI time:** ~45 min (1 session)
 **Files:** `client.ts`, `_validators.ts`, `models/error.ts`, `models/pagination.ts`, `shared/env.ts`
-**Status:** `[ ] Not started`
+**Status:** `[x] Complete`
 
 **Goals:** Build the axios client with CSRF retry logic and the shared validator utilities + foundation types that all domain models depend on.
 
@@ -309,7 +309,13 @@ All three install groups passed `npm run build`, `npm run type-check`, and `npm 
 - `npm run build` — zero errors
 
 ### Notes
-<!-- Update after completing this stage -->
+
+- `CsrfError` exported (not private) to enable clean unit testing of the retry path in `apiCall`.
+- `apiCall` accepts an optional `instanceFactory` param so tests can inject a mock `AxiosInstance` without any module-level mocking.
+- `src/shared/env.ts` added — thin wrapper over `import.meta.env` with strict `ImportMetaEnv` key typing; old `getEnv()` pattern (reading from `window.configs`) dropped — new app is pure Vite.
+- `src/shared/links.ts` extended with `gatewayLink()`.
+- `env.d.ts` updated: added `VITE_GATEWAY_URL`, removed the stale `// more env variables...` comment.
+- 39 unit tests written across 4 spec files; all pass.
 
 ---
 

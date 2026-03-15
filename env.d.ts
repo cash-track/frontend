@@ -7,7 +7,7 @@ interface ViteTypeOptions {
 
 interface ImportMetaEnv {
     readonly VITE_WEBSITE_URL: string
-    // more env variables...
+    readonly VITE_GATEWAY_URL: string
 }
 
 interface ImportMeta {
