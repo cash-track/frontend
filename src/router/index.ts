@@ -2,8 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import WalletsView from '@/views/WalletsView.vue'
 import ProfileView from '@/views/ProfileView.vue'
 import TagsView from '@/views/TagsView.vue'
-import DummyView from '@/views/TagsView.vue'
-import { MagicString } from 'vue/compiler-sfc'
+import DummyView from '@/views/DummyView.vue'
 
 const router = createRouter({
     history: createWebHistory(import.meta.env.BASE_URL),
@@ -123,9 +122,9 @@ router.beforeEach((to, from, next) => {
 
     if (nearestWithTitle) {
         if (to.params.nameForTitle && typeof to.params.nameForTitle === 'string' &&
-            nearestWithTitle.meta.namedTitle && nearestWithTitle.meta.namedTitle instanceof MagicString
+            typeof nearestWithTitle.meta.namedTitle === 'string'
         ) {
-            document.title = nearestWithTitle.meta.namedTitle.replaceAll('{name}', to.params.nameForTitle).toString()
+            document.title = nearestWithTitle.meta.namedTitle.replace(/\{name\}/g, to.params.nameForTitle as string)
         } else if (typeof nearestWithTitle.meta.title === 'string') {
             document.title = nearestWithTitle.meta.title;
         }

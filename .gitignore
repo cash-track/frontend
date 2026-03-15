@@ -43,3 +43,6 @@ playwright-report/
 # Auto-generated type declarations
 auto-imports.d.ts
 components.d.ts
+
+# Legacy Vue 2 app kept as reference during migration
+old/

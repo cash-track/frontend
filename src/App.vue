@@ -5,11 +5,11 @@ import { useI18n } from 'vue-i18n'
 import { useHead } from '@unhead/vue'
 import * as locales from '@nuxt/ui/locale'
 
-import Header from '@/components/Header.vue'
+import AppHeader from '@/components/AppHeader.vue'
 
 const { locale } = useI18n()
 
-const lang = computed(() => locales[locale.value].code)
+const lang = computed(() => locales[locale.value as keyof typeof locales].code)
 
 useHead({
     htmlAttrs: {
@@ -19,8 +19,8 @@ useHead({
 </script>
 
 <template>
-    <UApp :locale="locales[locale]">
-        <Header />
+    <UApp :locale="locales[locale as unknown as keyof typeof locales]">
+        <AppHeader />
 
         <UContainer class="pb-1">
             <RouterView />
