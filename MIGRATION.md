@@ -319,12 +319,12 @@ All three install groups passed `npm run build`, `npm run type-check`, and `npm 
 
 ---
 
-## Stage 2b: Domain Model Classes
+## Stage 2b: Domain Model Classes — 2026-03-15
 
 **Prerequisites:** Stage 2a
 **Estimated AI time:** ~1 h (1 session)
 **Files:** 8 model files in `src/api/models/`
-**Status:** `[ ] Not started`
+**Status:** `[x] Complete`
 
 **Goals:** Generate all domain model classes from the OpenAPI schema. Every model must parse, validate, and type-convert API responses.
 
@@ -351,7 +351,13 @@ All three install groups passed `npm run build`, `npm run type-check`, and `npm 
 - Manual: import `Wallet` in a component, verify IDE autocomplete shows all typed properties
 
 ### Notes
-<!-- Update after completing this stage -->
+
+- `Wallet` extends `WalletShort` via class inheritance to avoid duplicating 10 shared fields — `Wallet.from()` still constructs the full object directly via the parent constructor.
+- `wallet.ts` ↔ `charge.ts` is a circular ESM module reference (`Wallet` needs `Charge[]`; `Charge` needs `WalletShort`). Safe because both sides only reference each other inside method bodies, never at module init time. Confirmed working with Vite/ESM at build and test time.
+- `WalletTotalTag` is an inline `interface` (not a class) — it has no runtime parsing behaviour of its own, just plain data pulled from the array.
+- `WalletLimit.isExceeded` computed getter added as a convenience (percentage > 1).
+- `User.displayName` and `UserShort.displayName` getters added for use in header/avatar components.
+- 12 spec files, 83 tests total across both 2a and 2b; all pass.
 
 ---
 
