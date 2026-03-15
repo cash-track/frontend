@@ -221,32 +221,32 @@ Stages 5a, 6, 7, and 8a are independently startable after Stage 4. Within the wa
 
 ---
 
-## Stage 1: Library Versions Verification
+## Stage 1: Library Versions Verification — 2026-03-15
 
 **Prerequisites:** Stage 0
 **Estimated AI time:** ~30 min (1 session)
-**Status:** `[ ] Not started`
+**Status:** `[x] Complete`
 
 **Goals:** Lock in a stable dependency baseline. Add new runtime dependencies.
 
 ### Tasks
 
-- [ ] Run `npm outdated` — record all outdated packages
-- [ ] Re-verify latest versions: `npm show <pkg> version` for each package in the table above
-- [ ] Upgrade safe packages:
+- [x] Run `npm outdated` — record all outdated packages
+- [x] Re-verify latest versions: `npm show <pkg> version` for each package in the table above
+- [x] Upgrade safe packages:
   ```bash
   npm install vue@latest vue-i18n@latest "@nuxt/ui@latest" typescript@latest
   ```
-- [ ] Add new dependencies:
+- [x] Add new dependencies:
   ```bash
   npm install axios chart.js vue-chartjs
   ```
-- [ ] Upgrade to latest within current major for deferred packages:
+- [x] Upgrade to latest within current major for deferred packages:
   ```bash
   npm install "vue-router@^4" "vite@^6" "@vitejs/plugin-vue@^5" "vitest@^3"
   ```
-- [ ] Run `npm run build && npm run test:unit` after each install group; fix breakage before proceeding
-- [ ] Record final resolved versions in Notes below
+- [x] Run `npm run build && npm run test:unit` after each install group; fix breakage before proceeding
+- [x] Record final resolved versions in Notes below
 
 ### Testing checkpoint
 
@@ -256,7 +256,25 @@ Stages 5a, 6, 7, and 8a are independently startable after Stage 4. Within the wa
 - `npm run dev` — app loads without console errors
 
 ### Notes
-<!-- Record final installed versions here -->
+
+Final resolved versions after Stage 1:
+
+| Package | Version |
+|---|---|
+| `vue` | ^3.5.30 |
+| `vue-i18n` | ^11.3.0 |
+| `@nuxt/ui` | ^4.5.1 |
+| `typescript` | ^5.9.3 |
+| `axios` | ^1.13.6 |
+| `chart.js` | ^4.5.1 |
+| `vue-chartjs` | ^5.3.3 |
+| `vue-router` | ^4.6.4 (already current) |
+| `vite` | ^6.4.1 |
+| `@vitejs/plugin-vue` | ^5.2.4 |
+| `vitest` | ^3.1.1 (already current 3.x) |
+| `vue-tsc` | ^2.2.8 (deferred) |
+
+All three install groups passed `npm run build`, `npm run type-check`, and `npm run test:unit` without errors.
 
 ---
 
