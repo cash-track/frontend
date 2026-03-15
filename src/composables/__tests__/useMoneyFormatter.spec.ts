@@ -1,6 +1,11 @@
-import { describe, it, expect, beforeAll } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
+import { ref } from 'vue'
 import { Currency } from '@/api/models/currency'
 import { useMoneyFormatter } from '../useMoneyFormatter'
+
+vi.mock('vue-i18n', () => ({
+    useI18n: () => ({ locale: ref('en') }),
+}))
 
 const usdCurrency = new Currency({
     id: 'USD',
@@ -18,10 +23,6 @@ const eurCurrency = new Currency({
     char: '€',
     rate: 0.9,
     updatedAt: new Date(),
-})
-
-beforeAll(() => {
-    Object.defineProperty(navigator, 'language', { value: 'en-US', configurable: true })
 })
 
 describe('useMoneyFormatter', () => {

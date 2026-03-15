@@ -1,4 +1,8 @@
+import { useI18n } from 'vue-i18n'
+
 export function useTimeAgo() {
+    const { locale } = useI18n()
+
     function timeAgo(date: Date): string {
         const diffMs = date.getTime() - Date.now()
         const diffSecs = Math.round(diffMs / 1000)
@@ -9,7 +13,7 @@ export function useTimeAgo() {
         const diffMonths = Math.round(diffDays / 30)
         const diffYears = Math.round(diffDays / 365)
 
-        const rtf = new Intl.RelativeTimeFormat(navigator.language, { numeric: 'auto' })
+        const rtf = new Intl.RelativeTimeFormat(locale.value, { numeric: 'auto' })
 
         if (Math.abs(diffSecs) < 60) return rtf.format(diffSecs, 'second')
         if (Math.abs(diffMins) < 60) return rtf.format(diffMins, 'minute')

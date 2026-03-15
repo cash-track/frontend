@@ -1,16 +1,16 @@
-import { describe, it, expect, beforeAll } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
+import { ref } from 'vue'
 import { useTimeAgo } from '../useTimeAgo'
 
-beforeAll(() => {
-    Object.defineProperty(navigator, 'language', { value: 'en-US', configurable: true })
-})
+vi.mock('vue-i18n', () => ({
+    useI18n: () => ({ locale: ref('en') }),
+}))
 
 describe('useTimeAgo', () => {
     it('date 1 hour ago returns locale-appropriate string', () => {
         const { timeAgo } = useTimeAgo()
         const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000)
-        const result = timeAgo(oneHourAgo)
-        expect(result).toBe('1 hour ago')
+        expect(timeAgo(oneHourAgo)).toBe('1 hour ago')
     })
 
     it('date 2 hours ago', () => {
