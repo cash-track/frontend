@@ -289,12 +289,12 @@ All three install groups passed `npm run build`, `npm run type-check`, and `npm 
 
 ### Tasks
 
-- [ ] `src/shared/env.ts` — environment variable accessor; adapt `VUE_APP_*` → `VITE_*` (port from `old/src/shared/env.ts`)
-- [ ] `src/shared/links.ts` — verify existing `webSiteLink()` works with `VITE_WEBSITE_URL`; add `gatewayLink()` if needed
-- [ ] `src/api/models/_validators.ts` — implement all 7 validator functions: `requireString`, `requireNumber`, `requireBoolean`, `requireDate`, `optionalString`, `optionalDate`, `optionalNumber`
-- [ ] `src/api/models/error.ts` — `ApiError` class, `ValidationError` class
-- [ ] `src/api/models/pagination.ts` — generic `Pagination<T>` class with `from()` factory
-- [ ] `src/api/client.ts`:
+- [x] `src/shared/env.ts` — environment variable accessor; adapt `VUE_APP_*` → `VITE_*` (port from `old/src/shared/env.ts`)
+- [x] `src/shared/links.ts` — verify existing `webSiteLink()` works with `VITE_WEBSITE_URL`; add `gatewayLink()` if needed
+- [x] `src/api/models/_validators.ts` — implement all 7 validator functions: `requireString`, `requireNumber`, `requireBoolean`, `requireDate`, `optionalString`, `optionalDate`, `optionalNumber`
+- [x] `src/api/models/error.ts` — `ApiError` class, `ValidationError` class
+- [x] `src/api/models/pagination.ts` — generic `Pagination<T>` class with `from()` factory
+- [x] `src/api/client.ts`:
   - Axios instance: `baseURL: import.meta.env.VITE_GATEWAY_URL`, `withCredentials: true`
   - Response interceptor: 401 → redirect to `webSiteLink('/login')`
   - Response interceptor: 417 → throw `CsrfError`
@@ -332,14 +332,14 @@ All three install groups passed `npm run build`, `npm run type-check`, and `npm 
 
 ### Tasks
 
-- [ ] `src/api/models/currency.ts` — `Currency` (simplest, no nested models — start here)
-- [ ] `src/api/models/user.ts` — `User`, `UserShort`
-- [ ] `src/api/models/tag.ts` — `Tag`
-- [ ] `src/api/models/passkey.ts` — `Passkey` (usedAt is nullable Date)
-- [ ] `src/api/models/auth.ts` — `AuthResponse`, `EmailConfirmation`
-- [ ] `src/api/models/charge.ts` — `Charge` (nested: UserShort, Tag[], WalletShort), `ChargeTotal`, `ChargeTitleSuggestion`
-- [ ] `src/api/models/limit.ts` — `Limit` (nested: Tag[], WalletShort), `WalletLimit`
-- [ ] `src/api/models/wallet.ts` — `Wallet`, `WalletShort`, `WalletTotal` (most complex — nested: Currency, UserShort[], Charge[], and circular-ish references; build last)
+- [x] `src/api/models/currency.ts` — `Currency` (simplest, no nested models — start here)
+- [x] `src/api/models/user.ts` — `User`, `UserShort`
+- [x] `src/api/models/tag.ts` — `Tag`
+- [x] `src/api/models/passkey.ts` — `Passkey` (usedAt is nullable Date)
+- [x] `src/api/models/auth.ts` — `AuthResponse`, `EmailConfirmation`
+- [x] `src/api/models/charge.ts` — `Charge` (nested: UserShort, Tag[], WalletShort), `ChargeTotal`, `ChargeTitleSuggestion`
+- [x] `src/api/models/limit.ts` — `Limit` (nested: Tag[], WalletShort), `WalletLimit`
+- [x] `src/api/models/wallet.ts` — `Wallet`, `WalletShort`, `WalletTotal` (most complex — nested: Currency, UserShort[], Charge[], and circular-ish references; build last)
 
 > **Circular reference note:** `Wallet` contains `latestCharges: Charge[]` and `Charge` contains `wallet: WalletShort`. Use `WalletShort` (not `Wallet`) in `Charge` to avoid circular imports.
 
