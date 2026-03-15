@@ -447,16 +447,16 @@ All three install groups passed `npm run build`, `npm run type-check`, and `npm 
 **Prerequisites:** Stage 3a
 **Estimated AI time:** ~30 min (1 session)
 **Files:** 4 composables
-**Status:** `[ ] Not started`
+**Status:** `[x] Done — 2026-03-15`
 
 **Goals:** Extract reusable composables for formatting, error handling, and notifications.
 
 ### Tasks
 
-- [ ] `src/composables/useMoneyFormatter.ts` — `format(amount: number, currency: Currency): string`; port from `old/src/shared/numbers.ts`; use `Intl.NumberFormat`
-- [ ] `src/composables/useTimeAgo.ts` — `timeAgo(date: Date): string`; relative time using `Intl.RelativeTimeFormat`; no new dependency
-- [ ] `src/composables/useApiErrors.ts` — accepts Axios error, returns reactive `fieldErrors: Ref<Record<string, string[]>>` and `generalError: Ref<string | null>`; resets on new request
-- [ ] `src/composables/useNotifications.ts` — wrapper around Nuxt UI toast (`useToast`) for `notifySuccess(msg)` and `notifyError(msg)` with consistent styling
+- [x] `src/composables/useMoneyFormatter.ts` — `format(amount: number, currency: Currency): string`; port from `old/src/shared/numbers.ts`; use `Intl.NumberFormat`
+- [x] `src/composables/useTimeAgo.ts` — `timeAgo(date: Date): string`; relative time using `Intl.RelativeTimeFormat`; no new dependency
+- [x] `src/composables/useApiErrors.ts` — accepts Axios error, returns reactive `fieldErrors: Ref<Record<string, string[]>>` and `generalError: Ref<string | null>`; resets on new request
+- [x] `src/composables/useNotifications.ts` — wrapper around Nuxt UI toast (`useToast`) for `notifySuccess(msg)` and `notifyError(msg)` with consistent styling
 
 ### Testing checkpoint
 
@@ -465,7 +465,10 @@ All three install groups passed `npm run build`, `npm run type-check`, and `npm 
 - `npm run build` — zero errors
 
 ### Notes
-<!-- Update after completing this stage -->
+
+- `useToast` must be imported from `@nuxt/ui/composables`, not the root `@nuxt/ui` package (named export not re-exported from root in Vue/Vite mode).
+- `useMoneyFormatter` uses `Intl.NumberFormat` with `style: 'currency'` and the currency `code` field (ISO 4217); falls back to number + `char` if the code is invalid.
+- `useApiErrors.handleError` resets state before processing each new error, matching the "resets on new request" requirement.
 
 ---
 
