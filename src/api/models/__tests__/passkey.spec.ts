@@ -33,4 +33,12 @@ describe('Passkey.from', () => {
     it('throws on missing name', () => {
         expect(() => Passkey.from({ id: 7, createdAt: '2024-01-01T00:00:00Z' })).toThrow('"name"')
     })
+
+    it('throws on missing id', () => {
+        expect(() => Passkey.from({ name: 'Key', createdAt: '2024-01-01T00:00:00Z' })).toThrow('"id"')
+    })
+
+    it('throws on non-object', () => {
+        expect(() => Passkey.from(null)).toThrow('expected object')
+    })
 })

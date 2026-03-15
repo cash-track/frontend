@@ -21,6 +21,11 @@ describe('Pagination.from', () => {
         expect(p.hasPrev).toBe(false)
     })
 
+    it('parses hasPrev: true', () => {
+        const p = Pagination.from({ ...validRaw, page: 2, hasPrev: true })
+        expect(p.hasPrev).toBe(true)
+    })
+
     it('defaults hasNext/hasPrev to false when absent', () => {
         const raw = { page: 1, limit: 10, total: 5, totalPages: 1 }
         const p = Pagination.from(raw)

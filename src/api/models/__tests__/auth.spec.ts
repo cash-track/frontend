@@ -19,6 +19,15 @@ describe('AuthResponse.from', () => {
         expect(a.refreshTokenExpiredAt).toBeInstanceOf(Date)
     })
 
+    it('defaults type to "user" when missing', () => {
+        const a = AuthResponse.from({ ...raw, data: { id: 42 } })
+        expect(a.data.type).toBe('user')
+    })
+
+    it('throws when accessToken is missing', () => {
+        expect(() => AuthResponse.from({ ...raw, accessToken: undefined })).toThrow('"accessToken"')
+    })
+
     it('throws on missing data field', () => {
         expect(() => AuthResponse.from({ ...raw, data: undefined })).toThrow('missing data field')
     })
@@ -50,5 +59,9 @@ describe('EmailConfirmation.from', () => {
 
     it('throws on missing isValid', () => {
         expect(() => EmailConfirmation.from({ ...raw, isValid: undefined })).toThrow('"isValid"')
+    })
+
+    it('throws on non-object', () => {
+        expect(() => EmailConfirmation.from(null)).toThrow('expected object')
     })
 })

@@ -31,4 +31,12 @@ describe('Tag.from', () => {
     it('throws on missing name', () => {
         expect(() => Tag.from({ ...tagRaw, name: undefined })).toThrow('"name"')
     })
+
+    it('throws on missing id', () => {
+        expect(() => Tag.from({ ...tagRaw, id: undefined })).toThrow('"id"')
+    })
+
+    it('throws on non-object', () => {
+        expect(() => Tag.from(null)).toThrow('expected object')
+    })
 })

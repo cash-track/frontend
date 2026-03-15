@@ -45,6 +45,15 @@ describe('ValidationError.from', () => {
         expect(e.getFieldError('missing')).toBeNull()
     })
 
+    it('filters out non-string values within an error array', () => {
+        const e = ValidationError.from({ errors: { email: ['Required', 42, null] } })
+        expect(e.errors.email).toEqual(['Required'])
+    })
+
+    it('throws when errors field is not an object', () => {
+        expect(() => ValidationError.from({ errors: 'bad' })).toThrow('missing errors field')
+    })
+
     it('throws on missing errors field', () => {
         expect(() => ValidationError.from({})).toThrow('missing errors field')
     })

@@ -35,8 +35,22 @@ describe('Limit.from', () => {
         expect(l.createdAt).toBeInstanceOf(Date)
     })
 
+    it('parses + operation', () => {
+        const l = Limit.from({ ...limitRaw, operation: '+' })
+        expect(l.operation).toBe('+')
+    })
+
+    it('parses null wallet', () => {
+        const l = Limit.from({ ...limitRaw, wallet: null })
+        expect(l.wallet).toBeNull()
+    })
+
     it('throws on invalid operation', () => {
         expect(() => Limit.from({ ...limitRaw, operation: '*' })).toThrow('invalid operation')
+    })
+
+    it('throws on non-object', () => {
+        expect(() => Limit.from(null)).toThrow('expected object')
     })
 })
 
@@ -52,5 +66,14 @@ describe('WalletLimit.from', () => {
     it('isExceeded is true when percentage > 1', () => {
         const wl = WalletLimit.from({ amount: 600, percentage: 1.2, limit: limitRaw })
         expect(wl.isExceeded).toBe(true)
+    })
+
+    it('isExceeded is false at exactly 1.0', () => {
+        const wl = WalletLimit.from({ amount: 500, percentage: 1.0, limit: limitRaw })
+        expect(wl.isExceeded).toBe(false)
+    })
+
+    it('throws on non-object', () => {
+        expect(() => WalletLimit.from(null)).toThrow('expected object')
     })
 })

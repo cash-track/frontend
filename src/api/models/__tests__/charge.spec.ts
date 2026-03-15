@@ -65,6 +65,31 @@ describe('Charge.from', () => {
         expect(() => Charge.from({ ...chargeRaw, id: undefined })).toThrow('"id"')
     })
 
+    it('parses nested user when present', () => {
+        const userRaw = { id: 1, name: 'Alice', lastName: null, nickName: 'alice', photoUrl: null }
+        const c = Charge.from({ ...chargeRaw, user: userRaw })
+        expect(c.user?.id).toBe(1)
+        expect(c.user?.nickName).toBe('alice')
+    })
+
+    it('parses nested wallet when present', () => {
+        const walletRaw = {
+            id: 10, name: 'Main', slug: 'main', totalAmount: 0,
+            isActive: true, isPublic: false, isArchived: false,
+            defaultCurrencyCode: null, defaultCurrency: null,
+            createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T00:00:00Z',
+        }
+        const c = Charge.from({ ...chargeRaw, wallet: walletRaw })
+        expect(c.wallet?.id).toBe(10)
+        expect(c.wallet?.slug).toBe('main')
+    })
+
+    it('parses null user and wallet as null', () => {
+        const c = Charge.from(chargeRaw)
+        expect(c.user).toBeNull()
+        expect(c.wallet).toBeNull()
+    })
+
     it('throws on non-object', () => {
         expect(() => Charge.from(null)).toThrow('expected object')
     })
@@ -89,10 +114,24 @@ describe('ChargeTotal.from', () => {
     })
 })
 
+describe('ChargeTotal.from', () => {
+    it('throws on non-object', () => {
+        expect(() => ChargeTotal.from(null)).toThrow('expected object')
+    })
+})
+
 describe('ChargeTitleSuggestion.from', () => {
     it('parses title and count', () => {
         const s = ChargeTitleSuggestion.from({ title: 'Lunch', count: 12 })
         expect(s.title).toBe('Lunch')
         expect(s.count).toBe(12)
+    })
+
+    it('throws on missing title', () => {
+        expect(() => ChargeTitleSuggestion.from({ count: 1 })).toThrow('"title"')
+    })
+
+    it('throws on non-object', () => {
+        expect(() => ChargeTitleSuggestion.from(null)).toThrow('expected object')
     })
 })

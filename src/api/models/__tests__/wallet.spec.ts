@@ -40,8 +40,18 @@ describe('WalletShort.from', () => {
         expect(w.createdAt).toBeInstanceOf(Date)
     })
 
+    it('parses null defaultCurrency', () => {
+        const w = WalletShort.from({ ...walletShortRaw, defaultCurrency: null, defaultCurrencyCode: null })
+        expect(w.defaultCurrency).toBeNull()
+        expect(w.defaultCurrencyCode).toBeNull()
+    })
+
     it('throws on missing id', () => {
         expect(() => WalletShort.from({ ...walletShortRaw, id: undefined })).toThrow('"id"')
+    })
+
+    it('throws on non-object', () => {
+        expect(() => WalletShort.from(null)).toThrow('expected object')
     })
 })
 
@@ -78,6 +88,10 @@ describe('Wallet.from', () => {
     it('throws when id is missing', () => {
         expect(() => Wallet.from({ ...walletRaw, id: undefined })).toThrow('"id"')
     })
+
+    it('throws on non-object', () => {
+        expect(() => Wallet.from(null)).toThrow('expected object')
+    })
 })
 
 describe('WalletTotal.from', () => {
@@ -97,5 +111,14 @@ describe('WalletTotal.from', () => {
         const t = WalletTotal.from({})
         expect(t.totalAmount).toBe(0)
         expect(t.tags).toEqual([])
+    })
+
+    it('skips malformed (non-object) entries in tags array', () => {
+        const t = WalletTotal.from({ totalAmount: 0, totalIncomeAmount: 0, totalExpenseAmount: 0, tags: [null, 'bad', 42] })
+        expect(t.tags).toEqual([])
+    })
+
+    it('throws on non-object', () => {
+        expect(() => WalletTotal.from(null)).toThrow('expected object')
     })
 })

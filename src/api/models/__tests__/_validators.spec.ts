@@ -31,11 +31,23 @@ describe('requireNumber', () => {
     it('throws on missing key', () => {
         expect(() => requireNumber({}, 'amount')).toThrow('"amount"')
     })
+
+    it('throws on non-number value', () => {
+        expect(() => requireNumber({ amount: '99' }, 'amount')).toThrow('"amount"')
+    })
 })
 
 describe('requireBoolean', () => {
     it('returns true', () => {
         expect(requireBoolean({ active: true }, 'active')).toBe(true)
+    })
+
+    it('returns false', () => {
+        expect(requireBoolean({ active: false }, 'active')).toBe(false)
+    })
+
+    it('throws on missing key', () => {
+        expect(() => requireBoolean({}, 'active')).toThrow('"active"')
     })
 
     it('throws on string', () => {
@@ -50,12 +62,23 @@ describe('requireDate', () => {
         expect(d.getFullYear()).toBe(2024)
     })
 
+    it('accepts a Date instance directly', () => {
+        const input = new Date('2024-03-01T00:00:00Z')
+        const d = requireDate({ createdAt: input }, 'createdAt')
+        expect(d).toBeInstanceOf(Date)
+        expect(d.getTime()).toBe(input.getTime())
+    })
+
     it('throws on invalid date string', () => {
         expect(() => requireDate({ createdAt: 'not-a-date' }, 'createdAt')).toThrow('"createdAt"')
     })
 
     it('throws on missing key', () => {
         expect(() => requireDate({}, 'createdAt')).toThrow('"createdAt"')
+    })
+
+    it('throws on non-string non-Date value', () => {
+        expect(() => requireDate({ createdAt: 12345 }, 'createdAt')).toThrow('"createdAt"')
     })
 })
 
@@ -90,6 +113,10 @@ describe('optionalDate', () => {
         const d = optionalDate({ usedAt: '2024-06-01T00:00:00Z' }, 'usedAt')
         expect(d).toBeInstanceOf(Date)
     })
+
+    it('throws on invalid date string', () => {
+        expect(() => optionalDate({ usedAt: 'not-a-date' }, 'usedAt')).toThrow('"usedAt"')
+    })
 })
 
 describe('optionalNumber', () => {
@@ -97,7 +124,15 @@ describe('optionalNumber', () => {
         expect(optionalNumber({ rate: null }, 'rate')).toBeNull()
     })
 
+    it('returns null for undefined key', () => {
+        expect(optionalNumber({}, 'rate')).toBeNull()
+    })
+
     it('returns the number', () => {
         expect(optionalNumber({ rate: 1.5 }, 'rate')).toBe(1.5)
+    })
+
+    it('throws on non-number non-null value', () => {
+        expect(() => optionalNumber({ rate: 'high' }, 'rate')).toThrow('"rate"')
     })
 })

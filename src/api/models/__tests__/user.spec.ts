@@ -47,6 +47,10 @@ describe('UserShort.from', () => {
         expect(UserShort.from(userShortRaw).displayName).toBe('Alice')
     })
 
+    it('displayName includes lastName when present', () => {
+        expect(UserShort.from({ ...userShortRaw, lastName: 'Smith' }).displayName).toBe('Alice Smith')
+    })
+
     it('throws on missing id', () => {
         expect(() => UserShort.from({ ...userShortRaw, id: undefined })).toThrow('"id"')
     })
@@ -71,6 +75,10 @@ describe('User.from', () => {
 
     it('displayName includes lastName when present', () => {
         expect(User.from(userRaw).displayName).toBe('Alice Smith')
+    })
+
+    it('displayName returns name only when lastName is null', () => {
+        expect(User.from({ ...userRaw, lastName: null }).displayName).toBe('Alice')
     })
 
     it('throws on non-object', () => {
