@@ -112,9 +112,7 @@ describe('ChargeTotal.from', () => {
         expect(t.totalAmount).toBe(0)
         expect(t.currency).toBeNull()
     })
-})
 
-describe('ChargeTotal.from', () => {
     it('throws on non-object', () => {
         expect(() => ChargeTotal.from(null)).toThrow('expected object')
     })
