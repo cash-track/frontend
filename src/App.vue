@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { RouterView } from 'vue-router'
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useHead } from '@unhead/vue'
 import * as locales from '@nuxt/ui/locale'
 
 import AppHeader from '@/components/AppHeader.vue'
+import { useProfileStore } from '@/stores/profile'
+import { useLocaleStore, syncLocaleWithI18n } from '@/stores/locale'
 
 const { locale } = useI18n()
 
@@ -16,6 +18,13 @@ useHead({
         lang,
     },
 })
+
+const localeStore = useLocaleStore()
+localeStore.loadCachedLocale()
+syncLocaleWithI18n()
+
+const profileStore = useProfileStore()
+onMounted(() => profileStore.loadProfile())
 </script>
 
 <template>

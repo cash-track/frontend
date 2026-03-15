@@ -1,12 +1,52 @@
-import { ref } from 'vue'
+import { shallowRef, watch } from 'vue'
 import { defineStore } from 'pinia'
+import { useI18n } from 'vue-i18n'
+
+const LOCALE_COOKIE = 'cshtrkl'
+const COOKIE_MAX_AGE = 365 * 24 * 60 * 60 // 365 days in seconds
+
+function readLocaleCookie(): string | null {
+    const match = document.cookie.match(/(?:^|;\s*)cshtrkl=([^;]*)/)
+    return match ? decodeURIComponent(match[1]) : null
+}
+
+function writeLocaleCookie(locale: string) {
+    document.cookie = [
+        `${LOCALE_COOKIE}=${encodeURIComponent(locale)}`,
+        'path=/',
+        `max-age=${COOKIE_MAX_AGE}`,
+        'SameSite=Strict',
+    ].join('; ')
+}
 
 export const useLocaleStore = defineStore('locale', () => {
-  const locale = ref('en')
+    const locale = shallowRef<'en' | 'uk'>('en')
 
-  function localeChange(newLocale: 'en' | 'uk') {
-    locale.value = newLocale
-  }
+    function localeChange(newLocale: 'en' | 'uk') {
+        locale.value = newLocale
+        writeLocaleCookie(newLocale)
+    }
 
-  return { locale, localeChange }
+    function loadCachedLocale() {
+        const cached = readLocaleCookie()
+        if (cached === 'en' || cached === 'uk') {
+            locale.value = cached
+            writeLocaleCookie(cached)
+        } else {
+            writeLocaleCookie(locale.value)
+        }
+    }
+
+    return { locale, localeChange, loadCachedLocale }
 })
+
+export function syncLocaleWithI18n() {
+    const localeStore = useLocaleStore()
+    const { locale: i18nLocale } = useI18n()
+
+    watch(
+        () => localeStore.locale,
+        (val) => { i18nLocale.value = val },
+        { immediate: true },
+    )
+}

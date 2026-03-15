@@ -406,25 +406,25 @@ All three install groups passed `npm run build`, `npm run type-check`, and `npm 
 **Prerequisites:** Stage 2c
 **Estimated AI time:** ~45 min (1 session)
 **Files:** 4 store files
-**Status:** `[ ] Not started`
+**Status:** `[x] Complete — 2026-03-15`
 
 **Goals:** Replace Vuex with Pinia stores for auth, profile, and wallets state.
 
 ### Tasks
 
-- [ ] `src/stores/auth.ts` — `useAuthStore`:
+- [x] `src/stores/auth.ts` — `useAuthStore`:
   - State: `isLogged: boolean`, `isEmailConfirmed: boolean`
   - Actions: `login(profile: User)`, `logout()` (clears state, redirects to `webSiteLink('/')`)
-- [ ] `src/stores/profile.ts` — `useProfileStore`:
+- [x] `src/stores/profile.ts` — `useProfileStore`:
   - State: `profile: User | null`, `loading: boolean`
   - Actions: `loadProfile()` (calls `getProfile()`, commits to auth store, syncs locale from profile), `updatePhotoUrl(url: string)`
-- [ ] `src/stores/wallets.ts` — `useWalletsStore`:
+- [x] `src/stores/wallets.ts` — `useWalletsStore`:
   - State: `activeWallets: Wallet[]`, `loading: boolean`, `failed: boolean`
   - Actions: `loadActive()` (calls `getUnarchived()`, handles error state)
-- [ ] Update `src/stores/locale.ts`:
+- [x] Update `src/stores/locale.ts`:
   - Add cookie persistence (`cshtrkl` cookie, 365 days, strict sameSite)
   - Add `loadCachedLocale()` action
-  - Sync with vue-i18n `locale` ref on change
+  - Sync with vue-i18n `locale` ref on change via exported `syncLocaleWithI18n()` helper
 
 ### Testing checkpoint
 
@@ -433,7 +433,12 @@ All three install groups passed `npm run build`, `npm run type-check`, and `npm 
 - Manual: wire `loadProfile()` to `App.vue` `onMounted`, verify profile appears in Pinia devtools
 
 ### Notes
-<!-- Update after completing this stage -->
+
+- `js-cookie` not installed; cookie helpers implemented inline in `locale.ts` using native `document.cookie`
+- `syncLocaleWithI18n()` exported from `locale.ts` and called in `App.vue` — wires `watch(localeStore.locale → i18nLocale)` with `immediate: true`
+- `locale.ts` uses `shallowRef` for primitives per reactivity guidelines
+- `updatePhotoUrl` spreads profile object to trigger `shallowRef` reactivity (class instances need full replacement)
+- `vi.hoisted()` required for mock variables in profile/wallets tests due to vitest hoisting behaviour
 
 ---
 
