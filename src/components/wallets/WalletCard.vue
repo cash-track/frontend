@@ -56,7 +56,8 @@ function navigate() {
 
 <template>
     <div
-        class="cursor-pointer rounded-lg border border-default bg-elevated hover:border-primary transition-colors"
+        class="cursor-pointer rounded-lg border border-default hover:border-primary transition-colors"
+        :class="wallet.isActive ? 'bg-default' : 'bg-elevated'"
         @click="navigate"
     >
         <!-- Header: name + status badge -->
@@ -73,7 +74,7 @@ function navigate() {
         </div>
 
         <!-- Balance row -->
-        <div class="px-4 pb-3 flex justify-between items-center border-t border-default">
+        <div class="px-4 py-3 flex justify-between items-center border-t border-default">
             <span class="text-sm text-muted truncate">
                 {{ wallet.defaultCurrency ? t(`currency.${wallet.defaultCurrency.code}`) : '' }}
                 <template v-if="wallet.defaultCurrency">({{ wallet.defaultCurrency.code }})</template>

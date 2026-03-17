@@ -1,17 +1,30 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
+import draggable from 'vuedraggable'
 import { useWalletsStore } from '@/stores/wallets'
-import WalletsGridList from './WalletsGridList.vue'
+import { sortWallets } from '@/api/wallets'
+import type { Wallet } from '@/api/models/wallet'
+import WalletCard from './WalletCard.vue'
 
 const { t } = useI18n()
 const walletsStore = useWalletsStore()
 const { activeWallets, loading, failed } = storeToRefs(walletsStore)
 
+const localWallets = ref<Wallet[]>([])
+
+watch(activeWallets, (wallets) => {
+    localWallets.value = [...wallets]
+}, { immediate: true })
+
 const showEmpty = computed(
-    () => !loading.value && !failed.value && activeWallets.value.length === 0,
+    () => !loading.value && !failed.value && localWallets.value.length === 0,
 )
+
+async function onDragEnd() {
+    await sortWallets(localWallets.value.map(w => w.id))
+}
 </script>
 
 <template>
@@ -43,10 +56,20 @@ const showEmpty = computed(
             }]"
         />
 
-        <WalletsGridList
+        <draggable
             v-else
-            :wallets="activeWallets"
-            :by-archived="false"
-        />
+            v-model="localWallets"
+            item-key="id"
+            :animation="200"
+            ghost-class="opacity-50"
+            :delay="250"
+            :delay-on-touch-only="true"
+            class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+            @end="onDragEnd"
+        >
+            <template #item="{ element }">
+                <WalletCard :wallet="element" />
+            </template>
+        </draggable>
     </div>
 </template>
