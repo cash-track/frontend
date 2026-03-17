@@ -36,7 +36,7 @@ const year = new Date().getFullYear()
                             class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
                             aria-label="Telegram"
                         >
-                            <UIcon name="i-simple-icons-telegram" class="size-4" />
+                            <UIcon name="simple-icons:telegram" class="size-4" />
                         </ULink>
                     </nav>
                 </div>
