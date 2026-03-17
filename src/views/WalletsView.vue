@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useWalletsStore } from '@/stores/wallets'
 import WalletsActiveGridList from '@/components/wallets/WalletsActiveGridList.vue'
@@ -10,10 +10,10 @@ const walletsStore = useWalletsStore()
 
 onMounted(() => walletsStore.loadActive())
 
-const tabs = [
+const tabs = computed(() => [
     { label: t('wallets.activeTitle'), slot: 'active' as const },
     { label: t('wallets.archivedTitle'), slot: 'archived' as const },
-]
+])
 </script>
 
 <template>
