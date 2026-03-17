@@ -1,6 +1,6 @@
 import { shallowRef, watch } from 'vue'
 import { defineStore } from 'pinia'
-import { useI18n } from 'vue-i18n'
+import { loadLocaleAsync } from '@/lang'
 
 const LOCALE_COOKIE = 'cshtrkl'
 const COOKIE_MAX_AGE = 365 * 24 * 60 * 60 // 365 days in seconds
@@ -42,11 +42,10 @@ export const useLocaleStore = defineStore('locale', () => {
 
 export function syncLocaleWithI18n() {
     const localeStore = useLocaleStore()
-    const { locale: i18nLocale } = useI18n()
 
     watch(
         () => localeStore.locale,
-        (val) => { i18nLocale.value = val },
+        (val) => { loadLocaleAsync(val) },
         { immediate: true },
     )
 }
