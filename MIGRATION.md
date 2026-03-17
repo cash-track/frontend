@@ -521,7 +521,7 @@ All three install groups passed `npm run build`, `npm run type-check`, and `npm 
 **Prerequisites:** Stage 4
 **Estimated AI time:** ~1 h (1 session)
 **Files:** 4 new components + WalletsView update
-**Status:** `[ ] Not started`
+**Status:** `[x] Complete — 2026-03-17`
 
 **Goals:** Implement the wallets listing page with active/archived tabs and wallet cards.
 
@@ -529,10 +529,10 @@ All three install groups passed `npm run build`, `npm run type-check`, and `npm 
 
 ### Tasks
 
-- [ ] `src/views/WalletsView.vue` — replace stub; `UTabs` (Active/Archived tabs); "Create wallet" `UButton` linking to `wallets.create`; calls `useWalletsStore().loadActive()` on mount
-- [ ] `src/components/wallets/WalletsActiveGridList.vue` — reads from `useWalletsStore`, renders loading/error/empty states, passes wallets to `WalletsGridList`
-- [ ] `src/components/wallets/WalletsGridList.vue` — accepts `wallets: Wallet[]` prop + `byArchived: boolean`; calls `getArchived()` when `byArchived`; renders grid of `WalletCard`
-- [ ] `src/components/wallets/WalletCard.vue`:
+- [x] `src/views/WalletsView.vue` — replace stub; `UTabs` (Active/Archived tabs); "Create wallet" `UButton` linking to `wallets.create`; calls `useWalletsStore().loadActive()` on mount
+- [x] `src/components/wallets/WalletsActiveGridList.vue` — reads from `useWalletsStore`, renders loading/error/empty states, passes wallets to `WalletsGridList`
+- [x] `src/components/wallets/WalletsGridList.vue` — accepts `wallets: Wallet[]` prop + `byArchived: boolean`; calls `getArchived()` when `byArchived`; renders grid of `WalletCard`
+- [x] `src/components/wallets/WalletCard.vue`:
   - Shows: name, balance (formatted via `useMoneyFormatter`), currency code, member avatars (`UAvatar`), last updated (`useTimeAgo`), latest 3 charges preview
   - Active badge (`UBadge`) if `wallet.isActive`; Archived badge if `wallet.isArchived`
   - Click → `router.push({ name: 'wallets.show', params: { walletID } })`
@@ -549,7 +549,10 @@ All three install groups passed `npm run build`, `npm run type-check`, and `npm 
 - `npm run build` — zero errors
 
 ### Notes
-<!-- Update after completing this stage -->
+
+- `WalletsView` passes empty `wallets=[]` to `WalletsGridList` for the archived tab — the component fetches its own data when `byArchived=true`.
+- Used `vue-best-practices` + `nuxt-ui` skills; loaded `tailwind-design-system` skill implicitly for grid pattern.
+- Unit tests use component stubs for Nuxt UI components (UBadge, UAvatar, etc.) to avoid UApp dependency.
 
 ---
 
