@@ -5,6 +5,9 @@ import { useI18n } from 'vue-i18n'
 import { useColorMode } from '@vueuse/core'
 import type { DropdownMenuItem } from '@nuxt/ui'
 import { useLocaleStore } from '@/stores/locale'
+import { useAuthStore } from '@/stores/auth'
+import { useProfileStore } from '@/stores/profile'
+import { updateLocale } from '@/api/profile'
 import { webSiteLink } from '@/shared/links'
 import { locales, loadLocaleAsync, type LocaleInterface } from '@/lang'
 import LogoFull from '@/components/LogoFull.vue'
@@ -13,6 +16,10 @@ import HamburgerMenu from '@/components/Shared/HamburgerMenu.vue'
 const { t } = useI18n()
 const localeStore = useLocaleStore()
 const { locale } = storeToRefs(localeStore)
+const authStore = useAuthStore()
+const { isLogged } = storeToRefs(authStore)
+const profileStore = useProfileStore()
+const { profile } = storeToRefs(profileStore)
 const mode = useColorMode()
 
 const isHeaderOpened = ref(false)
@@ -41,11 +48,9 @@ function onLocaleChange(changed: LocaleInterface) {
 watch(locale, (newLocale) => {
     loadLocaleAsync(newLocale)
 
-    // TODO. Set locale for moment.js
-
-    // if (isLogged.value) {
-    // profilePutLocale(changed.code)
-    // }
+    if (isLogged.value) {
+        updateLocale(newLocale).catch(() => {})
+    }
 })
 
 const profileMenuItems = computed<DropdownMenuItem[][]>(() => {
@@ -74,7 +79,9 @@ function onMobileHeaderClick() {
     isHeaderOpened.value = !isHeaderOpened.value
 }
 
-function onLogout() {}
+function onLogout() {
+    authStore.logout()
+}
 </script>
 
 <template>
@@ -184,12 +191,12 @@ function onLogout() {}
                                         variant="subtle"
                                         trailing-icon="i-heroicons-chevron-down-20-solid"
                                         class="cursor-pointer"
-                                        label="Volodymyr"
+                                        :label="profile?.displayName"
                                     >
                                         <template #leading>
                                             <UAvatar
-                                                src="https://storage.cash-track.app/photos/20c3de50a626f1a5c580bc3b94a52bb0.jpg"
-                                                text="VK"
+                                                :src="profile?.photoUrl ?? undefined"
+                                                :text="profile?.name?.charAt(0)"
                                                 size="xs"
                                             />
                                         </template>

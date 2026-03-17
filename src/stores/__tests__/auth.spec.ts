@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 
 vi.mock('@/shared/links', () => ({ webSiteLink: (p: string) => `https://website.test${p}` }))
+vi.mock('@/api/auth', () => ({ logout: vi.fn().mockResolvedValue({}) }))
 
 const assignSpy = vi.fn()
 vi.stubGlobal('window', { location: { set href(v: string) { assignSpy(v) } } })
@@ -50,10 +51,10 @@ describe('useAuthStore', () => {
         expect(store.isEmailConfirmed).toBe(false)
     })
 
-    it('logout() resets state and redirects to website root', () => {
+    it('logout() resets state and redirects to website root', async () => {
         const store = useAuthStore()
         store.login(mockUser)
-        store.logout()
+        await store.logout()
         expect(store.isLogged).toBe(false)
         expect(store.isEmailConfirmed).toBe(false)
         expect(assignSpy).toHaveBeenCalledWith('https://website.test/')

@@ -472,12 +472,12 @@ All three install groups passed `npm run build`, `npm run type-check`, and `npm 
 
 ---
 
-## Stage 4: App Shell + Layout
+## Stage 4: App Shell + Layout — 2026-03-17
 
 **Prerequisites:** Stage 3b
 **Estimated AI time:** ~45 min (1 session)
 **Files:** 3 files modified/created
-**Status:** `[ ] Not started`
+**Status:** `[x] Complete`
 
 **Goals:** Wire the app shell so profile loads on mount, layout renders correctly for authenticated users, navigation is functional, and the email-not-confirmed banner works globally.
 
@@ -485,17 +485,17 @@ All three install groups passed `npm run build`, `npm run type-check`, and `npm 
 
 ### Tasks
 
-- [ ] `src/App.vue`:
+- [x] `src/App.vue`:
   - Call `useProfileStore().loadProfile()` on mount
   - Show loading skeleton (Tailwind `animate-pulse`) while profile loads
   - Conditionally render layout vs. redirect based on `useAuthStore().isLogged`
-- [ ] Wire `src/components/Header.vue` to real stores:
+- [x] Wire `src/components/AppHeader.vue` to real stores:
   - User name/avatar from `useProfileStore`
   - Logout button → `useAuthStore().logout()`
   - Active nav item highlights current route via `useRoute()`
   - Locale switcher → `useLocaleStore`
-- [ ] `src/components/Footer.vue` — port from `old/src/components/Footer.vue`; replace Bootstrap with Tailwind/Nuxt UI
-- [ ] Global email-not-confirmed banner in `App.vue` — `UAlert` shown when `!useAuthStore().isEmailConfirmed`; resend button calls `resendEmailConfirmation()`
+- [x] `src/components/AppFooter.vue` — port from `old/src/components/Footer.vue`; replace Bootstrap with Tailwind/Nuxt UI
+- [x] Global email-not-confirmed banner in `App.vue` — `UAlert` shown when `!useAuthStore().isEmailConfirmed`; resend button calls `resendEmailConfirmation()`
 
 ### Testing checkpoint
 
@@ -506,7 +506,13 @@ All three install groups passed `npm run build`, `npm run type-check`, and `npm 
 - `npm run build` — zero errors
 
 ### Notes
-<!-- Update after completing this stage -->
+
+- Header file is `AppHeader.vue` (not `Header.vue` as planned); footer created as `AppFooter.vue` for naming consistency.
+- `useAuthStore.logout()` made async — calls `POST /api/auth/logout` before redirecting; errors are swallowed so redirect always fires.
+- Locale switcher now calls `updateLocale()` API when user is logged in (previously a TODO comment).
+- `v-else-if="isLogged"` guards the full layout so unauthenticated users see only the loading skeleton until the automatic redirect fires.
+- Two unit tests updated to mock `@/api/auth` logout and `await store.logout()` — all 221 tests pass.
+- `i-simple-icons-telegram` icon used in footer; requires `@iconify-json/simple-icons` already installed.
 
 ---
 

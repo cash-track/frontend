@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 
 vi.mock('@/shared/links', () => ({ webSiteLink: (p: string) => `https://website.test${p}` }))
+vi.mock('@/api/auth', () => ({ logout: vi.fn().mockResolvedValue({}) }))
 vi.stubGlobal('window', { location: { set href(_v: string) {} } })
 
 const { mockGetProfile } = vi.hoisted(() => ({ mockGetProfile: vi.fn() }))

@@ -1,6 +1,7 @@
 import { shallowRef } from 'vue'
 import { defineStore } from 'pinia'
 import type { User } from '@/api/models/user'
+import { logout as apiLogout } from '@/api/auth'
 import { webSiteLink } from '@/shared/links'
 
 export const useAuthStore = defineStore('auth', () => {
@@ -12,7 +13,12 @@ export const useAuthStore = defineStore('auth', () => {
         isEmailConfirmed.value = profile.isEmailConfirmed
     }
 
-    function logout() {
+    async function logout() {
+        try {
+            await apiLogout()
+        } catch {
+            // redirect regardless
+        }
         isLogged.value = false
         isEmailConfirmed.value = false
         window.location.href = webSiteLink('/')
