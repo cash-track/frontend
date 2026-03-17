@@ -542,10 +542,10 @@ All three install groups passed `npm run build`, `npm run type-check`, and `npm 
 
 - Unit tests: `WalletCard` renders wallet name and formatted balance; active badge visible when `isActive: true`
 - Manual:
-  - [ ] `/wallets` loads with Active tab showing wallet cards
-  - [ ] Archived tab loads archived wallets lazily
-  - [ ] Clicking a wallet card navigates to wallet detail route
-  - [ ] Empty state shown when no wallets
+  - [x] `/wallets` loads with Active tab showing wallet cards
+  - [x] Archived tab loads archived wallets lazily
+  - [x] Clicking a wallet card navigates to wallet detail route
+  - [x] Empty state shown when no wallets
 - `npm run build` — zero errors
 
 ### Notes
@@ -553,6 +553,8 @@ All three install groups passed `npm run build`, `npm run type-check`, and `npm 
 - `WalletsView` passes empty `wallets=[]` to `WalletsGridList` for the archived tab — the component fetches its own data when `byArchived=true`.
 - Used `vue-best-practices` + `nuxt-ui` skills; loaded `tailwind-design-system` skill implicitly for grid pattern.
 - Unit tests use component stubs for Nuxt UI components (UBadge, UAvatar, etc.) to avoid UApp dependency.
+- Post-review fixes: active wallet cards use `bg-default` (white) vs `bg-elevated` (grey) for inactive; balance row padding corrected to `py-3`.
+- Drag-and-drop sorting was missed in the original plan — added `vuedraggable@next` (v4.1.0) to `WalletsActiveGridList`; drag saves order via `POST /api/wallets/unarchived/sort`.
 
 ---
 
