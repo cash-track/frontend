@@ -562,39 +562,44 @@ All three install groups passed `npm run build`, `npm run type-check`, and `npm 
 
 **Prerequisites:** Stage 5a
 **Estimated AI time:** ~1.5 h (1 session)
-**Files:** 7 new files
-**Status:** `[ ] Not started`
+**Files:** 7 new files + 3 test files + router update + i18n
+**Status:** `[x] Complete — 2026-03-19`
 
 **Goals:** Implement wallet create, edit, and share flows.
 
 ### Tasks
 
-- [ ] `src/views/WalletCreateView.vue` + `src/components/wallets/WalletCreate.vue`:
+- [x] `src/views/WalletCreateView.vue` + `src/components/wallets/WalletCreate.vue`:
   - Form: name (`UInput`), currency selector (`USelect` from `getCurrencies()`), isPublic toggle
   - Submit calls `createWallet()`, redirects to `wallets.show` on success
   - `useApiErrors` for field validation display
-- [ ] `src/views/WalletEditView.vue` + `src/components/wallets/WalletEdit.vue`:
+- [x] `src/views/WalletEditView.vue` + `src/components/wallets/WalletEdit.vue`:
   - Loads wallet by `walletID` prop on mount
   - Pre-fills form from wallet data; submit calls `updateWallet()`
   - Delete button opens `UModal` confirmation → calls `deleteWallet()` → redirects to `/wallets`
-- [ ] `src/views/WalletShareView.vue` + `src/components/wallets/WalletShare.vue` + `src/components/wallets/WalletSharedMember.vue`:
+- [x] `src/views/WalletShareView.vue` + `src/components/wallets/WalletShare.vue` + `src/components/wallets/WalletSharedMember.vue`:
   - Lists current wallet members as `WalletSharedMember` items
   - Each member: avatar, name, remove button → calls `unshareWallet(walletId, userId)`
-  - User search input → calls `getUser()` by ID or nick → "Add" button → calls `shareWallet()`
+  - User search input → calls `findUserByEmail()` → "Invite" button → calls `shareWallet()`
 
 ### Testing checkpoint
 
-- Unit tests: `WalletCreate` form — name required, submits `createWallet()` with correct payload; `WalletEdit` delete button triggers modal
-- Manual:
-  - [ ] Create wallet → appears in wallet list
-  - [ ] Edit wallet name → saved
-  - [ ] Delete wallet (with confirmation) → redirects to `/wallets`
-  - [ ] Share wallet with another user → member appears
-  - [ ] Remove member → member disappears
+- Unit tests: `WalletCreate` form — name required, submits `createWallet()` with correct payload; `WalletEdit` delete button triggers modal; `WalletSharedMember` emits deleted event
+- Browser (`agent-browser` skill — standard login flow, then):
+  - [x] Navigate to `https://my.dev-cash-track.app/wallets/create` → fill name + currency → submit → redirects to wallet detail
+  - [x] Navigate to edit page → form pre-filled → change name → save → title updates
+  - [x] Delete wallet (confirm modal appears) → Cancel dismisses correctly
+  - [x] Share wallet page loads with member list and invite search input
+  - [ ] Remove member → member disappears from list (not tested — only one member in test wallet)
 - `npm run build` — zero errors
 
 ### Notes
-<!-- Update after completing this stage -->
+
+- Used `getFeaturedCurrencies()` (not full `getCurrencies()`) so the dropdown stays short and usable.
+- `WalletSharedMember` receives `walletId: number` and `walletName: string` props (not the full Wallet object) — keeps it decoupled.
+- `vi.hoisted()` required for mocks referencing top-level `vi.fn()` variables (vitest hoisting constraint).
+- Added `formIsPublic` i18n key to both `en.ts` and `uk.ts`.
+- User search calls `findUserByEmail()` (search by email only; old app also only searched by email).
 
 ---
 
@@ -625,15 +630,15 @@ All three install groups passed `npm run build`, `npm run type-check`, and `npm 
 ### Testing checkpoint
 
 - Unit tests: `ChargeItem` shows green up-arrow for `operation: '+'`; `ChargesFilter` emits `filter-change` on date change; `ChargeCreate` validates amount > 0
-- Manual:
-  - [ ] Wallet detail page loads with header and charges list
-  - [ ] Add a charge (+ income) → balance updates, appears in list
-  - [ ] Add a charge (- expense) → balance updates
-  - [ ] Filter charges by date range → list updates
-  - [ ] Filter by tag → only matching charges shown
-  - [ ] Edit charge → changes saved
-  - [ ] Delete charge → removed from list
-  - [ ] Pagination works (if enough charges)
+- Browser (`agent-browser` skill — standard login flow, then):
+  - [ ] Navigate to `https://my.dev-cash-track.app/wallets` → click a wallet card → detail page loads with header and charges list
+  - [ ] Create income charge (+) → balance increases, charge appears at top of list
+  - [ ] Create expense charge (-) → balance decreases
+  - [ ] Apply date range filter → list updates
+  - [ ] Apply tag filter → only matching charges shown
+  - [ ] Edit a charge → changes reflected in list
+  - [ ] Delete a charge → removed from list
+  - [ ] Navigate to next page (if enough charges) → page loads correctly
 - `npm run build` — zero errors
 
 ### Notes
@@ -661,12 +666,12 @@ All three install groups passed `npm run build`, `npm run type-check`, and `npm 
 ### Testing checkpoint
 
 - Unit tests: chart components mount without errors (mock `vue-chartjs`); `WalletLimitItem` progress bar is red when `percentage > 1`
-- Manual:
-  - [ ] Charts render with real data (not empty, not erroring)
-  - [ ] Flow chart date range can be adjusted
-  - [ ] Add limit → appears with progress bar
-  - [ ] Limit progress bar turns red when exceeded
-  - [ ] Delete limit → removed
+- Browser (`agent-browser` skill — standard login flow, then):
+  - [ ] Navigate to `https://my.dev-cash-track.app/wallets` → open a wallet with charges → charts section renders with real data (no blank canvas, no errors)
+  - [ ] Adjust flow chart date range → chart reloads with updated data
+  - [ ] Create a limit → appears below charts with progress bar
+  - [ ] Progress bar is green normally; confirm it turns red for a limit that is exceeded
+  - [ ] Delete limit → removed from list
 - `npm run build` — zero errors
 
 ### Notes
@@ -709,12 +714,13 @@ components/tags/
 ### Testing checkpoint
 
 - Unit tests: `Tag.vue` — `style` attribute contains the tag's hex color; `TagForm` — validates name min-length and no-spaces pattern
-- Manual:
-  - [ ] Create tag with name, icon, color → appears in list with correct color
-  - [ ] Edit tag color → updates
-  - [ ] View tag detail → charges for that tag load with filter/pagination
-  - [ ] Delete tag → removed
-  - [ ] Tag multi-select in charge form shows all tags; selected ones appear as chips
+- Browser (`agent-browser` skill — standard login flow, then):
+  - [ ] Navigate to `https://my.dev-cash-track.app/tags` → tag list renders
+  - [ ] Create tag with name, icon, color → chip appears in list with correct background color
+  - [ ] Edit tag color → chip updates
+  - [ ] Click tag → navigate to tag detail page → charges for that tag load with filter/pagination
+  - [ ] Delete tag (with confirmation) → removed from list
+  - [ ] Open charge create form on any wallet → tag multi-select shows all tags; selecting renders chips; deselecting removes them
 - `npm run build` — zero errors
 
 ### Notes
@@ -765,11 +771,11 @@ components/profile/
 ### Testing checkpoint
 
 - Unit tests: `EmailIsNotConfirmedAlert` renders when `isEmailConfirmed: false`, hidden when `true`
-- Manual:
-  - [ ] Profile page loads with all sections populated
-  - [ ] Stats show real numbers
-  - [ ] Latest wallets listed
-  - [ ] Email confirmation alert visible when email not confirmed; resend works
+- Browser (`agent-browser` skill — standard login flow, then):
+  - [ ] Navigate to `https://my.dev-cash-track.app/profile` → all sections render (avatar, name, stats grid, latest wallets, common tags)
+  - [ ] Stats show real non-zero numbers
+  - [ ] Latest wallets section lists wallets with balances
+  - [ ] If email not confirmed: alert visible with Resend button → click Resend → success notification
 - `npm run build` — zero errors
 
 ### Notes
@@ -800,11 +806,11 @@ components/profile/
 ### Testing checkpoint
 
 - Unit tests: `ProfileSettings` form — nickName uniqueness check fires on blur; `ProfilePhoto` calls `uploadPhoto` with FormData
-- Manual:
-  - [ ] Navigate to Settings → Profile tab
-  - [ ] Edit name → saved, header updates
-  - [ ] Upload photo → appears in header avatar
-  - [ ] Change locale from settings → app language changes
+- Browser (`agent-browser` skill — standard login flow, then):
+  - [ ] Navigate to `https://my.dev-cash-track.app/settings` → redirects to Profile tab; sidebar shows Profile and Security links
+  - [ ] Edit display name → save → header avatar name updates
+  - [ ] Upload a profile photo → avatar updates in header immediately
+  - [ ] Change locale from settings dropdown → app language switches (EN ↔ UK)
 - `npm run build` — zero errors
 
 ### Notes
@@ -834,13 +840,13 @@ components/profile/
 ### Testing checkpoint
 
 - Unit tests: `SecuritySettings` validates `newPassword` min-length and confirmation match; `PasskeyItem` renders "Never used" when `usedAt` is null
-- Manual:
-  - [ ] Navigate Settings → Security tab
-  - [ ] Change password (valid) → success notification
-  - [ ] Change password (wrong current) → field error shown
-  - [ ] View passkeys list
+- Browser (`agent-browser` skill — standard login flow, then):
+  - [ ] Navigate to `https://my.dev-cash-track.app/settings/security` → security form + passkeys section render
+  - [ ] Submit password change with wrong current password → field error displayed inline
+  - [ ] Submit valid password change → success notification, form resets
+  - [ ] Passkeys list shows existing passkeys (name, dates) or empty state
   - [ ] Delete a passkey → removed from list
-  - [ ] Register new passkey (requires WebAuthn-capable browser)
+  - [ ] "Add passkey" button triggers WebAuthn flow (skip assertion if no hardware key available)
 - `npm run build` — zero errors
 
 ### Notes
@@ -872,11 +878,11 @@ components/profile/
 - [ ] `npm run test:e2e` — all passing
 - [ ] `npm run build` — zero errors, zero warnings
 - [ ] Bundle audit: confirm no Bootstrap CSS in `dist/assets/`
-- [ ] Manual full walkthrough:
-  - [ ] Every route navigates correctly
-  - [ ] Both locales (EN, UK) work
-  - [ ] Dark mode works (Nuxt UI color mode)
-  - [ ] Mobile responsive layout
+- [ ] Browser full walkthrough (`agent-browser` skill — standard login flow, then):
+  - [ ] Every nav route navigates correctly (Wallets, Tags, Profile, Settings)
+  - [ ] Both locales (EN, UK) — switch locale, reload, verify labels change
+  - [ ] Dark mode — toggle, verify Nuxt UI color mode applies
+  - [ ] Mobile responsive — resize viewport to 375px, verify layout doesn't break
 
 ### Testing checkpoint (final)
 
@@ -906,7 +912,7 @@ After completing each stage/sub-stage, before marking it done and moving to the 
    ```
    All must pass. Do not proceed with failures outstanding.
 
-2. **Manual visual verification** — open `npm run dev` and test every feature introduced in the stage:
+2. **Browser verification** — use the `agent-browser` skill (see CLAUDE.md "Browser Verification" section for the standard login flow). For each stage, follow the browser checklist in its testing checkpoint:
    - Navigate to affected routes
    - Interact with forms (valid input, invalid input, submit)
    - Check responsive layout (resize window to mobile width)

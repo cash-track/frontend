@@ -168,6 +168,7 @@ export default {
         formName: 'Назва',
         formCurrency: 'Валюта',
         formCurrencyDescription: 'Валюта за замовчуванням для гаманця і кожної операції.',
+        formIsPublic: 'Публічний гаманець',
         create: 'Створити',
         update: 'Змінити',
         cancel: 'Відміна',

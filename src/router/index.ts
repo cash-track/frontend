@@ -1,5 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import WalletsView from '@/views/WalletsView.vue'
+import WalletCreateView from '@/views/WalletCreateView.vue'
+import WalletEditView from '@/views/WalletEditView.vue'
+import WalletShareView from '@/views/WalletShareView.vue'
 import ProfileView from '@/views/ProfileView.vue'
 import TagsView from '@/views/TagsView.vue'
 import DummyView from '@/views/DummyView.vue'
@@ -59,7 +62,7 @@ const router = createRouter({
         {
             path: '/wallets/create',
             name: 'wallets.create',
-            component: DummyView,
+            component: WalletCreateView,
             meta: {
                 title: 'Create Wallet | Cash Track',
             },
@@ -77,7 +80,7 @@ const router = createRouter({
         {
             path: '/wallets/:walletID/edit',
             name: 'wallets.edit',
-            component: DummyView,
+            component: WalletEditView,
             props: true,
             meta: {
                 title: 'Edit Wallet | Cash Track',
@@ -87,7 +90,7 @@ const router = createRouter({
         {
             path: '/wallets/:walletID/share',
             name: 'wallets.share',
-            component: DummyView,
+            component: WalletShareView,
             props: true,
             meta: {
                 title: 'Share Wallet | Cash Track',

@@ -168,6 +168,7 @@ export default {
         formName: 'Name',
         formCurrency: 'Currency',
         formCurrencyDescription: 'Default currency for this wallet.',
+        formIsPublic: 'Public wallet',
         create: 'Create',
         update: 'Update',
         cancel: 'Cancel',
