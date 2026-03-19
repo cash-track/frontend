@@ -88,6 +88,7 @@ function navigate() {
         <div class="px-4 py-2 border-t border-default flex justify-between items-center">
             <UAvatarGroup v-if="!hasOneMember" size="xs">
                 <UTooltip
+                    :arrow="true"
                     v-for="user in members"
                     :key="user.id"
                     :text="user.displayName"
@@ -98,11 +99,11 @@ function navigate() {
                         size="xs"
                     />
                 </UTooltip>
-                <UTooltip v-if="hasMoreMembers" :text="t('wallets.moreMembers')">
+                <UTooltip :arrow="true" v-if="hasMoreMembers" :text="t('wallets.moreMembers')">
                     <UAvatar :alt="t('wallets.moreMembers')" size="xs" />
                 </UTooltip>
             </UAvatarGroup>
-            <UTooltip v-else-if="members[0]" :text="members[0].displayName">
+            <UTooltip :arrow="true" v-else-if="members[0]" :text="members[0].displayName">
                 <UAvatar
                     :src="members[0].photoUrl ?? undefined"
                     :alt="members[0].displayName"

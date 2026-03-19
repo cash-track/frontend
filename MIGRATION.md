@@ -27,7 +27,7 @@ Cash-Track frontend is mid-migration. The new Vue 3 skeleton lives at `/frontend
 - **Git commit after each stage:** once the testing checkpoint passes, stage all new/modified files produced by that stage and commit them on the current branch (`feature/ui-migration-claude`). Exclude any unrelated changes (e.g. files under `old/` that were not touched as part of the stage). Commit message format: `feat: stage <N> — <short description>`.
 - Each sub-stage is sized to fit in one focused conversation session (~5–10 files of moderate complexity)
 - Do not start a sub-stage unless its prerequisite sub-stage testing checkpoint has passed
-- **Tooltips:** Replace all old `v-b-tooltip` / Bootstrap tooltip directives with `UTooltip` wrapper components from Nuxt UI. Wherever the old code used `v-b-tooltip` (member avatars, action buttons, time displays, counter items), the new component must use `<UTooltip :text="...">` wrapping the trigger element. Do not use native HTML `title` attribute as a substitute — use `UTooltip` for visual consistency.
+- **Tooltips:** Replace all old `v-b-tooltip` / Bootstrap tooltip directives with `UTooltip` wrapper components from Nuxt UI. Wherever the old code used `v-b-tooltip` (member avatars, action buttons, time displays, counter items), the new component must use `<UTooltip :text="..." :arrow="true">` wrapping the trigger element. Always include `:arrow="true"` so the tooltip shows a directional pointer. Do not use native HTML `title` attribute as a substitute — use `UTooltip` for visual consistency.
 
 ---
 

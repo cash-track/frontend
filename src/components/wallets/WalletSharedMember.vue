@@ -45,6 +45,7 @@ async function onRemove() {
         </div>
         <UTooltip
             v-if="isAllowedToRemove"
+            :arrow="true"
             :text="t('wallets.shareCancelInvite', [walletName])"
         >
             <UButton
