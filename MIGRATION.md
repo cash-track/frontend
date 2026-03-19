@@ -27,6 +27,7 @@ Cash-Track frontend is mid-migration. The new Vue 3 skeleton lives at `/frontend
 - **Git commit after each stage:** once the testing checkpoint passes, stage all new/modified files produced by that stage and commit them on the current branch (`feature/ui-migration-claude`). Exclude any unrelated changes (e.g. files under `old/` that were not touched as part of the stage). Commit message format: `feat: stage <N> — <short description>`.
 - Each sub-stage is sized to fit in one focused conversation session (~5–10 files of moderate complexity)
 - Do not start a sub-stage unless its prerequisite sub-stage testing checkpoint has passed
+- **Tooltips:** Replace all old `v-b-tooltip` / Bootstrap tooltip directives with `UTooltip` wrapper components from Nuxt UI. Wherever the old code used `v-b-tooltip` (member avatars, action buttons, time displays, counter items), the new component must use `<UTooltip :text="...">` wrapping the trigger element. Do not use native HTML `title` attribute as a substitute — use `UTooltip` for visual consistency.
 
 ---
 
@@ -618,7 +619,7 @@ All three install groups passed `npm run build`, `npm run type-check`, and `npm 
 - [ ] `src/components/wallets/WalletHeader.vue` — wallet name, total balance (`useMoneyFormatter`), currency badge, action buttons (Edit/Share/Archive as `UDropdownMenu` or `UButton` group)
 - [ ] `src/components/wallets/charges/ChargesFilter.vue` — date range pickers, tag multi-select (`TagFormInput`), search text; emits `filter-change` event with filter state
 - [ ] `src/components/wallets/charges/ChargesList.vue` — calls `getCharges()` with filter params; paginated list with `UPagination`; renders `ChargeItem` per row
-- [ ] `src/components/wallets/charges/ChargeItem.vue` — operation icon (`i-heroicons-arrow-up` green / `i-heroicons-arrow-down` red), title, amount, tags as `Tag` chips, `useTimeAgo`, edit/delete action buttons
+- [ ] `src/components/wallets/charges/ChargeItem.vue` — operation icon (`i-heroicons-arrow-up` green / `i-heroicons-arrow-down` red), title, amount, tags as `Tag` chips, `useTimeAgo`, edit/delete action buttons; **time display must have `UTooltip` showing full datetime** (old: `v-b-tooltip.left` with `dateTime` computed)
 - [ ] `src/components/wallets/charges/ChargeEdit.vue` — same form as `ChargeCreate`, pre-filled from charge data; `updateCharge()` on save
 - [ ] `src/components/wallets/charges/ChargeCreate.vue`:
   - Amount `UInput`, operation toggle (+/-) as `UButtonGroup`
@@ -761,7 +762,7 @@ components/profile/
 - [ ] `src/components/profile/ProfileAvatar.vue` — `UAvatar` wrapper; shows `profile.photoUrl` or initials fallback from `profile.name`
 - [ ] `src/components/profile/ProfileAvatarBadge.vue` — wraps `ProfileAvatar` with email-confirmed indicator badge
 - [ ] `src/components/profile/ProfileTitle.vue` — display name, `@nickName`, email
-- [ ] `src/components/profile/CountersStatistics.vue` — calls `getCounterStats()`; renders stat cards (wallet count, charge count, etc.)
+- [ ] `src/components/profile/CountersStatistics.vue` — calls `getCounterStats()`; renders stat cards (wallet count, charge count, etc.); **each counter item must have `UTooltip` with the stat's full label** (old: `v-b-tooltip.top` on each `.counter-item`)
 - [ ] `src/components/profile/ChargesStatsCard.vue` — single stat card used inside `CountersStatistics`
 - [ ] `src/components/profile/ChargesFlowStatistics.vue` — calls `getChargesFlowStats()`; renders income vs expense summary (amounts + currency)
 - [ ] `src/components/profile/LatestWallets.vue` — calls `getLatestWallets()`; compact wallet list with balance

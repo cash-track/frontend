@@ -43,15 +43,18 @@ async function onRemove() {
             />
             <span class="text-sm truncate">{{ user.displayName }}</span>
         </div>
-        <UButton
+        <UTooltip
             v-if="isAllowedToRemove"
-            color="error"
-            variant="ghost"
-            icon="i-lucide-x"
-            size="xs"
-            :loading="removing"
-            :title="t('wallets.shareCancelInvite', [walletName])"
-            @click="onRemove"
-        />
+            :text="t('wallets.shareCancelInvite', [walletName])"
+        >
+            <UButton
+                color="error"
+                variant="ghost"
+                icon="i-lucide-x"
+                size="xs"
+                :loading="removing"
+                @click="onRemove"
+            />
+        </UTooltip>
     </div>
 </template>

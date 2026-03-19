@@ -87,25 +87,28 @@ function navigate() {
         <!-- Members + last updated -->
         <div class="px-4 py-2 border-t border-default flex justify-between items-center">
             <UAvatarGroup v-if="!hasOneMember" size="xs">
-                <UAvatar
+                <UTooltip
                     v-for="user in members"
                     :key="user.id"
-                    :src="user.photoUrl ?? undefined"
-                    :alt="`${user.name}${user.lastName ? ' ' + user.lastName : ''}`"
-                    size="xs"
-                />
-                <UAvatar
-                    v-if="hasMoreMembers"
-                    :alt="t('wallets.moreMembers')"
-                    size="xs"
-                />
+                    :text="user.displayName"
+                >
+                    <UAvatar
+                        :src="user.photoUrl ?? undefined"
+                        :alt="user.displayName"
+                        size="xs"
+                    />
+                </UTooltip>
+                <UTooltip v-if="hasMoreMembers" :text="t('wallets.moreMembers')">
+                    <UAvatar :alt="t('wallets.moreMembers')" size="xs" />
+                </UTooltip>
             </UAvatarGroup>
-            <UAvatar
-                v-else-if="members[0]"
-                :src="members[0].photoUrl ?? undefined"
-                :alt="`${members[0].name}${members[0].lastName ? ' ' + members[0].lastName : ''}`"
-                size="xs"
-            />
+            <UTooltip v-else-if="members[0]" :text="members[0].displayName">
+                <UAvatar
+                    :src="members[0].photoUrl ?? undefined"
+                    :alt="members[0].displayName"
+                    size="xs"
+                />
+            </UTooltip>
             <div v-else />
 
             <span class="text-xs text-muted flex items-center gap-1">
