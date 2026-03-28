@@ -69,7 +69,7 @@ const profileMenuItems = computed<DropdownMenuItem[][]>(() => {
             {
                 label: t('signOut'),
                 icon: 'i-heroicons-arrow-right-on-rectangle-20-solid',
-                click: () => onLogout(),
+                onSelect: () => onLogout(),
             },
         ],
     ]

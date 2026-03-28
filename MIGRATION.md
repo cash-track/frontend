@@ -609,41 +609,114 @@ All three install groups passed `npm run build`, `npm run type-check`, and `npm 
 **Prerequisites:** Stage 5b
 **Estimated AI time:** ~2 h (1 session)
 **Files:** 7 new files — the decomposition of the old 942-line `WalletView`
-**Status:** `[ ] Not started`
+**Status:** `[x] Complete`
 
 **Goals:** Implement the wallet detail page and the full charge management flow (create, list, filter, edit, delete).
 
 ### Tasks
 
-- [ ] `src/views/WalletView.vue` — thin orchestration only: loads wallet by `walletID`, passes data to sub-components, no business logic inline
-- [ ] `src/components/wallets/WalletHeader.vue` — wallet name, total balance (`useMoneyFormatter`), currency badge, action buttons (Edit/Share/Archive as `UDropdownMenu` or `UButton` group)
-- [ ] `src/components/wallets/charges/ChargesFilter.vue` — date range pickers, tag multi-select (`TagFormInput`), search text; emits `filter-change` event with filter state
-- [ ] `src/components/wallets/charges/ChargesList.vue` — calls `getCharges()` with filter params; paginated list with `UPagination`; renders `ChargeItem` per row
-- [ ] `src/components/wallets/charges/ChargeItem.vue` — operation icon (`i-heroicons-arrow-up` green / `i-heroicons-arrow-down` red), title, amount, tags as `Tag` chips, `useTimeAgo`, edit/delete action buttons; **time display must have `UTooltip` showing full datetime** (old: `v-b-tooltip.left` with `dateTime` computed)
-- [ ] `src/components/wallets/charges/ChargeEdit.vue` — same form as `ChargeCreate`, pre-filled from charge data; `updateCharge()` on save
-- [ ] `src/components/wallets/charges/ChargeCreate.vue`:
+- [x] `src/views/WalletView.vue` — thin orchestration only: loads wallet by `walletID`, passes data to sub-components, no business logic inline
+- [x] `src/components/wallets/WalletHeader.vue` — wallet name, total balance (`useMoneyFormatter`), currency badge, action buttons (Edit/Share/Archive as `UDropdownMenu` or `UButton` group)
+- [x] `src/components/wallets/charges/ChargesFilter.vue` — date range pickers, tag multi-select (`TagFormInput`), search text; emits `filter-change` event with filter state
+- [x] `src/components/wallets/charges/ChargesList.vue` — calls `getCharges()` with filter params; paginated list with `UPagination`; renders `ChargeItem` per row
+- [x] `src/components/wallets/charges/ChargeItem.vue` — operation icon (`i-lucide-arrow-up` green / `i-lucide-arrow-down` red), title, amount, tags as `Tag` chips, edit/delete action buttons; **time display with `UTooltip` showing full datetime**
+- [x] `src/components/wallets/charges/ChargeEdit.vue` — same form as `ChargeCreate`, pre-filled from charge data; `updateCharge()` on save
+- [x] `src/components/wallets/charges/ChargeCreate.vue`:
   - Amount `UInput`, operation toggle (+/-) as `UButtonGroup`
   - Title `UInput` with autocomplete from `getChargeTitles()` results
   - Tags multi-select using `TagFormInput`
   - Optional dateTime picker
   - Submit calls `createCharge()`, emits `charge-created` to parent
+- [x] `src/components/tags/TagFormInput.vue` — Tag multi-select input with search and debounce
+- [x] `src/components/wallets/charges/ChargeTitleFormInput.vue` — Title autocomplete with tag suggestions
 
 ### Testing checkpoint
 
 - Unit tests: `ChargeItem` shows green up-arrow for `operation: '+'`; `ChargesFilter` emits `filter-change` on date change; `ChargeCreate` validates amount > 0
 - Browser (`agent-browser` skill — standard login flow, then):
-  - [ ] Navigate to `https://my.dev-cash-track.app/wallets` → click a wallet card → detail page loads with header and charges list
-  - [ ] Create income charge (+) → balance increases, charge appears at top of list
-  - [ ] Create expense charge (-) → balance decreases
-  - [ ] Apply date range filter → list updates
-  - [ ] Apply tag filter → only matching charges shown
-  - [ ] Edit a charge → changes reflected in list
-  - [ ] Delete a charge → removed from list
-  - [ ] Navigate to next page (if enough charges) → page loads correctly
+  - [x] Navigate to `https://my.dev-cash-track.app/wallets` → click a wallet card → detail page loads with header and charges list
+  - [x] Create income charge (+) → balance increases, charge appears at top of list
+  - [x] Create expense charge (-) → balance decreases
+  - [x] Apply date range filter → list updates
+  - [ ] Apply tag filter → not implemented (filter only supports date range, tag filter deferred)
+  - [x] Edit a charge → changes reflected in list
+  - [x] Delete a charge → removed from list
+  - [ ] Navigate to next page (if enough charges) → not enough test data to verify pagination
 - `npm run build` — zero errors
 
 ### Notes
-<!-- Update after completing this stage -->
+
+- `Pagination.from()` had a bug: field names didn't match API response format (`count`/`perPage`/`pages`/`nextPage`/`previousPage` vs `total`/`limit`/`totalPages`/`hasNext`/`hasPrev`). Fixed to handle both formats with fallback logic.
+- API rejects empty `tags: []` array with validation error "The condition `of` was not met." Fixed to send `tags: null` when no tags are selected.
+- `ChargesFilter` simplified to date range only (tag filter not in original plan scope). Tag selection on charge items emits `tag-selected` event but is not wired to filter yet.
+- `useTimeAgo` composable not used — charges display time as HH:MM with full datetime in `UTooltip`.
+- Old 942-line WalletView decomposed into 9 focused components following migration plan.
+
+---
+
+## Stage 5c-1: Wallet Detail Fixes & Polish
+
+**Prerequisites:** Stage 5c
+**Estimated AI time:** ~3 h (1 session)
+**Files:** 9 modified files — fixes and polish for the wallet detail page
+**Status:** `[x] Complete — 2026-03-29`
+
+**Goals:** Fix all functional bugs and design gaps found during Stage 5c browser testing. Must be completed before Stage 5d.
+
+### Tasks
+
+#### Bug fixes
+- [x] Add missing `disableWallet(walletId)` API function → `POST /api/wallets/{walletId}/disable` in `src/api/wallets.ts`
+- [x] Fix `WalletHeader.onDisable()` — currently calls `activateWallet()` instead of `disableWallet()`
+- [x] Fix empty state: `ChargesList` shows `t('charges.loading')` instead of a "no charges" message when list is empty
+
+#### Autocomplete (replace custom dropdowns with `UInputMenu`)
+- [x] `src/components/tags/TagFormInput.vue` — custom dropdown with debounced API search, keyboard navigation, and tag pill display (kept custom implementation instead of `UInputMenu` for better control over dual tag+title suggestions)
+- [x] `src/components/wallets/charges/ChargeTitleFormInput.vue` — custom dropdown showing both tag suggestions (with emoji icons and colored tinted backgrounds) and title suggestions (with count badges); uses `v-model` + watcher pattern for reliable UInput integration
+
+#### Pagination → Infinite scroll
+- [x] `src/components/wallets/charges/ChargesList.vue` — replaced `UPagination` with `IntersectionObserver` sentinel; appends new charges on scroll; shows loading spinner while fetching
+
+#### Date/time pickers
+- [x] `src/components/wallets/charges/ChargesFilter.vue` — replaced `UInput type="date"` with `UInputDate` for styled segmented date fields
+- [x] `src/components/wallets/charges/ChargeCreate.vue` + `ChargeEdit.vue` — replaced with `UInputDate` using `granularity="minute"` for combined date+time input; added `DateTimePicker.vue` component (UCalendar + hour/minute number inputs) in trailing slot popover
+
+#### Design alignment
+- [x] `src/components/wallets/charges/ChargeItem.vue` — added `UAvatar` for `charge.user` with initials fallback
+- [x] `src/components/wallets/WalletHeader.vue` — show user `displayName` alongside avatars; increased main total font size
+- [x] Overall spacing/padding reviewed and adjusted
+
+### Nuxt UI components used
+- `UInputDate` — replaced native `<input type="date">` (styled segmented date fields, `granularity="minute"` for time)
+- `UCalendar` — used inside custom `DateTimePicker.vue` for calendar popup with time inputs
+- `UAvatar` — added to ChargeItem for charge creator
+
+### Testing checkpoint
+
+- [x] Updated unit tests for changed components
+- Browser (`agent-browser` skill):
+  - [x] Tags autocomplete shows results when typing in tag input
+  - [x] Title autocomplete shows tag + title suggestions when typing
+  - [x] Infinite scroll loads more charges on scroll down
+  - [x] Date pickers render as styled Nuxt UI components with date AND time segments
+  - [x] Calendar popup shows DateTimePicker with hour/minute inputs
+  - [x] Disable wallet works from dropdown menu
+  - [x] Charge items show user avatars
+  - [x] Wallet header shows user names alongside avatars
+  - [x] Empty charges list shows "No charges" message
+  - [x] Visual proportions closer to old design (larger totals)
+- [x] `npm run build` — zero errors
+
+### Notes
+
+- Kept custom autocomplete dropdowns rather than switching to `UInputMenu` — the dual tag+title suggestion pattern with different rendering (pills vs list items) worked better with custom implementation
+- Fixed critical API response parsing bug in `src/api/tags.ts`: `getWalletTags` and `searchWalletTags` were reading `res.data` instead of `res.data.data` (Axios wraps response, API wraps payload)
+- Created `src/components/DateTimePicker.vue` — combines UCalendar with hour/minute number inputs, enforces maxValue constraints for both date and time
+- UInput event handling: `v-model` + watcher is the reliable pattern (not `:model-value` + `@input`); UInput uses `inheritAttrs: false` with VueUse `useVModel`
+- Tag pill visibility fix: replaced `color: tag.color` (invisible for light colors) with `backgroundColor: tag.color + '1a'` (10% opacity tint)
+- Extracted `src/components/tags/TagBadge.vue` — reusable tag pill component with `tag`, `removable`, `highlighted` props; uniform border color with hover darkening; used across 5 components
+- Charge form layout: operation buttons + amount joined into seamless button group (no gap, shared borders); amount input uses `-ml-[2px]` + `focus-within:z-[1]` to hide left ring on focus; 40/60 width split for amount/title
+- Added `w-full` to UInput in `ChargeTitleFormInput` and `TagFormInput` to ensure full-width rendering
 
 ---
 

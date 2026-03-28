@@ -3,6 +3,7 @@ import WalletsView from '@/views/WalletsView.vue'
 import WalletCreateView from '@/views/WalletCreateView.vue'
 import WalletEditView from '@/views/WalletEditView.vue'
 import WalletShareView from '@/views/WalletShareView.vue'
+import WalletView from '@/views/WalletView.vue'
 import ProfileView from '@/views/ProfileView.vue'
 import TagsView from '@/views/TagsView.vue'
 import DummyView from '@/views/DummyView.vue'
@@ -70,7 +71,7 @@ const router = createRouter({
         {
             path: '/wallets/:walletID',
             name: 'wallets.show',
-            component: DummyView,
+            component: WalletView,
             props: true,
             meta: {
                 title: 'Wallet | Cash Track',

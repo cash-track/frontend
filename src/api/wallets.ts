@@ -69,6 +69,12 @@ export async function activateWallet(walletId: number): Promise<void> {
     })
 }
 
+export async function disableWallet(walletId: number): Promise<void> {
+    return apiCall(async client => {
+        await client.post(`/api/wallets/${walletId}/disable`)
+    })
+}
+
 export async function archiveWallet(walletId: number): Promise<void> {
     return apiCall(async client => {
         await client.post(`/api/wallets/${walletId}/archive`)

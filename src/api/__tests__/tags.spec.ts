@@ -136,7 +136,7 @@ describe('getWalletTags', () => {
     beforeEach(() => vi.clearAllMocks())
 
     it('calls GET /api/wallets/{id}/tags and returns Tag[]', async () => {
-        mockAxios.get = vi.fn().mockResolvedValue({ data: [rawTag] })
+        mockAxios.get = vi.fn().mockResolvedValue({ data: { data: [rawTag] } })
 
         const result = await getWalletTags(2)
 
@@ -150,7 +150,7 @@ describe('searchWalletTags', () => {
     beforeEach(() => vi.clearAllMocks())
 
     it('calls GET /api/wallets/{id}/tags/find/{query} with encoded query', async () => {
-        mockAxios.get = vi.fn().mockResolvedValue({ data: [rawTag] })
+        mockAxios.get = vi.fn().mockResolvedValue({ data: { data: [rawTag] } })
 
         const result = await searchWalletTags(2, 'foo bar')
 

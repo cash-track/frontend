@@ -203,6 +203,7 @@ export default {
 
         loading: 'Loading Charges..',
         loadingError: 'Unable to load charges. Please try again later.',
+        empty: 'No charges yet.',
         loadingMore: 'Loading more..',
         loadingMoreError: 'Unable to load more charges. Please try again later.',
 

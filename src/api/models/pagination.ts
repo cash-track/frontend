@@ -31,11 +31,15 @@ export class Pagination {
         const d = raw as Record<string, unknown>
         return new Pagination({
             page: requireNumber(d, 'page'),
-            limit: requireNumber(d, 'limit'),
-            total: requireNumber(d, 'total'),
-            totalPages: requireNumber(d, 'totalPages'),
-            hasNext: typeof d.hasNext === 'boolean' ? d.hasNext : false,
-            hasPrev: typeof d.hasPrev === 'boolean' ? d.hasPrev : false,
+            limit: typeof d.perPage === 'number' ? d.perPage : requireNumber(d, 'limit'),
+            total: typeof d.count === 'number' ? d.count : requireNumber(d, 'total'),
+            totalPages: typeof d.pages === 'number' ? d.pages : requireNumber(d, 'totalPages'),
+            hasNext: 'nextPage' in d
+                ? d.nextPage !== null && d.nextPage !== undefined
+                : d.hasNext === true,
+            hasPrev: 'previousPage' in d
+                ? d.previousPage !== null && d.previousPage !== undefined
+                : d.hasPrev === true,
         })
     }
 }

@@ -59,13 +59,13 @@ export async function getTagTotals(tagId: number): Promise<ChargeTotal> {
 export async function getWalletTags(walletId: number): Promise<Tag[]> {
     return apiCall(async client => {
         const res = await client.get(`/api/wallets/${walletId}/tags`)
-        return (res.data as unknown[]).map(Tag.from)
+        return (res.data.data as unknown[]).map(Tag.from)
     })
 }
 
 export async function searchWalletTags(walletId: number, query: string): Promise<Tag[]> {
     return apiCall(async client => {
         const res = await client.get(`/api/wallets/${walletId}/tags/find/${encodeURIComponent(query)}`)
-        return (res.data as unknown[]).map(Tag.from)
+        return (res.data.data as unknown[]).map(Tag.from)
     })
 }
