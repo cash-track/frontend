@@ -725,17 +725,17 @@ All three install groups passed `npm run build`, `npm run type-check`, and `npm 
 **Prerequisites:** Stage 5c
 **Estimated AI time:** ~1.5 h (1 session)
 **Files:** 5 new files
-**Status:** `[ ] Not started`
+**Status:** `[x] Complete — 2026-03-29`
 
 **Goals:** Add charts to the wallet detail page and implement the budget limits feature.
 
 ### Tasks
 
-- [ ] `src/components/wallets/charges/ChargesFlowChart.vue` — `vue-chartjs` bar chart; calls `getChargesFlowByDate(walletId, from, to)`; income bars green, expense bars red; date range selector
-- [ ] `src/components/wallets/charges/ChargesTotalChart.vue` — `vue-chartjs` doughnut; data from `getWalletTotals().tags`; each segment = one tag's share of expenses
-- [ ] `src/components/wallets/limits/LimitForm.vue` — operation toggle (+/-), amount `UInput`, tags multi-select; submit calls `createLimit()`
-- [ ] `src/components/wallets/limits/WalletLimitItem.vue` — limit description (tags + direction + amount), Tailwind progress bar (`bg-green-500`/`bg-red-500` based on percentage), delete button
-- [ ] `src/components/wallets/limits/WalletLimitsTotal.vue` — calls `getLimits(walletId)`, renders list of `WalletLimitItem`, "Add limit" button that opens `LimitForm`
+- [x] `src/components/wallets/charges/ChargesFlowChart.vue` — `vue-chartjs` bar chart; calls `getChargesFlowByDate(walletId, from, to)`; income bars green, expense bars red; date range selector
+- [x] `src/components/wallets/charges/ChargesTotalChart.vue` — `vue-chartjs` doughnut; data from `getChargesTotalByType()`; expense/income segments by label
+- [x] `src/components/wallets/limits/LimitForm.vue` — operation toggle (+/-), amount `UInput`, tags multi-select; submit calls `createLimit()`
+- [x] `src/components/wallets/limits/WalletLimitItem.vue` — limit description (tags + direction + amount), Tailwind progress bar (`bg-gray-400`/`bg-red-500` based on percentage), delete button
+- [x] `src/components/wallets/limits/WalletLimitsTotal.vue` — calls `getLimits(walletId)`, renders list of `WalletLimitItem`, "Add limit" button that opens `LimitForm`
 
 ### Testing checkpoint
 
@@ -749,7 +749,12 @@ All three install groups passed `npm run build`, `npm run type-check`, and `npm 
 - `npm run build` — zero errors
 
 ### Notes
-<!-- Update after completing this stage -->
+
+- Used `getChargesTotalByType()` (new API function added to `graph.ts`) instead of `getWalletTotals().tags` — the OpenAPI spec shows `/graph/total` returns `{label, income, expense}` per entry, which maps directly to doughnut chart segments
+- No date adapter needed for bar chart — the `/graph/amount` endpoint returns string labels, so CategoryScale suffices (no TimeScale)
+- Progress bar uses `bg-gray-400` (neutral) by default instead of `bg-green-500` — red only when exceeded (`percentage > 1`), matching the old app's behavior
+- Charts and limits are toggled via toolbar buttons in WalletView, consistent with the old app's collapsible pattern
+- Charts reload automatically when charges are created/updated/deleted
 
 ---
 

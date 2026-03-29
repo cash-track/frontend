@@ -10,35 +10,57 @@ vi.mock('../client', async (importOriginal) => {
 
 const mockAxios = { get: vi.fn(), post: vi.fn(), put: vi.fn(), delete: vi.fn() } as unknown as AxiosInstance
 
-import { getChargesFlowByDate } from '../graph'
+import { getChargesFlowByDate, getChargesTotalByType } from '../graph'
 
-const rawDataPoints = [
-    { label: '2024-06-01', amount: 150.5 },
-    { label: '2024-06-02', amount: 0 },
+const rawFlowPoints = [
+    { date: '2024-06-01', timestamp: 1717200000, income: 500, expense: 150.5 },
+    { date: '2024-06-02', timestamp: 1717286400, income: 0, expense: 0 },
+]
+
+const rawTotalPoints = [
+    { amount: 5000, tags: [1, 2] },
+    { amount: 3000, tags: [] },
 ]
 
 describe('getChargesFlowByDate', () => {
     beforeEach(() => vi.clearAllMocks())
 
     it('calls GET /api/wallets/{id}/charges/graph/amount without params', async () => {
-        mockAxios.get = vi.fn().mockResolvedValue({ data: { data: rawDataPoints } })
+        mockAxios.get = vi.fn().mockResolvedValue({ data: { data: rawFlowPoints } })
 
         const result = await getChargesFlowByDate(2)
 
         expect(mockAxios.get).toHaveBeenCalledWith('/api/wallets/2/charges/graph/amount', { params: undefined })
         expect(result).toHaveLength(2)
-        expect(result[0].label).toBe('2024-06-01')
-        expect(result[0].amount).toBe(150.5)
-        expect(result[1].amount).toBe(0)
+        expect(result[0].date).toBe('2024-06-01')
+        expect(result[0].income).toBe(500)
+        expect(result[0].expense).toBe(150.5)
+        expect(result[1].income).toBe(0)
     })
 
-    it('passes groupBy and type params when provided', async () => {
+    it('passes groupBy param when provided', async () => {
         mockAxios.get = vi.fn().mockResolvedValue({ data: { data: [] } })
 
-        await getChargesFlowByDate(2, { groupBy: 'month', type: '-' })
+        await getChargesFlowByDate(2, { groupBy: 'month' })
 
         expect(mockAxios.get).toHaveBeenCalledWith('/api/wallets/2/charges/graph/amount', {
-            params: { groupBy: 'month', type: '-' },
+            params: { groupBy: 'month' },
         })
+    })
+})
+
+describe('getChargesTotalByType', () => {
+    beforeEach(() => vi.clearAllMocks())
+
+    it('calls GET /api/wallets/{id}/charges/graph/total', async () => {
+        mockAxios.get = vi.fn().mockResolvedValue({ data: { data: rawTotalPoints } })
+
+        const result = await getChargesTotalByType(2)
+
+        expect(mockAxios.get).toHaveBeenCalledWith('/api/wallets/2/charges/graph/total')
+        expect(result).toHaveLength(2)
+        expect(result[0].amount).toBe(5000)
+        expect(result[0].tags).toEqual([1, 2])
+        expect(result[1].tags).toEqual([])
     })
 })
