@@ -1,12 +1,12 @@
 import { apiCall } from './client'
 import { Wallet, WalletTotal } from './models/wallet'
-import { UserShort } from './models/user'
+import { User } from './models/user'
 
 export interface CreateWalletRequest {
     name: string
-    slug: string
-    isPublic: boolean
-    defaultCurrencyCode: string
+    slug?: string | null
+    isPublic?: boolean
+    defaultCurrencyCode?: string | null
 }
 
 export interface UpdateWalletRequest {
@@ -100,10 +100,10 @@ export async function sortWallets(sort: number[]): Promise<void> {
     })
 }
 
-export async function getWalletUsers(walletId: number): Promise<UserShort[]> {
+export async function getWalletUsers(walletId: number): Promise<User[]> {
     return apiCall(async client => {
         const res = await client.get(`/api/wallets/${walletId}/users`)
-        return (res.data.data as unknown[]).map(UserShort.from)
+        return (res.data.data as unknown[]).map(User.from)
     })
 }
 

@@ -23,7 +23,11 @@ const walletShortRaw = {
 const walletRaw = {
     ...walletShortRaw,
     users: [
-        { id: 1, name: 'Alice', lastName: null, nickName: 'alice', photoUrl: null },
+        {
+            id: 1, name: 'Alice', lastName: null, nickName: 'alice', photoUrl: null,
+            email: 'alice@example.com', isEmailConfirmed: true, defaultCurrencyCode: null,
+            defaultCurrency: null, locale: 'en', createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-02T00:00:00Z',
+        },
     ],
     latestCharges: [],
 }

@@ -44,7 +44,7 @@ describe('resetPassword', () => {
     it('posts reset data to /api/auth/password/reset and returns message', async () => {
         mockAxios.post = vi.fn().mockResolvedValue({ data: { message: 'Password changed' } })
 
-        const request = { code: 'reset-code', email: 'jane@test.com', password: 'new123', passwordConfirmation: 'new123' }
+        const request = { code: 'reset-code', password: 'new123', passwordConfirmation: 'new123' }
         const result = await resetPassword(request)
 
         expect(mockAxios.post).toHaveBeenCalledWith('/api/auth/password/reset', request)

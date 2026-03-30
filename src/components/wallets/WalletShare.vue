@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { getWalletUsers, shareWallet } from '@/api/wallets'
 import { findUserByEmail, findUsersByCommonWallets } from '@/api/users'
 import type { Wallet } from '@/api/models/wallet'
-import type { UserShort } from '@/api/models/user'
+import type { User } from '@/api/models/user'
 import { useApiErrors } from '@/composables/useApiErrors'
 import { useNotifications } from '@/composables/useNotifications'
 import WalletSharedMember from './WalletSharedMember.vue'
@@ -15,12 +15,12 @@ const { t } = useI18n()
 const { fieldErrors, handleError, reset } = useApiErrors()
 const { notifyError } = useNotifications()
 
-const members = shallowRef<UserShort[]>([])
-const commonUsers = shallowRef<UserShort[]>([])
+const members = shallowRef<User[]>([])
+const commonUsers = shallowRef<User[]>([])
 const loadFailed = shallowRef(false)
 
 const searchEmail = shallowRef('')
-const foundUser = shallowRef<UserShort | null>(null)
+const foundUser = shallowRef<User | null>(null)
 const searching = shallowRef(false)
 const inviting = shallowRef(false)
 
@@ -56,7 +56,7 @@ async function onSearch() {
     }
 }
 
-async function onInvite(user: UserShort) {
+async function onInvite(user: User) {
     inviting.value = true
     try {
         await shareWallet(props.wallet.id, user.id)

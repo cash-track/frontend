@@ -1,6 +1,6 @@
 import { requireBoolean, requireNumber, requireString, optionalString } from './_validators'
 import { Currency } from './currency'
-import { UserShort } from './user'
+import { User } from './user'
 // Charge lives in charge.ts which imports WalletShort from this file — a circular ESM reference.
 // Safe: neither module executes cross-module calls at top-level init time.
 import { Charge } from './charge'
@@ -66,11 +66,11 @@ export class WalletShort {
 }
 
 export class Wallet extends WalletShort {
-    readonly users: UserShort[]
+    readonly users: User[]
     readonly latestCharges: Charge[]
 
     constructor(data: ConstructorParameters<typeof WalletShort>[0] & {
-        users: UserShort[]
+        users: User[]
         latestCharges: Charge[]
     }) {
         super(data)
@@ -95,7 +95,7 @@ export class Wallet extends WalletShort {
             defaultCurrency: d.defaultCurrency ? Currency.from(d.defaultCurrency) : null,
             createdAt: new Date(requireString(d, 'createdAt')),
             updatedAt: new Date(requireString(d, 'updatedAt')),
-            users: Array.isArray(d.users) ? d.users.map(UserShort.from) : [],
+            users: Array.isArray(d.users) ? d.users.map(User.from) : [],
             latestCharges: Array.isArray(d.latestCharges) ? d.latestCharges.map(Charge.from) : [],
         })
     }

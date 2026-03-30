@@ -27,16 +27,18 @@ const props = defineProps<{
 const { t } = useI18n()
 const { format } = useMoneyFormatter()
 
-type GroupBy = 'date' | 'day' | 'month'
+type GroupBy = 'day' | 'month' | 'year'
 
-const groupBy = ref<GroupBy>('date')
+const groupBy = ref<GroupBy>('day')
 const loading = ref(false)
 const error = ref<string | null>(null)
 const dataPoints = ref<ChargesFlowDataPoint[]>([])
+const hasLoaded = ref(false)
 
 const groupByOptions = computed(() => [
-    { label: t('wallets.groupByDay'), value: 'date' as GroupBy },
+    { label: t('wallets.groupByDay'), value: 'day' as GroupBy },
     { label: t('wallets.groupByMonth'), value: 'month' as GroupBy },
+    { label: t('wallets.groupByYear'), value: 'year' as GroupBy },
 ])
 
 const chartData = computed<ChartData<'bar'>>(() => ({
@@ -88,8 +90,9 @@ async function loadData() {
     loading.value = true
     error.value = null
     try {
-        const params: GetChargesFlowParams = { groupBy: groupBy.value }
+        const params: GetChargesFlowParams = { 'group-by': groupBy.value }
         dataPoints.value = await getChargesFlowByDate(props.walletId, params)
+        hasLoaded.value = true
     } catch {
         error.value = t('wallets.chartLoadingError')
     } finally {
@@ -105,29 +108,32 @@ defineExpose({ reload: loadData })
 
 <template>
     <div>
-        <div class="flex justify-end mb-4">
+        <div class="flex items-center justify-end gap-2 mb-4">
+            <span class="text-sm text-muted">{{ t('wallets.groupBy') }}</span>
             <USelect
                 v-model="groupBy"
                 :items="groupByOptions"
                 value-key="value"
                 label-key="label"
                 size="sm"
-                class="w-40"
+                class="w-32"
             />
         </div>
 
-        <div v-if="loading" class="flex justify-center py-8">
-            <UIcon name="i-lucide-loader-circle" class="size-6 animate-spin text-muted" />
-        </div>
-
         <UAlert
-            v-else-if="error"
+            v-if="error && !hasLoaded"
             color="error"
             :description="error"
             icon="i-lucide-alert-circle"
         />
 
         <div v-else class="relative h-[300px]">
+            <div
+                v-if="loading"
+                class="absolute inset-0 z-10 flex items-center justify-center bg-white/75 dark:bg-gray-900/75 backdrop-blur-[2px]"
+            >
+                <UIcon name="i-lucide-loader-circle" class="size-6 animate-spin text-muted" />
+            </div>
             <Bar :data="chartData" :options="chartOptions" />
         </div>
     </div>

@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { ref } from 'vue'
+import { defineComponent, h, ref } from 'vue'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
-import { UserShort } from '@/api/models/user'
+import { TooltipProvider } from 'reka-ui'
+import { User } from '@/api/models/user'
 import WalletSharedMember from '../WalletSharedMember.vue'
 
 const { mockUnshareWallet } = vi.hoisted(() => ({
@@ -37,8 +38,25 @@ const globalStubs = {
     },
 }
 
-function makeUser(id = 1, name = 'Alice', lastName: string | null = 'Smith'): UserShort {
-    return new UserShort({ id, name, lastName, nickName: 'alice', photoUrl: null })
+const WrapperComponent = defineComponent({
+    props: ['walletId', 'walletName', 'user', 'isAllowedToRemove'],
+    emits: ['deleted'],
+    setup(props, { emit }) {
+        return () => h(TooltipProvider, null, {
+            default: () => h(WalletSharedMember, {
+                ...props,
+                onDeleted: (userId: number) => emit('deleted', userId),
+            }),
+        })
+    },
+})
+
+function makeUser(id = 1, name = 'Alice', lastName: string | null = 'Smith'): User {
+    return new User({
+        id, name, lastName, nickName: 'alice', photoUrl: null,
+        email: 'alice@example.com', isEmailConfirmed: true, defaultCurrencyCode: null,
+        defaultCurrency: null, locale: 'en', createdAt: new Date('2024-01-01'), updatedAt: new Date('2024-01-02'),
+    })
 }
 
 describe('WalletSharedMember', () => {
@@ -64,7 +82,7 @@ describe('WalletSharedMember', () => {
     })
 
     it('shows remove button when isAllowedToRemove is true', () => {
-        const wrapper = mount(WalletSharedMember, {
+        const wrapper = mount(WrapperComponent, {
             props: { walletId: 1, walletName: 'Test', user: makeUser(), isAllowedToRemove: true },
             ...globalStubs,
         })
@@ -74,7 +92,7 @@ describe('WalletSharedMember', () => {
     it('emits deleted with userId after successful remove', async () => {
         mockUnshareWallet.mockResolvedValue(undefined)
 
-        const wrapper = mount(WalletSharedMember, {
+        const wrapper = mount(WrapperComponent, {
             props: { walletId: 1, walletName: 'Test', user: makeUser(7), isAllowedToRemove: true },
             ...globalStubs,
         })

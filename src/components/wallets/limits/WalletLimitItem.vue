@@ -23,13 +23,15 @@ const { t } = useI18n()
 const { format } = useMoneyFormatter()
 
 const isEditing = ref(false)
+const deleteConfirmOpen = ref(false)
+const deleting = ref(false)
 
 const isIncome = computed(() => props.walletLimit.limit.operation === '+')
 const isExpense = computed(() => props.walletLimit.limit.operation === '-')
 const isExceeded = computed(() => props.walletLimit.isExceeded)
-const barPercent = computed(() => Math.min(props.walletLimit.percentage * 100, 100))
-const displayPercent = computed(() => (props.walletLimit.percentage * 100).toFixed(0))
-const showBarLabel = computed(() => props.walletLimit.percentage > 0.1)
+const barPercent = computed(() => Math.min(props.walletLimit.percentage, 100))
+const displayPercent = computed(() => props.walletLimit.percentage.toFixed(0))
+const showBarLabel = computed(() => props.walletLimit.percentage > 10)
 
 function formatAmount(value: number): string {
     if (!props.wallet.defaultCurrency) return String(value)
@@ -38,20 +40,23 @@ function formatAmount(value: number): string {
 
 const menuItems = computed(() => [
     [
-        { label: t('limits.edit'), icon: 'i-lucide-pencil', click: () => { isEditing.value = true } },
+        { label: t('limits.edit'), icon: 'i-lucide-pencil', onSelect: () => { isEditing.value = true } },
     ],
     [
-        { label: t('limits.delete'), icon: 'i-lucide-trash-2', color: 'error' as const, click: onDelete },
+        { label: t('limits.delete'), icon: 'i-lucide-trash-2', color: 'error' as const, onSelect: () => { deleteConfirmOpen.value = true } },
     ],
 ])
 
-async function onDelete() {
-    if (!confirm(t('limits.deletingConfirm'))) return
+async function onDeleteConfirmed() {
+    deleting.value = true
     try {
         await deleteLimit(props.wallet.id, props.walletLimit.limit.id)
+        deleteConfirmOpen.value = false
         emit('deleted', props.walletLimit.limit)
     } catch (err) {
         console.error('unable to delete limit', err)
+    } finally {
+        deleting.value = false
     }
 }
 
@@ -128,5 +133,28 @@ function onEditCancelled() {
                 @cancelled="onEditCancelled"
             />
         </div>
+
+        <!-- Delete confirmation modal -->
+        <UModal v-model:open="deleteConfirmOpen" :title="t('limits.delete')">
+            <template #body>
+                <p class="text-sm text-muted">{{ t('limits.deletingConfirm') }}</p>
+            </template>
+            <template #footer>
+                <div class="flex justify-end gap-2">
+                    <UButton
+                        variant="ghost"
+                        :label="t('limits.cancel')"
+                        :disabled="deleting"
+                        @click="deleteConfirmOpen = false"
+                    />
+                    <UButton
+                        color="error"
+                        :label="t('limits.delete')"
+                        :loading="deleting"
+                        @click="onDeleteConfirmed"
+                    />
+                </div>
+            </template>
+        </UModal>
     </div>
 </template>

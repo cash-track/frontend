@@ -56,20 +56,20 @@ describe('Limit.from', () => {
 
 describe('WalletLimit.from', () => {
     it('parses amount, percentage and nested limit', () => {
-        const wl = WalletLimit.from({ amount: 350, percentage: 0.7, limit: limitRaw })
+        const wl = WalletLimit.from({ amount: 350, percentage: 70, limit: limitRaw })
         expect(wl.amount).toBe(350)
-        expect(wl.percentage).toBe(0.7)
+        expect(wl.percentage).toBe(70)
         expect(wl.isExceeded).toBe(false)
         expect(wl.limit.id).toBe(5)
     })
 
-    it('isExceeded is true when percentage > 1', () => {
-        const wl = WalletLimit.from({ amount: 600, percentage: 1.2, limit: limitRaw })
+    it('isExceeded is true when percentage > 100', () => {
+        const wl = WalletLimit.from({ amount: 600, percentage: 120, limit: limitRaw })
         expect(wl.isExceeded).toBe(true)
     })
 
-    it('isExceeded is false at exactly 1.0', () => {
-        const wl = WalletLimit.from({ amount: 500, percentage: 1.0, limit: limitRaw })
+    it('isExceeded is false at exactly 100', () => {
+        const wl = WalletLimit.from({ amount: 500, percentage: 100, limit: limitRaw })
         expect(wl.isExceeded).toBe(false)
     })
 

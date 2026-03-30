@@ -113,26 +113,36 @@ describe('getChargesFlowStats', () => {
 
     it('calls GET /api/profile/statistics/charges-flow and returns parsed stats', async () => {
         mockAxios.get = vi.fn().mockResolvedValue({
-            data: { data: { income: 3000.5, expense: 1200.0, currency: rawCurrency } },
+            data: {
+                data: {
+                    '+': { type: '+', total: 3000.5, lastYear: 2000, lastQuarter: 800, lastMonth: 200.5 },
+                    '-': { type: '-', total: 1200.0, lastYear: 900, lastQuarter: 200, lastMonth: 100 },
+                    currency: rawCurrency,
+                },
+            },
         })
 
         const result = await getChargesFlowStats()
 
         expect(mockAxios.get).toHaveBeenCalledWith('/api/profile/statistics/charges-flow')
-        expect(result.income).toBe(3000.5)
-        expect(result.expense).toBe(1200.0)
+        expect(result.income.total).toBe(3000.5)
+        expect(result.income.lastMonth).toBe(200.5)
+        expect(result.expense.total).toBe(1200.0)
+        expect(result.expense.lastQuarter).toBe(200)
         expect(result.currency).toBeInstanceOf(Currency)
         expect(result.currency?.code).toBe('USD')
     })
 
     it('returns null currency when not present', async () => {
         mockAxios.get = vi.fn().mockResolvedValue({
-            data: { data: { income: 0, expense: 0 } },
+            data: { data: {} },
         })
 
         const result = await getChargesFlowStats()
 
         expect(result.currency).toBeNull()
+        expect(result.income.total).toBe(0)
+        expect(result.expense.total).toBe(0)
     })
 })
 

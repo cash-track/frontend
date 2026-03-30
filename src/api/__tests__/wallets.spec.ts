@@ -28,7 +28,7 @@ import {
     getWalletTotals, sortWallets, getWalletUsers, shareWallet, unshareWallet,
 } from '../wallets'
 import { Wallet, WalletTotal } from '../models/wallet'
-import { UserShort } from '../models/user'
+import { User } from '../models/user'
 
 const rawWallet = {
     id: 1, name: 'My Wallet', slug: 'my-wallet', totalAmount: 100.5,
@@ -38,7 +38,11 @@ const rawWallet = {
     users: [], latestCharges: [],
 }
 
-const rawUser = { id: 5, name: 'Bob', lastName: null, nickName: 'bob', photoUrl: null }
+const rawUser = {
+    id: 5, name: 'Bob', lastName: null, nickName: 'bob', photoUrl: null,
+    email: 'bob@example.com', isEmailConfirmed: true, defaultCurrencyCode: null,
+    defaultCurrency: null, locale: 'en', createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-02T00:00:00Z',
+}
 
 describe('getWallets', () => {
     beforeEach(() => vi.clearAllMocks())
@@ -216,13 +220,13 @@ describe('sortWallets', () => {
 describe('getWalletUsers', () => {
     beforeEach(() => vi.clearAllMocks())
 
-    it('calls GET /api/wallets/{id}/users and returns UserShort[]', async () => {
+    it('calls GET /api/wallets/{id}/users and returns User[]', async () => {
         mockAxios.get = vi.fn().mockResolvedValue({ data: { data: [rawUser] } })
 
         const result = await getWalletUsers(1)
 
         expect(mockAxios.get).toHaveBeenCalledWith('/api/wallets/1/users')
-        expect(result[0]).toBeInstanceOf(UserShort)
+        expect(result[0]).toBeInstanceOf(User)
         expect(result[0].id).toBe(5)
     })
 })

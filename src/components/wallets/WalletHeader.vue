@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import type { Wallet } from '@/api/models/wallet'
 import type { WalletTotal } from '@/api/models/wallet'
-import type { UserShort } from '@/api/models/user'
+import type { User } from '@/api/models/user'
 import { activateWallet, disableWallet, archiveWallet, unarchiveWallet, deleteWallet } from '@/api/wallets'
 import { useMoneyFormatter } from '@/composables/useMoneyFormatter'
 import { useAuthStore } from '@/stores/auth'
@@ -13,8 +13,11 @@ import { useNotifications } from '@/composables/useNotifications'
 const props = defineProps<{
     wallet: Wallet
     totals: WalletTotal | null
-    users: UserShort[]
+    users: User[]
 }>()
+
+const deleteConfirmOpen = ref(false)
+const deleting = ref(false)
 
 const emit = defineEmits<{
     'wallet-changed': []
@@ -85,7 +88,7 @@ const actionItems = computed(() => [
             icon: 'i-lucide-trash-2',
             color: 'error' as const,
             disabled: !authStore.isEmailConfirmed,
-            onSelect: onDelete,
+            onSelect: () => { deleteConfirmOpen.value = true },
         },
     ],
 ])
@@ -118,12 +121,17 @@ async function onUnArchive() {
     } catch { notifyError(t('wallets.loadingError')) }
 }
 
-async function onDelete() {
-    if (!confirm(t('wallets.deletingConfirm'))) return
+async function onDeleteConfirmed() {
+    deleting.value = true
     try {
         await deleteWallet(props.wallet.id)
+        deleteConfirmOpen.value = false
         router.push({ name: 'wallets' })
-    } catch { notifyError(t('wallets.loadingError')) }
+    } catch {
+        notifyError(t('wallets.loadingError'))
+    } finally {
+        deleting.value = false
+    }
 }
 </script>
 
@@ -186,5 +194,27 @@ async function onDelete() {
                 </div>
             </div>
         </div>
+        <!-- Delete confirmation modal -->
+        <UModal v-model:open="deleteConfirmOpen" :title="t('wallets.delete')">
+            <template #body>
+                <p class="text-sm text-muted">{{ t('wallets.deletingConfirm') }}</p>
+            </template>
+            <template #footer>
+                <div class="flex justify-end gap-2">
+                    <UButton
+                        variant="ghost"
+                        :label="t('wallets.cancel')"
+                        :disabled="deleting"
+                        @click="deleteConfirmOpen = false"
+                    />
+                    <UButton
+                        color="error"
+                        :label="t('wallets.delete')"
+                        :loading="deleting"
+                        @click="onDeleteConfirmed"
+                    />
+                </div>
+            </template>
+        </UModal>
     </div>
 </template>

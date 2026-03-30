@@ -29,8 +29,13 @@ const { format } = useMoneyFormatter()
 
 const loading = ref(false)
 const error = ref<string | null>(null)
-const data = ref<ChargesTotalDataPoint[]>([])
+const expenseData = ref<ChargesTotalDataPoint[]>([])
+const incomeData = ref<ChargesTotalDataPoint[]>([])
 const tags = ref<Tag[]>([])
+const hasLoaded = ref(false)
+
+const hideThresholdAmount = 8
+const hideThresholdPercent = 15
 
 function hashColor(name: string): string {
     let hash = 0
@@ -62,49 +67,101 @@ function getLabel(tagIds: number[]): string {
     return names.length > 0 ? names.join(', ') : t('tags.withoutTags')
 }
 
-const chartData = computed<ChartData<'doughnut'>>(() => {
-    const items = data.value.filter(d => d.amount > 0)
+function filterDataset(dataset: ChargesTotalDataPoint[]): ChargesTotalDataPoint[] {
+    const items = dataset.filter(d => d.amount > 0)
+    if (items.length <= hideThresholdAmount) return items
+
+    const totalSum = items.reduce((sum, d) => sum + d.amount, 0)
+    const visiblePercent = 100 - hideThresholdPercent
+    let capSum = 0
+    let visibleCount = 0
+
+    for (const entry of items) {
+        if ((capSum / totalSum) * 100 > visiblePercent) break
+        capSum += entry.amount
+        visibleCount++
+    }
+
+    const visible = items.slice(0, visibleCount)
+    const rest = items.slice(visibleCount)
+
+    if (rest.length > 0) {
+        const otherAmount = rest.reduce((sum, d) => sum + d.amount, 0)
+        visible.push({ amount: otherAmount, tags: [-1] })
+    }
+
+    return visible
+}
+
+function getLabelWithPercent(tagIds: number[], amount: number, totalSum: number): string {
+    let label: string
+    if (tagIds.length === 1 && tagIds[0] === -1) {
+        const otherCount = expenseData.value.length + incomeData.value.length
+        label = t('tags.otherTags', [otherCount])
+    } else {
+        label = getLabel(tagIds)
+    }
+    return `${label} ${((amount / totalSum) * 100).toFixed(0)}%`
+}
+
+function buildChartData(dataset: ChargesTotalDataPoint[]): ChartData<'doughnut'> {
+    const filtered = filterDataset(dataset)
+    const totalSum = dataset.filter(d => d.amount > 0).reduce((sum, d) => sum + d.amount, 0)
     return {
-        labels: items.map(d => getLabel(d.tags)),
+        labels: filtered.map(d => getLabelWithPercent(d.tags, d.amount, totalSum)),
         datasets: [{
-            backgroundColor: items.map(d => hashColor(getLabel(d.tags))),
-            data: items.map(d => d.amount),
+            backgroundColor: filtered.map(d => hashColor(getLabel(d.tags))),
+            data: filtered.map(d => d.amount),
         }],
     }
-})
+}
 
-const chartOptions = computed<ChartOptions<'doughnut'>>(() => ({
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-        legend: {
-            position: 'bottom',
-            align: 'start',
-        },
-        tooltip: {
-            callbacks: {
-                label: (context) => {
-                    let label = `  ${context.label}`
-                    if (context.parsed !== null && props.currency) {
-                        label += ' — ' + format(context.parsed, props.currency)
-                    }
-                    return label
+const expenseChartData = computed(() => buildChartData(expenseData.value))
+const incomeChartData = computed(() => buildChartData(incomeData.value))
+
+const hasExpenseData = computed(() => expenseData.value.some(d => d.amount > 0))
+const hasIncomeData = computed(() => incomeData.value.some(d => d.amount > 0))
+
+function buildChartOptions(): ChartOptions<'doughnut'> {
+    return {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'left',
+                align: 'center',
+            },
+            tooltip: {
+                callbacks: {
+                    label: (context) => {
+                        const rawLabel = context.label?.replace(/\b\d{1,3}%$/g, '').trim() ?? ''
+                        let label = `  ${rawLabel}`
+                        if (context.parsed !== null && props.currency) {
+                            label += ' — ' + format(context.parsed, props.currency)
+                        }
+                        return label
+                    },
                 },
             },
         },
-    },
-}))
+    }
+}
+
+const chartOptions = computed(() => buildChartOptions())
 
 async function loadData() {
     loading.value = true
     error.value = null
     try {
-        const [totalData, walletTags] = await Promise.all([
-            getChargesTotalByType(props.walletId),
+        const [expenseResult, incomeResult, walletTags] = await Promise.all([
+            getChargesTotalByType(props.walletId, { 'charge-type': 'expense' }),
+            getChargesTotalByType(props.walletId, { 'charge-type': 'income' }),
             getWalletTags(props.walletId),
         ])
-        data.value = totalData
+        expenseData.value = expenseResult
+        incomeData.value = incomeResult
         tags.value = walletTags
+        hasLoaded.value = true
     } catch {
         error.value = t('wallets.chartLoadingError')
     } finally {
@@ -119,19 +176,39 @@ defineExpose({ reload: loadData })
 
 <template>
     <div>
-        <div v-if="loading" class="flex justify-center py-8">
-            <UIcon name="i-lucide-loader-circle" class="size-6 animate-spin text-muted" />
-        </div>
-
         <UAlert
-            v-else-if="error"
+            v-if="error && !hasLoaded"
             color="error"
             :description="error"
             icon="i-lucide-alert-circle"
         />
 
-        <div v-else-if="data.length > 0" class="relative h-[400px]">
-            <Doughnut :data="chartData" :options="chartOptions" />
+        <div v-else class="relative">
+            <div
+                v-if="loading"
+                class="absolute inset-0 z-10 flex items-center justify-center bg-white/75 dark:bg-gray-900/75 backdrop-blur-[2px]"
+            >
+                <UIcon name="i-lucide-loader-circle" class="size-6 animate-spin text-muted" />
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <h4 class="text-lg font-medium mb-2">
+                        <span class="text-red-500">↓</span> {{ t('wallets.expense') }}
+                    </h4>
+                    <div v-if="hasExpenseData" class="relative h-[400px]">
+                        <Doughnut :data="expenseChartData" :options="chartOptions" />
+                    </div>
+                </div>
+                <div>
+                    <h4 class="text-lg font-medium mb-2">
+                        <span class="text-green-500">↑</span> {{ t('wallets.income') }}
+                    </h4>
+                    <div v-if="hasIncomeData" class="relative h-[400px]">
+                        <Doughnut :data="incomeChartData" :options="chartOptions" />
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </template>

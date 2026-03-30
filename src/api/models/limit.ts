@@ -68,7 +68,7 @@ export class WalletLimit {
     }
 
     get isExceeded(): boolean {
-        return this.percentage > 1
+        return this.percentage > 100
     }
 
     static from(raw: unknown): WalletLimit {

@@ -2,13 +2,13 @@
 import { shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { unshareWallet } from '@/api/wallets'
-import type { UserShort } from '@/api/models/user'
+import type { User } from '@/api/models/user'
 import { useNotifications } from '@/composables/useNotifications'
 
 const props = defineProps<{
     walletId: number
     walletName: string
-    user: UserShort
+    user: User
     isAllowedToRemove: boolean
 }>()
 

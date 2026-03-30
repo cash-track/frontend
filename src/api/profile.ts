@@ -3,9 +3,16 @@ import { User } from './models/user'
 import { Currency } from './models/currency'
 import { Wallet } from './models/wallet'
 
+export interface ChargesFlowPeriod {
+    total: number
+    lastYear: number
+    lastQuarter: number
+    lastMonth: number
+}
+
 export interface ChargesFlowStats {
-    income: number
-    expense: number
+    income: ChargesFlowPeriod
+    expense: ChargesFlowPeriod
     currency: Currency | null
 }
 
@@ -68,13 +75,25 @@ export async function updateLocale(locale: string): Promise<User> {
     })
 }
 
+function parseFlowPeriod(raw: unknown): ChargesFlowPeriod {
+    const zero: ChargesFlowPeriod = { total: 0, lastYear: 0, lastQuarter: 0, lastMonth: 0 }
+    if (!raw || typeof raw !== 'object') return zero
+    const d = raw as Record<string, unknown>
+    return {
+        total: typeof d.total === 'number' ? d.total : 0,
+        lastYear: typeof d.lastYear === 'number' ? d.lastYear : 0,
+        lastQuarter: typeof d.lastQuarter === 'number' ? d.lastQuarter : 0,
+        lastMonth: typeof d.lastMonth === 'number' ? d.lastMonth : 0,
+    }
+}
+
 export async function getChargesFlowStats(): Promise<ChargesFlowStats> {
     return apiCall(async client => {
         const res = await client.get('/api/profile/statistics/charges-flow')
         const d = res.data.data as Record<string, unknown>
         return {
-            income: typeof d.income === 'number' ? d.income : 0,
-            expense: typeof d.expense === 'number' ? d.expense : 0,
+            income: parseFlowPeriod(d['+']),
+            expense: parseFlowPeriod(d['-']),
             currency: d.currency ? Currency.from(d.currency) : null,
         }
     })

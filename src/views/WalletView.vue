@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { getWallet, getWalletTotals, getWalletUsers } from '@/api/wallets'
 import type { Wallet } from '@/api/models/wallet'
 import type { WalletTotal } from '@/api/models/wallet'
-import type { UserShort } from '@/api/models/user'
+import type { User } from '@/api/models/user'
 import type { FilterState } from '@/components/wallets/charges/ChargesFilter.vue'
 import WalletHeader from '@/components/wallets/WalletHeader.vue'
 import ChargeCreate from '@/components/wallets/charges/ChargeCreate.vue'
@@ -20,7 +20,7 @@ const { t } = useI18n()
 
 const wallet = shallowRef<Wallet | null>(null)
 const totals = shallowRef<WalletTotal | null>(null)
-const users = ref<UserShort[]>([])
+const users = ref<User[]>([])
 const loading = ref(false)
 const error = ref<string | null>(null)
 

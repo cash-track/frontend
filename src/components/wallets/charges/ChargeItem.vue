@@ -29,6 +29,7 @@ const authStore = useAuthStore()
 const isExpanded = ref(false)
 const isEdit = ref(false)
 const deleting = ref(false)
+const deleteConfirmOpen = ref(false)
 
 const currency = computed<Currency | null>(() => props.wallet.defaultCurrency)
 
@@ -67,12 +68,11 @@ function onUpdated(charge: Charge) {
     emit('updated', charge)
 }
 
-async function onDelete() {
-    if (!confirm(t('charges.deletingConfirm'))) return
-
+async function onDeleteConfirmed() {
     deleting.value = true
     try {
         await deleteCharge(props.wallet.id, props.charge.id)
+        deleteConfirmOpen.value = false
         emit('deleted', props.charge.id)
     } catch {
         // Silently fail — old code did the same
@@ -94,7 +94,7 @@ const actionItems = computed(() => [
             icon: 'i-lucide-trash-2',
             color: 'error' as const,
             disabled: !authStore.isEmailConfirmed || deleting.value,
-            onSelect: onDelete,
+            onSelect: () => { deleteConfirmOpen.value = true },
         },
     ],
 ])
@@ -182,5 +182,27 @@ const actionItems = computed(() => [
                 @cancelled="cancelEdit"
             />
         </div>
+        <!-- Delete confirmation modal -->
+        <UModal v-model:open="deleteConfirmOpen" :title="t('charges.delete')">
+            <template #body>
+                <p class="text-sm text-muted">{{ t('charges.deletingConfirm') }}</p>
+            </template>
+            <template #footer>
+                <div class="flex justify-end gap-2">
+                    <UButton
+                        variant="ghost"
+                        :label="t('charges.cancel')"
+                        :disabled="deleting"
+                        @click="deleteConfirmOpen = false"
+                    />
+                    <UButton
+                        color="error"
+                        :label="t('charges.delete')"
+                        :loading="deleting"
+                        @click="onDeleteConfirmed"
+                    />
+                </div>
+            </template>
+        </UModal>
     </div>
 </template>

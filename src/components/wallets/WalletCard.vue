@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import type { Wallet } from '@/api/models/wallet'
-import type { UserShort } from '@/api/models/user'
+import type { User } from '@/api/models/user'
 import { useMoneyFormatter } from '@/composables/useMoneyFormatter'
 import { useTimeAgo } from '@/composables/useTimeAgo'
 import { useProfileStore } from '@/stores/profile'
@@ -18,9 +18,9 @@ const { format } = useMoneyFormatter()
 const { timeAgo } = useTimeAgo()
 const profileStore = useProfileStore()
 
-const members = computed<UserShort[]>(() => {
+const members = computed<User[]>(() => {
     const currentUser = profileStore.profile
-    const result: UserShort[] = []
+    const result: User[] = []
 
     if (currentUser) {
         result.push(currentUser)

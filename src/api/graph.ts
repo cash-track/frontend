@@ -13,7 +13,10 @@ export interface ChargesTotalDataPoint {
 }
 
 export interface GetChargesFlowParams {
-    groupBy?: 'date' | 'day' | 'month'
+    'group-by'?: 'day' | 'month' | 'year'
+    'date-from'?: string
+    'date-to'?: string
+    tags?: string
 }
 
 export async function getChargesFlowByDate(
@@ -34,11 +37,21 @@ export async function getChargesFlowByDate(
     })
 }
 
+export interface GetChargesTotalParams {
+    'charge-type'?: 'income' | 'expense'
+    'date-from'?: string
+    'date-to'?: string
+    tags?: string
+}
+
 export async function getChargesTotalByType(
     walletId: number,
+    params?: GetChargesTotalParams,
 ): Promise<ChargesTotalDataPoint[]> {
     return apiCall(async client => {
-        const res = await client.get(`/api/wallets/${walletId}/charges/graph/total`)
+        const res = await client.get(`/api/wallets/${walletId}/charges/graph/total`, {
+            params,
+        })
         return (res.data.data as unknown[]).map(item => {
             const d = item as Record<string, unknown>
             return {

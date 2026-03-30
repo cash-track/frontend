@@ -44,10 +44,10 @@ function makeTag(): Tag {
 
 function makeWalletLimit(percentage: number): WalletLimit {
     return new WalletLimit({
-        amount: percentage * 100,
+        amount: (percentage / 100) * 1000,
         percentage,
         limit: new Limit({
-            id: 1, operation: '-', amount: 100, walletId: 1,
+            id: 1, operation: '-', amount: 1000, walletId: 1,
             createdAt: new Date(), updatedAt: new Date(),
             tags: [makeTag()], wallet: null,
         }),
@@ -60,6 +60,7 @@ const stubs = {
             UIcon: true,
             UButton: true,
             UDropdownMenu: true,
+            UModal: true,
             TagBadge: true,
             LimitForm: true,
         },
@@ -67,10 +68,10 @@ const stubs = {
 }
 
 describe('WalletLimitItem', () => {
-    it('renders progress bar green (gray) when percentage <= 1', () => {
+    it('renders progress bar gray when percentage <= 100', () => {
         const wrapper = shallowMount(WalletLimitItem, {
             ...stubs,
-            props: { walletLimit: makeWalletLimit(0.5), wallet: makeWallet() },
+            props: { walletLimit: makeWalletLimit(50), wallet: makeWallet() },
         })
         const bar = wrapper.find('.bg-gray-400')
         expect(bar.exists()).toBe(true)
@@ -78,10 +79,10 @@ describe('WalletLimitItem', () => {
         expect(redBar.exists()).toBe(false)
     })
 
-    it('renders progress bar red when percentage > 1 (exceeded)', () => {
+    it('renders progress bar red when percentage > 100 (exceeded)', () => {
         const wrapper = shallowMount(WalletLimitItem, {
             ...stubs,
-            props: { walletLimit: makeWalletLimit(1.5), wallet: makeWallet() },
+            props: { walletLimit: makeWalletLimit(150), wallet: makeWallet() },
         })
         const redBar = wrapper.find('.bg-red-500')
         expect(redBar.exists()).toBe(true)
@@ -90,16 +91,16 @@ describe('WalletLimitItem', () => {
     it('caps visual bar width at 100%', () => {
         const wrapper = shallowMount(WalletLimitItem, {
             ...stubs,
-            props: { walletLimit: makeWalletLimit(1.5), wallet: makeWallet() },
+            props: { walletLimit: makeWalletLimit(150), wallet: makeWallet() },
         })
         const bar = wrapper.find('.bg-red-500')
         expect(bar.attributes('style')).toContain('width: 100%')
     })
 
-    it('displays percentage text when percentage > 10%', () => {
+    it('displays percentage text when percentage > 10', () => {
         const wrapper = shallowMount(WalletLimitItem, {
             ...stubs,
-            props: { walletLimit: makeWalletLimit(0.5), wallet: makeWallet() },
+            props: { walletLimit: makeWalletLimit(50), wallet: makeWallet() },
         })
         expect(wrapper.find('.text-xs').text()).toBe('50%')
     })

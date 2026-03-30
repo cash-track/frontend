@@ -17,6 +17,7 @@ export interface GetChargesParams {
     limit?: number
     'date-from'?: string
     'date-to'?: string
+    tags?: string
 }
 
 export async function getCharges(walletId: number, params?: GetChargesParams): Promise<PaginatedResponse<Charge>> {
