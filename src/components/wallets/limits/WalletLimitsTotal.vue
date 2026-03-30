@@ -50,12 +50,12 @@ async function loadLimits() {
     }
 }
 
-function onLimitCreated(limit: Limit) {
+function onLimitCreated() {
     showCreateForm.value = false
     void loadLimits()
 }
 
-function onLimitUpdated(limit: Limit) {
+function onLimitUpdated() {
     void loadLimits()
 }
 
