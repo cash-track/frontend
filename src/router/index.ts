@@ -6,6 +6,7 @@ import WalletShareView from '@/views/WalletShareView.vue'
 import WalletView from '@/views/WalletView.vue'
 import ProfileView from '@/views/ProfileView.vue'
 import TagsView from '@/views/TagsView.vue'
+import TagView from '@/views/TagView.vue'
 import DummyView from '@/views/DummyView.vue'
 
 const router = createRouter({
@@ -102,7 +103,7 @@ const router = createRouter({
         {
             path: '/tags/:tagID',
             name: 'tags.show',
-            component: DummyView,
+            component: TagView,
             props: true,
             meta: {
                 title: 'Tag | Cash Track',

@@ -763,7 +763,7 @@ All three install groups passed `npm run build`, `npm run type-check`, and `npm 
 **Prerequisites:** Stage 4 (independent of Stage 5)
 **Estimated AI time:** ~1.5 h (1 session)
 **Files:** 6 new files
-**Status:** `[ ] Not started`
+**Status:** `[x] Complete — 2026-03-31`
 
 **Goals:** Tag listing with full CRUD and tag detail page with associated charges and statistics.
 
@@ -783,27 +783,31 @@ components/tags/
 
 ### Tasks
 
-- [ ] `src/components/tags/Tag.vue` — colored chip: `icon` + `name`; dynamic background from `tag.color` using CSS custom property; click navigates to `tags.show`
-- [ ] `src/components/tags/TagForm.vue` — name field (minLength 3, pattern `^\S+$` no spaces), optional icon (emoji), optional color (swatches or `<input type="color">`); `useApiErrors`
-- [ ] `src/components/tags/CreateTag.vue` — wraps `TagForm`; calls `createTag()`; emits `tag-created`
-- [ ] `src/components/tags/TagFormInput.vue` — multi-select input that fetches `getTags()`, renders selected tags as `Tag` chips, allows deselecting; used in `ChargeCreate`/`ChargeEdit`
-- [ ] `src/views/TagsView.vue` — replace stub; grid of `Tag` components; inline `CreateTag` form; edit (opens `TagForm` inline) / delete per tag with confirmation
-- [ ] `src/views/TagView.vue` — tag name/color header; reuses `ChargesFilter` + `ChargesList` components from Stage 5c; `ChargesFlowChart` from Stage 5d showing this tag's totals from `getTagTotals()`
+- [x] `src/components/tags/Tag.vue` — colored chip: `icon` + `name`; dynamic background from `tag.color` using CSS custom property; click navigates to `tags.show`
+- [x] `src/components/tags/TagForm.vue` — name field (minLength 3, pattern `^\S+$` no spaces), optional icon (emoji), optional color (swatches or `<input type="color">`); `useApiErrors`
+- [x] `src/components/tags/CreateTag.vue` — wraps `TagForm`; calls `createTag()`; emits `tag-created`
+- [x] `src/components/tags/TagFormInput.vue` — already existed from earlier stage (uses wallet-scoped tags via `getWalletTags`/`searchWalletTags`); kept as-is
+- [x] `src/views/TagsView.vue` — replace stub; grid of `Tag` components; inline `CreateTag` form; edit (opens `TagForm` in `UModal`) / delete per tag with confirmation
+- [x] `src/views/TagView.vue` — tag name/color header; inline charges list using `getTagCharges()`; `ChargesFilter` reused; totals from `getTagTotals()` shown as income/expense summary
 
 ### Testing checkpoint
 
 - Unit tests: `Tag.vue` — `style` attribute contains the tag's hex color; `TagForm` — validates name min-length and no-spaces pattern
 - Browser (`agent-browser` skill — standard login flow, then):
-  - [ ] Navigate to `https://my.dev-cash-track.app/tags` → tag list renders
-  - [ ] Create tag with name, icon, color → chip appears in list with correct background color
-  - [ ] Edit tag color → chip updates
-  - [ ] Click tag → navigate to tag detail page → charges for that tag load with filter/pagination
-  - [ ] Delete tag (with confirmation) → removed from list
-  - [ ] Open charge create form on any wallet → tag multi-select shows all tags; selecting renders chips; deselecting removes them
+  - [x] Navigate to `https://my.dev-cash-track.app/tags` → tag list renders
+  - [x] Create tag with name, icon, color → chip appears in list with correct background color
+  - [x] Edit tag color → chip updates (modal with pre-populated TagForm opens)
+  - [x] Click tag → navigate to tag detail page → charges for that tag load with filter/pagination
+  - [x] Delete tag (with confirmation) → removed from list
+  - [x] Open charge create form on any wallet → tag multi-select shows all tags; selecting renders chips; deselecting removes them
 - `npm run build` — zero errors
 
 ### Notes
-<!-- Update after completing this stage -->
+
+- `Tag.vue` navigating chip and `TagBadge.vue` selected-tag chip coexist — different responsibilities (navigation vs display with removable state). `TagsView.vue` imports `Tag.vue` as `TagChip` alias to avoid naming conflict with the `Tag` model type.
+- `TagView.vue` builds an inline charges list using `getTagCharges()` rather than reusing `ChargesList.vue` (which requires a full `Wallet` object). `ChargesFlowChart` also skipped for the same reason — only `getTagTotals()` income/expense summary is shown.
+- `TagFormInput.vue` already existed using wallet-scoped APIs (`getWalletTags`/`searchWalletTags`). Kept as-is since wallet-scope suggestions are the correct UX for charge creation context.
+- Browser login workaround: website (Nuxt) was returning Internal Server Error; logged in by navigating to `gateway.dev-cash-track.app` and running a fetch to `/api/auth/login` with credentials to set auth cookies, then navigated to `my.dev-cash-track.app/tags`.
 
 ---
 
