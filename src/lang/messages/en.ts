@@ -227,6 +227,7 @@ export default {
         editInfoLine1: 'Tags which you created are accessible by users, with whom you have at least one common wallet.',
         editInfoLine2: 'But they cannot edit or delete them.',
         create: 'Create',
+        edit: 'Edit',
         update: 'Save',
         deletingConfirm: 'Deleting tag {0}. Are you sure?',
         autocompleteHint: 'Find or create tags by start typing..',

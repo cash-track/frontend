@@ -111,7 +111,7 @@ onMounted(loadTags)
                                         color="neutral"
                                         size="xs"
                                         icon="i-lucide-pencil"
-                                        :label="t('tags.update')"
+                                        :label="t('tags.edit')"
                                         @click="openEdit(tag)"
                                     />
                                     <UButton
