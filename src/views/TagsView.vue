@@ -169,9 +169,10 @@ onMounted(loadTags)
             :title="t('charges.delete')"
         >
             <template #body>
-                <p class="text-sm text-muted">
-                    {{ t('tags.deletingConfirm', [deletingTag?.name ?? '']) }}
-                </p>
+                <div class="space-y-3">
+                    <TagComponent v-if="deletingTag" :tag="deletingTag" />
+                    <p class="text-sm text-muted">{{ t('tags.deletingConfirm') }}</p>
+                </div>
             </template>
             <template #footer>
                 <div class="flex justify-end gap-2">

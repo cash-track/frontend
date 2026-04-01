@@ -229,7 +229,7 @@ export default {
         create: 'Create',
         edit: 'Edit',
         update: 'Save',
-        deletingConfirm: 'Deleting tag {0}. Are you sure?',
+        deletingConfirm: 'Are you sure you want to delete this tag?',
         autocompleteHint: 'Find or create tags by start typing..',
 
         stats: 'Analyse tags usage',
