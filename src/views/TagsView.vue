@@ -91,50 +91,56 @@ onMounted(loadTags)
         />
 
         <template v-else>
-            <!-- Create form -->
-            <div class="border border-default rounded-lg p-4">
-                <h2 class="text-sm font-medium text-muted mb-3">{{ t('tags.addNew') }}</h2>
-                <CreateTag @tag-created="onTagCreated" />
-            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Tags list -->
+                <div>
+                    <!-- Tags grid -->
+                    <div v-if="tags.length > 0" class="flex flex-wrap gap-3">
+                        <div
+                            v-for="tag in tags"
+                            :key="tag.id"
+                            class="flex items-center gap-1 group"
+                        >
+                            <TagComponent :tag="tag" navigable />
+                            <div class="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <UButton
+                                    variant="ghost"
+                                    color="neutral"
+                                    size="xs"
+                                    icon="i-lucide-pencil"
+                                    :aria-label="t('tags.update')"
+                                    @click="openEdit(tag)"
+                                />
+                                <UButton
+                                    variant="ghost"
+                                    color="error"
+                                    size="xs"
+                                    icon="i-lucide-trash-2"
+                                    :aria-label="t('charges.delete')"
+                                    @click="openDelete(tag)"
+                                />
+                            </div>
+                        </div>
+                    </div>
 
-            <!-- Tags grid -->
-            <div v-if="tags.length > 0" class="flex flex-wrap gap-3">
-                <div
-                    v-for="tag in tags"
-                    :key="tag.id"
-                    class="flex items-center gap-1 group"
-                >
-                    <TagComponent :tag="tag" navigable />
-                    <div class="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <UButton
-                            variant="ghost"
-                            color="neutral"
-                            size="xs"
-                            icon="i-lucide-pencil"
-                            :aria-label="t('tags.update')"
-                            @click="openEdit(tag)"
-                        />
-                        <UButton
-                            variant="ghost"
-                            color="error"
-                            size="xs"
-                            icon="i-lucide-trash-2"
-                            :aria-label="t('charges.delete')"
-                            @click="openDelete(tag)"
-                        />
+                    <!-- Empty state -->
+                    <div v-else class="flex flex-col items-center justify-center py-16 text-muted">
+                        <UIcon name="i-lucide-tag" class="size-12 mb-3 opacity-30" />
+                        <p class="text-sm">{{ t('tags.addNew') }}</p>
                     </div>
                 </div>
-            </div>
 
-            <!-- Empty state -->
-            <div v-else class="flex flex-col items-center justify-center py-16 text-muted">
-                <UIcon name="i-lucide-tag" class="size-12 mb-3 opacity-30" />
-                <p class="text-sm">{{ t('tags.addNew') }}</p>
+                <!-- Create form -->
+                <div class="border border-default rounded-lg p-4">
+                    <h2 class="text-sm font-medium text-muted mb-3">{{ t('tags.addNew') }}</h2>
+                    <CreateTag @tag-created="onTagCreated" />
+                </div>
             </div>
 
             <!-- Info alert -->
             <UAlert
                 color="neutral"
+                variant="subtle"
                 :description="`${t('tags.editInfoLine1')} ${t('tags.editInfoLine2')}`"
                 icon="i-lucide-info"
             />
