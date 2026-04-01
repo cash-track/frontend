@@ -224,6 +224,7 @@ export default {
         inputHelpLine2: 'Emoji it\'s always a good way to find your tags faster. And that\'s just beautiful.',
         inputHelpLine3: 'Change a color of your tag to outline it. Tap on a square button before entered tag name.',
         preview: 'Preview',
+        open: 'Open',
         editInfoLine1: 'Tags which you created are accessible by users, with whom you have at least one common wallet.',
         editInfoLine2: 'But they cannot edit or delete them.',
         create: 'Create',
