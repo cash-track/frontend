@@ -99,10 +99,10 @@ onMounted(loadTags)
                         <div
                             v-for="tag in tags"
                             :key="tag.id"
-                            class="flex items-center gap-1 group"
+                            class="relative group"
                         >
                             <TagComponent :tag="tag" navigable />
-                            <div class="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div class="absolute left-full top-1/2 -translate-y-1/2 ml-0.5 flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                                 <UButton
                                     variant="ghost"
                                     color="neutral"
