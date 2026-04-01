@@ -91,7 +91,7 @@ async function onSubmit() {
     <div class="space-y-4">
         <!-- Preview -->
         <div class="flex items-center gap-2">
-            <span class="text-sm text-muted">{{ t('tags.editHelpLine1') }}</span>
+            <span class="text-sm text-muted">{{ t('tags.preview') }}:</span>
             <TagChip :tag="previewTag" />
         </div>
 
