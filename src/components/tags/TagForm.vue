@@ -97,26 +97,7 @@ async function onSubmit() {
 
         <form novalidate @submit.prevent="onSubmit">
             <div class="flex flex-col sm:flex-row sm:items-start gap-2">
-                <!-- Color picker -->
-                <div class="flex items-center gap-1 shrink-0">
-                    <label
-                        :for="`tag-color-${tag?.id ?? 'new'}`"
-                        class="relative cursor-pointer"
-                    >
-                        <span
-                            class="block size-9 rounded-md border-2 border-default transition-all hover:border-primary/40"
-                            :style="{ backgroundColor: color }"
-                        />
-                        <input
-                            :id="`tag-color-${tag?.id ?? 'new'}`"
-                            v-model="color"
-                            type="color"
-                            class="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                        />
-                    </label>
-                </div>
-
-                <!-- Name + emoji field -->
+                <!-- Name + emoji field with inline color picker -->
                 <UFormField
                     class="flex-1"
                     :error="fieldErrors.name?.[0] ?? fieldErrors.icon?.[0]"
@@ -129,7 +110,25 @@ async function onSubmit() {
                         autocomplete="off"
                         :disabled="loading"
                         :status="(fieldErrors.name || fieldErrors.icon) ? 'error' : undefined"
-                    />
+                    >
+                        <template #leading>
+                            <label
+                                :for="`tag-color-${tag?.id ?? 'new'}`"
+                                class="relative cursor-pointer"
+                            >
+                                <span
+                                    class="block size-5 rounded-sm border border-white/20"
+                                    :style="{ backgroundColor: color }"
+                                />
+                                <input
+                                    :id="`tag-color-${tag?.id ?? 'new'}`"
+                                    v-model="color"
+                                    type="color"
+                                    class="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                                />
+                            </label>
+                        </template>
+                    </UInput>
                 </UFormField>
 
                 <!-- Submit -->
