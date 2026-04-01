@@ -61,7 +61,7 @@ const stubs = {
             UButton: true,
             UDropdownMenu: true,
             UModal: true,
-            TagBadge: true,
+            Tag: true,
             LimitForm: true,
         },
     },

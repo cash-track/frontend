@@ -10,7 +10,7 @@ import { useApiErrors } from '@/composables/useApiErrors'
 import { useAuthStore } from '@/stores/auth'
 import ChargeTitleFormInput from './ChargeTitleFormInput.vue'
 import TagFormInput from '@/components/tags/TagFormInput.vue'
-import TagBadge from '@/components/tags/TagBadge.vue'
+import TagChip from '@/components/tags/Tag.vue'
 import DateTimePicker from '@/components/DateTimePicker.vue'
 
 const props = defineProps<{
@@ -140,7 +140,7 @@ const maxDateTime = computed(() => {
 
         <!-- Selected tags -->
         <div v-if="selectedTags.length > 0" class="flex flex-wrap gap-1">
-            <TagBadge
+            <TagChip
                 v-for="tag in selectedTags"
                 :key="tag.id"
                 :tag="tag"

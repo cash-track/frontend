@@ -6,7 +6,7 @@ import type { WalletLimit } from '@/api/models/limit'
 import type { Limit } from '@/api/models/limit'
 import type { Wallet } from '@/api/models/wallet'
 import { useMoneyFormatter } from '@/composables/useMoneyFormatter'
-import TagBadge from '@/components/tags/TagBadge.vue'
+import Tag from '@/components/tags/Tag.vue'
 import LimitForm from './LimitForm.vue'
 
 const props = defineProps<{
@@ -85,7 +85,7 @@ function onEditCancelled() {
                     name="i-lucide-arrow-down"
                     class="text-red-500 hidden sm:inline-block"
                 />
-                <TagBadge
+                <Tag
                     v-for="tag in walletLimit.limit.tags"
                     :key="tag.id"
                     :tag="tag"

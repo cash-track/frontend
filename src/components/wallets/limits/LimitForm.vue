@@ -7,7 +7,7 @@ import type { Wallet } from '@/api/models/wallet'
 import type { Tag } from '@/api/models/tag'
 import { useApiErrors } from '@/composables/useApiErrors'
 import TagFormInput from '@/components/tags/TagFormInput.vue'
-import TagBadge from '@/components/tags/TagBadge.vue'
+import TagChip from '@/components/tags/Tag.vue'
 
 const props = defineProps<{
     wallet: Wallet
@@ -91,7 +91,7 @@ function onCancel() {
     <form @submit.prevent="onSubmit" class="space-y-3">
         <!-- Selected tags -->
         <div v-if="selectedTags.length > 0" class="flex flex-wrap gap-1">
-            <TagBadge
+            <TagChip
                 v-for="tag in selectedTags"
                 :key="tag.id"
                 :tag="tag"

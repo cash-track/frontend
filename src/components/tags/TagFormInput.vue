@@ -3,7 +3,7 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { getWalletTags, searchWalletTags } from '@/api/tags'
 import type { Tag } from '@/api/models/tag'
-import TagBadge from '@/components/tags/TagBadge.vue'
+import TagChip from '@/components/tags/Tag.vue'
 
 const props = defineProps<{
     walletId: number
@@ -147,7 +147,7 @@ defineExpose({ reset })
             v-if="dropdownOpen && displayedTags.length > 0"
             class="absolute z-10 mt-1 w-full rounded-md border border-default bg-default shadow-lg p-2 flex flex-wrap gap-1 max-h-40 overflow-y-auto"
         >
-            <TagBadge
+            <TagChip
                 v-for="(tag, index) in displayedTags"
                 :key="tag.id"
                 :tag="tag"

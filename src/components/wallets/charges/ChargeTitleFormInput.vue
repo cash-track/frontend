@@ -5,7 +5,7 @@ import { getChargeTitles } from '@/api/charges'
 import { searchWalletTags } from '@/api/tags'
 import type { Tag } from '@/api/models/tag'
 import type { ChargeTitleSuggestion } from '@/api/models/charge'
-import TagBadge from '@/components/tags/TagBadge.vue'
+import TagChip from '@/components/tags/Tag.vue'
 
 const props = defineProps<{
     modelValue: string
@@ -176,7 +176,7 @@ defineExpose({ reset })
         >
             <!-- Tag suggestions -->
             <div v-if="filteredTagSuggestions.length > 0" class="p-2 flex flex-wrap gap-1 border-b border-default">
-                <TagBadge
+                <TagChip
                     v-for="(tag, index) in filteredTagSuggestions"
                     :key="tag.id"
                     :tag="tag"

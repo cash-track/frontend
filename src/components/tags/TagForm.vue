@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { createTag, updateTag } from '@/api/tags'
 import type { Tag } from '@/api/models/tag'
 import { useApiErrors } from '@/composables/useApiErrors'
-import TagBadge from './TagBadge.vue'
+import TagChip from './Tag.vue'
 
 const props = defineProps<{
     tag?: Tag | null
@@ -100,7 +100,7 @@ async function onSubmit() {
         <!-- Preview -->
         <div class="flex items-center gap-2">
             <span class="text-sm text-muted">{{ t('tags.editHelpLine1') }}</span>
-            <TagBadge :tag="previewTag" />
+            <TagChip :tag="previewTag" />
         </div>
 
         <form novalidate @submit.prevent="onSubmit">

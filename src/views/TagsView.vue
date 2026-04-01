@@ -3,7 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { getTags, deleteTag } from '@/api/tags'
 import type { Tag } from '@/api/models/tag'
-import TagChip from '@/components/tags/Tag.vue'
+import TagComponent from '@/components/tags/Tag.vue'
 import CreateTag from '@/components/tags/CreateTag.vue'
 import TagForm from '@/components/tags/TagForm.vue'
 
@@ -104,7 +104,7 @@ onMounted(loadTags)
                     :key="tag.id"
                     class="flex items-center gap-1 group"
                 >
-                    <TagChip :tag="tag" />
+                    <TagComponent :tag="tag" navigable />
                     <div class="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                         <UButton
                             variant="ghost"

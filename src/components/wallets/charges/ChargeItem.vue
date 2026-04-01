@@ -8,7 +8,7 @@ import { deleteCharge } from '@/api/charges'
 import { useMoneyFormatter } from '@/composables/useMoneyFormatter'
 import { useAuthStore } from '@/stores/auth'
 import ChargeEdit from './ChargeEdit.vue'
-import TagBadge from '@/components/tags/TagBadge.vue'
+import Tag from '@/components/tags/Tag.vue'
 
 const props = defineProps<{
     charge: Charge
@@ -158,7 +158,7 @@ const actionItems = computed(() => [
                         size="xs"
                     />
                     <template v-if="charge.tags.length > 0">
-                        <TagBadge
+                        <Tag
                             v-for="tag in charge.tags"
                             :key="tag.id"
                             :tag="tag"

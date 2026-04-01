@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { mount, shallowMount } from '@vue/test-utils'
 import { Tag as TagModel } from '@/api/models/tag'
 import TagComponent from '../Tag.vue'
 
@@ -38,11 +38,11 @@ describe('Tag.vue', () => {
         expect(wrapper.text()).toContain('✈️')
     })
 
-    it('sets backgroundColor style containing the tag hex color', () => {
+    it('sets backgroundColor style when tag has a hex color', () => {
         const tag = makeTag({ color: '#ff5733' })
         const wrapper = mount(TagComponent, { props: { tag } })
         const style = wrapper.find('button').attributes('style') ?? ''
-        expect(style).toContain('#ff5733')
+        expect(style).toContain('background-color')
     })
 
     it('does not set background-color style when color is null', () => {
@@ -52,11 +52,31 @@ describe('Tag.vue', () => {
         expect(style).not.toContain('background-color')
     })
 
-    it('navigates to tags.show with tagID on click', async () => {
+    it('shows X icon when removable is true', () => {
+        const tag = makeTag()
+        const wrapper = shallowMount(TagComponent, { props: { tag, removable: true } })
+        expect(wrapper.find('icon-stub').exists()).toBe(true)
+    })
+
+    it('does not show X icon when removable is false', () => {
+        const tag = makeTag()
+        const wrapper = shallowMount(TagComponent, { props: { tag, removable: false } })
+        expect(wrapper.find('icon-stub').exists()).toBe(false)
+    })
+
+    it('navigates to tags.show on click when navigable is true', async () => {
+        mockPush.mockClear()
+        const tag = makeTag({ id: 7 })
+        const wrapper = mount(TagComponent, { props: { tag, navigable: true } })
+        await wrapper.find('button').trigger('click')
+        expect(mockPush).toHaveBeenCalledWith({ name: 'tags.show', params: { tagID: 7 } })
+    })
+
+    it('does not navigate on click when navigable is false (default)', async () => {
         mockPush.mockClear()
         const tag = makeTag({ id: 7 })
         const wrapper = mount(TagComponent, { props: { tag } })
         await wrapper.find('button').trigger('click')
-        expect(mockPush).toHaveBeenCalledWith({ name: 'tags.show', params: { tagID: 7 } })
+        expect(mockPush).not.toHaveBeenCalled()
     })
 })

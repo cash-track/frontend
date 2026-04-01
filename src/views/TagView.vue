@@ -6,7 +6,7 @@ import type { Tag } from '@/api/models/tag'
 import type { Charge, ChargeTotal } from '@/api/models/charge'
 import type { Pagination } from '@/api/models/pagination'
 import type { FilterState } from '@/components/wallets/charges/ChargesFilter.vue'
-import TagBadge from '@/components/tags/TagBadge.vue'
+import TagChip from '@/components/tags/Tag.vue'
 import ChargesFilter from '@/components/wallets/charges/ChargesFilter.vue'
 import { useMoneyFormatter } from '@/composables/useMoneyFormatter'
 
@@ -109,7 +109,7 @@ onMounted(loadTag)
         <template v-else-if="tag">
             <!-- Tag header -->
             <div class="flex items-center gap-3">
-                <TagBadge :tag="tag" class="text-base" />
+                <TagChip :tag="tag" class="text-base" />
                 <h1 class="text-2xl font-semibold">{{ t('tags.stats') }}</h1>
             </div>
 

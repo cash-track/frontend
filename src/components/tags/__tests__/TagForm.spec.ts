@@ -39,7 +39,7 @@ const makeGlobal = () => ({
                 props: ['loading', 'disabled', 'type', 'class'],
             },
             UAlert: { template: '<div />', props: ['color', 'description', 'icon', 'class'] },
-            TagBadge: { template: '<span />', props: ['tag', 'class'] },
+            TagChip: { template: '<span />', props: ['tag', 'class'] },
         },
     },
 })
@@ -68,7 +68,7 @@ describe('TagForm.vue', () => {
     it('submit button is disabled when name is empty', () => {
         const wrapper = mount(TagForm, makeGlobal())
         const btn = wrapper.find('button[type="submit"]')
-        expect(btn.element.disabled).toBe(true)
+        expect((btn.element as HTMLButtonElement).disabled).toBe(true)
     })
 
     it('submit button is disabled when name is fewer than 3 chars', async () => {
@@ -77,7 +77,7 @@ describe('TagForm.vue', () => {
         await nameInput.setValue('ab')
         await nextTick()
         const btn = wrapper.find('button[type="submit"]')
-        expect(btn.element.disabled).toBe(true)
+        expect((btn.element as HTMLButtonElement).disabled).toBe(true)
     })
 
     it('submit button is disabled when name contains whitespace', async () => {
@@ -86,7 +86,7 @@ describe('TagForm.vue', () => {
         await nameInput.setValue('has space')
         await nextTick()
         const btn = wrapper.find('button[type="submit"]')
-        expect(btn.element.disabled).toBe(true)
+        expect((btn.element as HTMLButtonElement).disabled).toBe(true)
     })
 
     it('submit button is enabled when name is valid (>= 3 chars, no spaces)', async () => {
@@ -95,7 +95,7 @@ describe('TagForm.vue', () => {
         await nameInput.setValue('Shopping')
         await nextTick()
         const btn = wrapper.find('button[type="submit"]')
-        expect(btn.element.disabled).toBe(false)
+        expect((btn.element as HTMLButtonElement).disabled).toBe(false)
     })
 
     it('submit button is enabled for a short 3-char name without spaces', async () => {
@@ -104,6 +104,6 @@ describe('TagForm.vue', () => {
         await nameInput.setValue('xyz')
         await nextTick()
         const btn = wrapper.find('button[type="submit"]')
-        expect(btn.element.disabled).toBe(false)
+        expect((btn.element as HTMLButtonElement).disabled).toBe(false)
     })
 })
