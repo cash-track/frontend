@@ -95,7 +95,7 @@ onMounted(loadTags)
                 <!-- Tags list -->
                 <div>
                     <!-- Tags grid -->
-                    <div v-if="tags.length > 0" class="flex flex-wrap gap-3">
+                    <div v-if="tags.length > 0" class="flex flex-wrap gap-2">
                         <div
                             v-for="tag in tags"
                             :key="tag.id"
@@ -131,7 +131,7 @@ onMounted(loadTags)
                 </div>
 
                 <!-- Create form -->
-                <div class="border border-default rounded-lg p-4">
+                <div class="border border-default rounded-lg p-4 self-start">
                     <h2 class="text-sm font-medium text-muted mb-3">{{ t('tags.addNew') }}</h2>
                     <CreateTag @tag-created="onTagCreated" />
                 </div>
