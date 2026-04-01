@@ -96,7 +96,7 @@ async function onSubmit() {
         </div>
 
         <form novalidate @submit.prevent="onSubmit">
-            <div class="flex -space-x-px sm:items-start">
+            <div class="flex w-full -space-x-px sm:items-start">
                 <!-- Name + emoji field with inline color picker -->
                 <UFormField
                     class="flex-1 min-w-0"
@@ -110,6 +110,7 @@ async function onSubmit() {
                         autocomplete="off"
                         :disabled="loading"
                         :status="(fieldErrors.name || fieldErrors.icon) ? 'error' : undefined"
+                        class="w-full"
                         :ui="{ base: 'rounded-e-none' }"
                     >
                         <template #leading>
