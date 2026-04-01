@@ -145,6 +145,7 @@ async function onSubmit() {
 
             <!-- Help text -->
             <p class="mt-2 text-xs text-muted">
+                {{ t('tags.inputHelpLine1') }}<br>
                 {{ t('tags.inputHelpLine2') }}<br>
                 {{ t('tags.inputHelpLine3') }}
             </p>
