@@ -32,6 +32,23 @@ describe('useApiErrors', () => {
 
         expect(fieldErrors.value.name).toEqual(['Name is required', 'Name is too short'])
         expect(fieldErrors.value.name[0]).toBe('Name is required')
+        expect(generalError.value).toBeNull()
+    })
+
+    it('normalizes Spiral string field errors to arrays', () => {
+        const { fieldErrors, generalError, handleError } = useApiErrors()
+
+        handleError(makeAxiosError(422, { errors: { name: 'Value should be unique.' } }))
+
+        expect(fieldErrors.value.name).toEqual(['Value should be unique.'])
+        expect(generalError.value).toBeNull()
+    })
+
+    it('sets generalError when 422 has no parseable field errors', () => {
+        const { generalError, handleError } = useApiErrors()
+
+        handleError(makeAxiosError(422, { errors: {} }))
+
         expect(generalError.value).toBe('One or more fields is not valid')
     })
 

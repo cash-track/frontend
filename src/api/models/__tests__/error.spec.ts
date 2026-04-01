@@ -45,6 +45,12 @@ describe('ValidationError.from', () => {
         expect(e.getFieldError('missing')).toBeNull()
     })
 
+    it('normalizes string field errors to single-element arrays (Spiral format)', () => {
+        const e = ValidationError.from({ errors: { name: 'Value should be unique.' } })
+        expect(e.errors.name).toEqual(['Value should be unique.'])
+        expect(e.getFieldError('name')).toBe('Value should be unique.')
+    })
+
     it('filters out non-string values within an error array', () => {
         const e = ValidationError.from({ errors: { email: ['Required', 42, null] } })
         expect(e.errors.email).toEqual(['Required'])

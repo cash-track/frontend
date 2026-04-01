@@ -25,7 +25,9 @@ export function useApiErrors() {
             try {
                 const ve = ValidationError.from(data)
                 fieldErrors.value = ve.errors
-                generalError.value = 'One or more fields is not valid'
+                if (Object.keys(ve.errors).length === 0) {
+                    generalError.value = 'One or more fields is not valid'
+                }
             } catch {
                 generalError.value = 'Validation failed'
             }

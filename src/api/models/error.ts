@@ -37,6 +37,8 @@ export class ValidationError {
         for (const [key, value] of Object.entries(d.errors as Record<string, unknown>)) {
             if (Array.isArray(value)) {
                 errors[key] = value.filter((v): v is string => typeof v === 'string')
+            } else if (typeof value === 'string') {
+                errors[key] = [value]
             }
         }
         return new ValidationError(errors)
