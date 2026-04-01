@@ -80,13 +80,36 @@ describe('TagForm.vue', () => {
         expect((btn.element as HTMLButtonElement).disabled).toBe(true)
     })
 
-    it('submit button is disabled when name contains whitespace', async () => {
+    it('submit button is disabled when parsed name contains whitespace', async () => {
         const wrapper = mount(TagForm, makeGlobal())
         const nameInput = findNameInput(wrapper)
         await nameInput.setValue('has space')
         await nextTick()
         const btn = wrapper.find('button[type="submit"]')
         expect((btn.element as HTMLButtonElement).disabled).toBe(true)
+    })
+
+    it('submit button is enabled when input has leading emoji and valid name', async () => {
+        const wrapper = mount(TagForm, makeGlobal())
+        const nameInput = findNameInput(wrapper)
+        await nameInput.setValue('🥦 Food')
+        await nextTick()
+        const btn = wrapper.find('button[type="submit"]')
+        expect((btn.element as HTMLButtonElement).disabled).toBe(false)
+    })
+
+    it('populates input as "icon name" in edit mode', () => {
+        const tag = { id: 1, name: 'Food', icon: '🥦', color: null, userId: 1, createdAt: new Date(), updatedAt: new Date() }
+        const wrapper = mount(TagForm, { props: { tag }, ...makeGlobal() })
+        const nameInput = findNameInput(wrapper)
+        expect((nameInput.element as HTMLInputElement).value).toBe('🥦 Food')
+    })
+
+    it('populates input as plain name when tag has no icon', () => {
+        const tag = { id: 1, name: 'Food', icon: null, color: null, userId: 1, createdAt: new Date(), updatedAt: new Date() }
+        const wrapper = mount(TagForm, { props: { tag }, ...makeGlobal() })
+        const nameInput = findNameInput(wrapper)
+        expect((nameInput.element as HTMLInputElement).value).toBe('Food')
     })
 
     it('submit button is enabled when name is valid (>= 3 chars, no spaces)', async () => {

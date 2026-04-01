@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { createTag, updateTag } from '@/api/tags'
 import type { Tag } from '@/api/models/tag'
 import { useApiErrors } from '@/composables/useApiErrors'
+import { parseTagInput } from '@/shared/strings'
 import TagChip from './Tag.vue'
 
 const props = defineProps<{
@@ -18,62 +19,54 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const { fieldErrors, generalError, reset: resetErrors, handleError } = useApiErrors()
 
-const name = ref('')
-const icon = ref('')
+const nameInput = ref('')
 const color = ref('#6366f1')
 const loading = ref(false)
 
 const isEditMode = computed(() => !!props.tag)
 
+const parsed = computed(() => parseTagInput(nameInput.value))
+
 const previewTag = computed(() => ({
     id: 0,
-    name: name.value.trim() || t('tags.inputLabel'),
-    icon: icon.value.trim() || null,
+    name: parsed.value.name || t('tags.inputLabel'),
+    icon: parsed.value.icon,
     color: color.value || null,
     userId: 0,
     createdAt: new Date(),
     updatedAt: new Date(),
 }))
 
-function populateFromTag(t: Tag | null | undefined) {
-    if (!t) {
-        name.value = ''
-        icon.value = ''
+function populateFromTag(tag: Tag | null | undefined) {
+    if (!tag) {
+        nameInput.value = ''
         color.value = '#6366f1'
         return
     }
-    name.value = t.name
-    icon.value = t.icon ?? ''
-    color.value = t.color ?? '#6366f1'
+    nameInput.value = tag.icon ? `${tag.icon} ${tag.name}` : tag.name
+    color.value = tag.color ?? '#6366f1'
 }
 
 watch(() => props.tag, populateFromTag, { immediate: true })
 
 function validate(): boolean {
-    if (!name.value.trim()) return false
-    if (name.value.trim().length < 3) return false
-    if (/\s/.test(name.value.trim())) return false
+    const { name } = parsed.value
+    if (!name) return false
+    if (name.length < 3) return false
+    if (/\s/.test(name)) return false
     return true
 }
 
 async function onSubmit() {
     resetErrors()
 
-    const trimmedName = name.value.trim()
+    const { name, icon } = parsed.value
 
-    if (trimmedName.length < 3) {
+    if (!name || name.length < 3 || /\s/.test(name)) {
         return
     }
 
-    if (/\s/.test(trimmedName)) {
-        return
-    }
-
-    const request = {
-        name: trimmedName,
-        icon: icon.value.trim() || null,
-        color: color.value || null,
-    }
+    const request = { name, icon, color: color.value || null }
 
     loading.value = true
     try {
@@ -83,8 +76,7 @@ async function onSubmit() {
         } else {
             const created = await createTag(request)
             emit('tag-created', created)
-            name.value = ''
-            icon.value = ''
+            nameInput.value = ''
             color.value = '#6366f1'
         }
     } catch (err) {
@@ -104,7 +96,7 @@ async function onSubmit() {
         </div>
 
         <form novalidate @submit.prevent="onSubmit">
-            <div class="flex flex-col sm:flex-row gap-2">
+            <div class="flex flex-col sm:flex-row sm:items-start gap-2">
                 <!-- Color picker -->
                 <div class="flex items-center gap-1 shrink-0">
                     <label
@@ -124,28 +116,19 @@ async function onSubmit() {
                     </label>
                 </div>
 
-                <!-- Icon field -->
-                <UInput
-                    v-model="icon"
-                    :placeholder="t('tags.inputHelpLine1')"
-                    class="w-20 shrink-0"
-                    maxlength="4"
-                    :disabled="loading"
-                />
-
-                <!-- Name field -->
+                <!-- Name + emoji field -->
                 <UFormField
                     class="flex-1"
-                    :error="fieldErrors.name?.[0]"
+                    :error="fieldErrors.name?.[0] ?? fieldErrors.icon?.[0]"
                 >
                     <UInput
-                        v-model="name"
+                        v-model="nameInput"
                         required
                         type="text"
                         :placeholder="t('tags.inputLabel')"
                         autocomplete="off"
                         :disabled="loading"
-                        :status="fieldErrors.name ? 'error' : undefined"
+                        :status="(fieldErrors.name || fieldErrors.icon) ? 'error' : undefined"
                     />
                 </UFormField>
 
