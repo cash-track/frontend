@@ -96,10 +96,10 @@ async function onSubmit() {
         </div>
 
         <form novalidate @submit.prevent="onSubmit">
-            <div class="flex flex-col sm:flex-row sm:items-start gap-2">
+            <div class="flex -space-x-px sm:items-start">
                 <!-- Name + emoji field with inline color picker -->
                 <UFormField
-                    class="flex-1"
+                    class="flex-1 min-w-0"
                     :error="fieldErrors.name?.[0] ?? fieldErrors.icon?.[0]"
                 >
                     <UInput
@@ -110,6 +110,7 @@ async function onSubmit() {
                         autocomplete="off"
                         :disabled="loading"
                         :status="(fieldErrors.name || fieldErrors.icon) ? 'error' : undefined"
+                        :ui="{ base: 'rounded-e-none' }"
                     >
                         <template #leading>
                             <label
@@ -136,7 +137,7 @@ async function onSubmit() {
                     type="submit"
                     :loading="loading"
                     :disabled="!validate()"
-                    class="shrink-0"
+                    :ui="{ base: 'rounded-s-none' }"
                 >
                     {{ isEditMode ? t('tags.update') : t('tags.create') }}
                 </UButton>
