@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
 import { getTags, deleteTag } from '@/api/tags'
 import type { Tag } from '@/api/models/tag'
 import TagComponent from '@/components/tags/Tag.vue'
@@ -9,17 +8,6 @@ import CreateTag from '@/components/tags/CreateTag.vue'
 import TagForm from '@/components/tags/TagForm.vue'
 
 const { t } = useI18n()
-const router = useRouter()
-
-function tagMenuItems(tag: Tag) {
-    return [
-        [{ label: t('tags.open'), icon: 'i-lucide-eye', onSelect: () => router.push({ name: 'tags.show', params: { tagID: tag.id } }) }],
-        [
-            { label: t('tags.update'), icon: 'i-lucide-pencil', onSelect: () => openEdit(tag) },
-            { label: t('charges.delete'), icon: 'i-lucide-trash-2', color: 'error', onSelect: () => openDelete(tag) },
-        ],
-    ]
-}
 
 const tags = ref<Tag[]>([])
 const loading = ref(false)
@@ -108,13 +96,35 @@ onMounted(loadTags)
                 <div>
                     <!-- Tags grid -->
                     <div v-if="tags.length > 0" class="flex flex-wrap gap-2">
-                        <UDropdownMenu
+                        <UPopover
                             v-for="tag in tags"
                             :key="tag.id"
-                            :items="tagMenuItems(tag)"
+                            mode="hover"
+                            :open-delay="200"
+                            :close-delay="100"
                         >
-                            <TagComponent :tag="tag" />
-                        </UDropdownMenu>
+                            <TagComponent :tag="tag" navigable />
+                            <template #content>
+                                <div class="flex gap-1 p-1">
+                                    <UButton
+                                        variant="ghost"
+                                        color="neutral"
+                                        size="xs"
+                                        icon="i-lucide-pencil"
+                                        :label="t('tags.update')"
+                                        @click="openEdit(tag)"
+                                    />
+                                    <UButton
+                                        variant="ghost"
+                                        color="error"
+                                        size="xs"
+                                        icon="i-lucide-trash-2"
+                                        :label="t('charges.delete')"
+                                        @click="openDelete(tag)"
+                                    />
+                                </div>
+                            </template>
+                        </UPopover>
                     </div>
 
                     <!-- Empty state -->
