@@ -119,7 +119,7 @@ async function onSubmit() {
                                 class="relative cursor-pointer"
                             >
                                 <span
-                                    class="block size-5 rounded-sm border border-white/20"
+                                    class="block size-5 rounded-sm border border-default"
                                     :style="{ backgroundColor: color }"
                                 />
                                 <input
