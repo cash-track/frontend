@@ -30,10 +30,9 @@ const { profile } = storeToRefs(useProfileStore())
 
         <!-- Two-column layout: counters + stats -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <!-- Left: counters + common tags -->
+            <!-- Left: counters -->
             <div class="space-y-6">
                 <CountersStatistics />
-                <CommonTags />
             </div>
 
             <!-- Right: email alert + charges flow stats -->
@@ -42,6 +41,9 @@ const { profile } = storeToRefs(useProfileStore())
                 <ChargesFlowStatistics />
             </div>
         </div>
+
+        <!-- Common tags (full width) -->
+        <CommonTags />
 
         <!-- Latest wallets (full width) -->
         <div class="border-t border-default pt-6">
