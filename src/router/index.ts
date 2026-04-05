@@ -8,6 +8,8 @@ import ProfileView from '@/views/ProfileView.vue'
 import TagsView from '@/views/TagsView.vue'
 import TagView from '@/views/TagView.vue'
 import DummyView from '@/views/DummyView.vue'
+import SettingsView from '@/views/settings/SettingsView.vue'
+import ProfileSettingsView from '@/views/settings/ProfileSettingsView.vue'
 
 const router = createRouter({
     history: createWebHistory(import.meta.env.BASE_URL),
@@ -38,7 +40,8 @@ const router = createRouter({
         {
             path: '/settings',
             name: 'settings',
-            component: DummyView,
+            component: SettingsView,
+            redirect: { name: 'settings.profile' },
             meta: {
                 title: 'Settings | Cash Track',
             },
@@ -46,7 +49,7 @@ const router = createRouter({
                 {
                     path: 'profile',
                     name: 'settings.profile',
-                    component: DummyView,
+                    component: ProfileSettingsView,
                     meta: {
                         title: 'Profile Settings | Cash Track',
                     },

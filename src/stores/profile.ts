@@ -9,13 +9,16 @@ export const useProfileStore = defineStore('profile', () => {
     const profile = shallowRef<User | null>(null)
     const loading = shallowRef(false)
 
+    function setProfile(user: User) {
+        profile.value = user
+        useAuthStore().login(user)
+        useLocaleStore().localeChange(user.locale as 'en' | 'uk')
+    }
+
     async function loadProfile() {
         loading.value = true
         try {
-            const user = await getProfile()
-            profile.value = user
-            useAuthStore().login(user)
-            useLocaleStore().localeChange(user.locale as 'en' | 'uk')
+            setProfile(await getProfile())
         } catch {
             useAuthStore().logout()
         } finally {
@@ -28,5 +31,5 @@ export const useProfileStore = defineStore('profile', () => {
         profile.value = { ...profile.value, photoUrl: url } as User
     }
 
-    return { profile, loading, loadProfile, updatePhotoUrl }
+    return { profile, loading, loadProfile, setProfile, updatePhotoUrl }
 })
