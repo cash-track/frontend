@@ -816,7 +816,7 @@ components/tags/
 **Prerequisites:** Stage 4 (independent of Stages 5–6)
 **Estimated AI time:** ~1.5 h (1 session)
 **Files:** 9 new files
-**Status:** `[ ] Not started`
+**Status:** `[x] Complete — 2026-04-05`
 
 **Goals:** Profile summary page with user info, statistics, latest wallets, common tags, and email confirmation alert.
 
@@ -840,29 +840,35 @@ components/profile/
 
 ### Tasks
 
-- [ ] `src/views/ProfileView.vue` — replace stub; layout: avatar + title top, stats grid, latest wallets + common tags columns
-- [ ] `src/components/profile/ProfileAvatar.vue` — `UAvatar` wrapper; shows `profile.photoUrl` or initials fallback from `profile.name`
-- [ ] `src/components/profile/ProfileAvatarBadge.vue` — wraps `ProfileAvatar` with email-confirmed indicator badge
-- [ ] `src/components/profile/ProfileTitle.vue` — display name, `@nickName`, email
-- [ ] `src/components/profile/CountersStatistics.vue` — calls `getCounterStats()`; renders stat cards (wallet count, charge count, etc.); **each counter item must have `UTooltip` with the stat's full label** (old: `v-b-tooltip.top` on each `.counter-item`)
-- [ ] `src/components/profile/ChargesStatsCard.vue` — single stat card used inside `CountersStatistics`
-- [ ] `src/components/profile/ChargesFlowStatistics.vue` — calls `getChargesFlowStats()`; renders income vs expense summary (amounts + currency)
-- [ ] `src/components/profile/LatestWallets.vue` — calls `getLatestWallets()`; compact wallet list with balance
-- [ ] `src/components/profile/CommonTags.vue` — renders tag chips from profile stats (reuses `Tag.vue`)
-- [ ] `src/components/profile/EmailIsNotConfirmedAlert.vue` — `UAlert` warning variant; shown when `!useAuthStore().isEmailConfirmed`; "Resend" button calls `resendEmailConfirmation()`; success/error via `useNotifications`
+- [x] `src/views/ProfileView.vue` — replace stub; layout: avatar + title top, stats grid, latest wallets + common tags columns
+- [x] `src/components/profile/ProfileAvatar.vue` — `UAvatar` wrapper; shows `profile.photoUrl` or initials fallback from `profile.name`
+- [x] `src/components/profile/ProfileAvatarBadge.vue` — wraps `ProfileAvatar` with email-confirmed indicator badge
+- [x] `src/components/profile/ProfileTitle.vue` — display name, `@nickName`, email
+- [x] `src/components/profile/CountersStatistics.vue` — calls `getCounterStats()`; renders stat cards (wallet count, charge count, etc.); **each counter item must have `UTooltip` with the stat's full label** (old: `v-b-tooltip.top` on each `.counter-item`)
+- [x] `src/components/profile/ChargesStatsCard.vue` — single stat card used inside `CountersStatistics`
+- [x] `src/components/profile/ChargesFlowStatistics.vue` — calls `getChargesFlowStats()`; renders income vs expense summary (amounts + currency)
+- [x] `src/components/profile/LatestWallets.vue` — calls `getLatestWallets()`; compact wallet list with balance
+- [x] `src/components/profile/CommonTags.vue` — renders tag chips from profile stats (reuses `Tag.vue`)
+- [x] `src/components/profile/EmailIsNotConfirmedAlert.vue` — `UAlert` warning variant; shown when `!useAuthStore().isEmailConfirmed`; "Resend" button calls `resendEmailConfirmation()`; success/error via `useNotifications`
 
 ### Testing checkpoint
 
 - Unit tests: `EmailIsNotConfirmedAlert` renders when `isEmailConfirmed: false`, hidden when `true`
 - Browser (`agent-browser` skill — standard login flow, then):
-  - [ ] Navigate to `https://my.dev-cash-track.app/profile` → all sections render (avatar, name, stats grid, latest wallets, common tags)
-  - [ ] Stats show real non-zero numbers
-  - [ ] Latest wallets section lists wallets with balances
-  - [ ] If email not confirmed: alert visible with Resend button → click Resend → success notification
+  - [x] Navigate to `https://my.dev-cash-track.app/profile` → all sections render (avatar, name, stats grid, latest wallets, common tags)
+  - [x] Stats show real non-zero numbers
+  - [x] Latest wallets section lists wallets with balances
+  - [ ] If email not confirmed: alert visible with Resend button → click Resend → success notification (email is confirmed in test account; alert logic verified via unit tests)
 - `npm run build` — zero errors
 
 ### Notes
-<!-- Update after completing this stage -->
+
+- Added `getCommonTags()` to `src/api/tags.ts` (calls `/api/tags/common`) — was missing from the API module.
+- `ChargesStatsCard` is used inside `ChargesFlowStatistics` (not `CountersStatistics` as the plan implied) — matches the old app's structure and makes more semantic sense.
+- `ProfileAvatarBadge` uses a colored dot indicator (green = confirmed, warning = unconfirmed) instead of a Bootstrap badge — simpler and consistent with Nuxt UI design language.
+- `CommonTags` reuses existing `Tag.vue` component with `navigable=true` prop.
+- `UTooltip` internal component name is `Tooltip` (not `UTooltip`) — stubs in tests must include both keys to work correctly with `mount`.
+- 3 new spec files, 299 tests total; all pass. Build clean.
 
 ---
 

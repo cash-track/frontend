@@ -17,6 +17,13 @@ export async function getTags(): Promise<Tag[]> {
     })
 }
 
+export async function getCommonTags(): Promise<Tag[]> {
+    return apiCall(async client => {
+        const res = await client.get('/api/tags/common')
+        return (res.data.data as unknown[]).map(Tag.from)
+    })
+}
+
 export async function createTag(request: TagRequest): Promise<Tag> {
     return apiCall(async client => {
         const res = await client.post('/api/tags', request)
