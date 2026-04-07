@@ -915,7 +915,7 @@ components/profile/
 **Prerequisites:** Stage 8a
 **Estimated AI time:** ~1.5 h (1 session)
 **Files:** 5 new files
-**Status:** `[ ] Not started`
+**Status:** `[x] Done — 2026-04-07`
 
 **Goals:** Password change and WebAuthn passkey management.
 
@@ -923,26 +923,31 @@ components/profile/
 
 ### Tasks
 
-- [ ] `src/views/settings/SecuritySettingsView.vue` — composes `SecuritySettings` and `PasskeysSettings`
-- [ ] `src/components/settings/SecuritySettings.vue` — password change form: currentPassword, newPassword (min 6), newPasswordConfirmation; `updatePassword()` on submit; `useApiErrors` for field errors; `useNotifications` for success
-- [ ] `src/components/settings/passkeys/PasskeysSettings.vue` — loads passkey list via `getPasskeys()`; "Add passkey" button triggers WebAuthn registration flow (`initPasskey()` → browser credential creation → `storePasskey()`)
-- [ ] `src/components/settings/passkeys/PasskeysSettingsCard.vue` — card layout wrapper for the passkeys section
-- [ ] `src/components/settings/passkeys/PasskeyItem.vue` — passkey name, `createdAt` date, `usedAt` (`useTimeAgo` or "Never"), delete button with confirmation → `deletePasskey()`
+- [x] `src/views/settings/SecuritySettingsView.vue` — composes `SecuritySettings` and `PasskeysSettings`
+- [x] `src/components/settings/SecuritySettings.vue` — password change form: currentPassword, newPassword (min 6), newPasswordConfirmation; `updatePassword()` on submit; `useApiErrors` for field errors; `useNotifications` for success
+- [x] `src/components/settings/passkeys/PasskeysSettings.vue` — loads passkey list via `getPasskeys()`; "Add passkey" button triggers WebAuthn registration flow (`initPasskey()` → browser credential creation → `storePasskey()`)
+- [x] `src/components/settings/passkeys/PasskeysSettingsCard.vue` — card layout wrapper for the passkeys section
+- [x] `src/components/settings/passkeys/PasskeyItem.vue` — passkey name, `createdAt` date, `usedAt` (`useTimeAgo` or "Never"), delete button with confirmation → `deletePasskey()`
 
 ### Testing checkpoint
 
 - Unit tests: `SecuritySettings` validates `newPassword` min-length and confirmation match; `PasskeyItem` renders "Never used" when `usedAt` is null
 - Browser (`agent-browser` skill — standard login flow, then):
-  - [ ] Navigate to `https://my.dev-cash-track.app/settings/security` → security form + passkeys section render
-  - [ ] Submit password change with wrong current password → field error displayed inline
-  - [ ] Submit valid password change → success notification, form resets
-  - [ ] Passkeys list shows existing passkeys (name, dates) or empty state
-  - [ ] Delete a passkey → removed from list
-  - [ ] "Add passkey" button triggers WebAuthn flow (skip assertion if no hardware key available)
+  - [x] Navigate to `https://my.dev-cash-track.app/settings/security` → security form + passkeys section render
+  - [x] Submit password change with wrong current password → field error displayed inline
+  - [x] Submit valid password change → success notification, form resets
+  - [x] Passkeys list shows existing passkeys (name, dates) or empty state
+  - [x] Delete a passkey → removed from list
+  - [x] "Add passkey" button triggers WebAuthn flow (skip assertion if no hardware key available)
 - `npm run build` — zero errors
 
 ### Notes
-<!-- Update after completing this stage -->
+- Added `@simplewebauthn/browser` ^13.3.0 dependency for `browserSupportsWebAuthn` and `startRegistration`
+- `initPasskey()` returns base64-encoded options; decoded inline with `JSON.parse(atob(init.data))` before passing to `startRegistration({ optionsJSON: options })`
+- Used `window.confirm()` for delete confirmation (no UModal needed — matches old behavior, simpler than programmatic overlay)
+- `usedAt` displayed as formatted date string using `toLocaleDateString` rather than `useTimeAgo` (absolute dates are clearer for security keys)
+- Added `securitySettings.success` i18n key to both `en.ts` and `uk.ts`
+- TypeScript target does not include `replaceAll` — used `replace(/\{name\}/g, ...)` instead
 
 ---
 
