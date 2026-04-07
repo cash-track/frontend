@@ -107,6 +107,14 @@ export async function getWalletUsers(walletId: number): Promise<User[]> {
     })
 }
 
+export async function getWalletsWithLimits(archived = false): Promise<Wallet[]> {
+    return apiCall(async client => {
+        const url = archived ? '/api/wallets/has-limits?archived' : '/api/wallets/has-limits'
+        const res = await client.get(url)
+        return (res.data.data as unknown[]).map(Wallet.from)
+    })
+}
+
 export async function shareWallet(walletId: number, userId: number): Promise<void> {
     return apiCall(async client => {
         await client.patch(`/api/wallets/${walletId}/users/${userId}`)

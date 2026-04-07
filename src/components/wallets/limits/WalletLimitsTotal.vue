@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { getLimits } from '@/api/limits'
+import { getLimits, copyLimits } from '@/api/limits'
 import type { WalletLimit } from '@/api/models/limit'
 import type { Limit } from '@/api/models/limit'
 import type { Wallet } from '@/api/models/wallet'
+import { getWalletsWithLimits } from '@/api/wallets'
 import { useMoneyFormatter } from '@/composables/useMoneyFormatter'
 import WalletLimitItem from './WalletLimitItem.vue'
 import LimitForm from './LimitForm.vue'
@@ -19,6 +20,8 @@ const { format } = useMoneyFormatter()
 const limits = ref<WalletLimit[]>([])
 const loading = ref(false)
 const showCreateForm = ref(false)
+const walletsWithLimits = ref<Wallet[]>([])
+const copyLoading = ref(false)
 
 const totalExpenseAmount = computed(() =>
     limits.value
@@ -34,19 +37,55 @@ const totalExpenseLimitAmount = computed(() =>
 
 const hasExpenseTotals = computed(() => totalExpenseLimitAmount.value > 0)
 
+const copyDropdownItems = computed(() =>
+    walletsWithLimits.value.map(w => ({
+        label: w.name,
+        click: () => onCopyFrom(w),
+    })),
+)
+
 function formatAmount(value: number): string {
     if (!props.wallet.defaultCurrency) return String(value)
     return format(value, props.wallet.defaultCurrency)
+}
+
+async function loadWalletsWithLimits() {
+    try {
+        let wallets = await getWalletsWithLimits(false)
+        if (wallets.length === 0) {
+            wallets = await getWalletsWithLimits(true)
+        }
+        walletsWithLimits.value = wallets.filter(w => w.id !== props.wallet.id)
+    } catch {
+        // Non-fatal; just don't show the button
+    }
 }
 
 async function loadLimits() {
     loading.value = true
     try {
         limits.value = await getLimits(props.wallet.id)
+        if (limits.value.length === 0) {
+            await loadWalletsWithLimits()
+        } else {
+            walletsWithLimits.value = []
+        }
     } catch {
         // Silently fail
     } finally {
         loading.value = false
+    }
+}
+
+async function onCopyFrom(sourceWallet: Wallet) {
+    copyLoading.value = true
+    try {
+        limits.value = await copyLimits(props.wallet.id, sourceWallet.id)
+        walletsWithLimits.value = []
+    } catch {
+        // Non-fatal
+    } finally {
+        copyLoading.value = false
     }
 }
 
@@ -65,7 +104,7 @@ function onLimitDeleted(limit: Limit) {
 
 onMounted(() => loadLimits())
 
-defineExpose({ reload: loadLimits })
+defineExpose({ reload: loadLimits, copyDropdownItems })
 </script>
 
 <template>
@@ -98,8 +137,8 @@ defineExpose({ reload: loadLimits })
                 </div>
             </div>
 
-            <!-- Add limit button -->
-            <div class="pt-3">
+            <!-- Add limit button + Copy From -->
+            <div class="pt-3 flex gap-2">
                 <UButton
                     v-if="!showCreateForm"
                     variant="outline"
@@ -111,14 +150,29 @@ defineExpose({ reload: loadLimits })
                     {{ t('limits.createLimit') }}
                 </UButton>
 
-                <!-- Create form -->
-                <div v-if="showCreateForm" class="border border-default rounded-lg p-4">
-                    <LimitForm
-                        :wallet="wallet"
-                        @created="onLimitCreated"
-                        @cancelled="showCreateForm = false"
-                    />
-                </div>
+                <UDropdownMenu
+                    v-if="!limits.length && walletsWithLimits.length"
+                    :items="copyDropdownItems"
+                >
+                    <UButton
+                        variant="outline"
+                        color="neutral"
+                        size="sm"
+                        icon="i-lucide-copy"
+                        :loading="copyLoading"
+                    >
+                        {{ t('limits.copyFrom') }}
+                    </UButton>
+                </UDropdownMenu>
+            </div>
+
+            <!-- Create form -->
+            <div v-if="showCreateForm" class="border border-default rounded-lg p-4">
+                <LimitForm
+                    :wallet="wallet"
+                    @created="onLimitCreated"
+                    @cancelled="showCreateForm = false"
+                />
             </div>
         </template>
     </div>

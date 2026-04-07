@@ -9,6 +9,7 @@ import type { FilterState } from '@/components/wallets/charges/ChargesFilter.vue
 import TagChip from '@/components/tags/Tag.vue'
 import ChargesFilter from '@/components/wallets/charges/ChargesFilter.vue'
 import { useMoneyFormatter } from '@/composables/useMoneyFormatter'
+import WalletsActiveShortList from '@/components/wallets/WalletsActiveShortList.vue'
 
 const props = defineProps<{ tagID: string }>()
 
@@ -107,6 +108,8 @@ onMounted(loadTag)
         />
 
         <template v-else-if="tag">
+            <WalletsActiveShortList />
+
             <!-- Tag header -->
             <div class="flex items-center gap-3">
                 <TagChip :tag="tag" class="text-base" />

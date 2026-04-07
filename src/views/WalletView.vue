@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { shallowRef, ref, onMounted } from 'vue'
+import { shallowRef, ref, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { getWallet, getWalletTotals, getWalletUsers } from '@/api/wallets'
 import type { Wallet } from '@/api/models/wallet'
@@ -13,6 +13,7 @@ import ChargesFilter from '@/components/wallets/charges/ChargesFilter.vue'
 import ChargesFlowChart from '@/components/wallets/charges/ChargesFlowChart.vue'
 import ChargesTotalChart from '@/components/wallets/charges/ChargesTotalChart.vue'
 import WalletLimitsTotal from '@/components/wallets/limits/WalletLimitsTotal.vue'
+import WalletsActiveShortList from '@/components/wallets/WalletsActiveShortList.vue'
 
 const props = defineProps<{ walletID: string }>()
 
@@ -109,6 +110,14 @@ function onFilterChange(f: FilterState) {
 }
 
 onMounted(() => loadWallet())
+watch(() => props.walletID, () => {
+    showCreateForm.value = false
+    showFilters.value = false
+    showGraph.value = false
+    showLimits.value = false
+    filter.value = { dateFrom: '', dateTo: '' }
+    loadWallet()
+})
 </script>
 
 <template>
@@ -128,6 +137,7 @@ onMounted(() => loadWallet())
 
         <!-- Content -->
         <div v-else-if="wallet">
+            <WalletsActiveShortList />
             <!-- Header -->
             <WalletHeader
                 :wallet="wallet"
