@@ -9,6 +9,7 @@ import { useMoneyFormatter } from '@/composables/useMoneyFormatter'
 import { useAuthStore } from '@/stores/auth'
 import ChargeEdit from './ChargeEdit.vue'
 import Tag from '@/components/tags/Tag.vue'
+import ConfirmModal from '@/components/Shared/ConfirmModal.vue'
 
 const props = defineProps<{
     charge: Charge
@@ -182,27 +183,14 @@ const actionItems = computed(() => [
                 @cancelled="cancelEdit"
             />
         </div>
-        <!-- Delete confirmation modal -->
-        <UModal v-model:open="deleteConfirmOpen" :title="t('charges.delete')">
-            <template #body>
-                <p class="text-sm text-muted">{{ t('charges.deletingConfirm') }}</p>
-            </template>
-            <template #footer>
-                <div class="flex justify-end gap-2">
-                    <UButton
-                        variant="ghost"
-                        :label="t('charges.cancel')"
-                        :disabled="deleting"
-                        @click="deleteConfirmOpen = false"
-                    />
-                    <UButton
-                        color="error"
-                        :label="t('charges.delete')"
-                        :loading="deleting"
-                        @click="onDeleteConfirmed"
-                    />
-                </div>
-            </template>
-        </UModal>
+        <ConfirmModal
+            v-model:open="deleteConfirmOpen"
+            :title="t('charges.delete')"
+            :description="t('charges.deletingConfirm')"
+            :confirm-label="t('charges.delete')"
+            :cancel-label="t('charges.cancel')"
+            :loading="deleting"
+            @confirm="onDeleteConfirmed"
+        />
     </div>
 </template>

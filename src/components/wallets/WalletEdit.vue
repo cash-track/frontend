@@ -9,6 +9,7 @@ import type { Wallet } from '@/api/models/wallet'
 import { useApiErrors } from '@/composables/useApiErrors'
 import { useNotifications } from '@/composables/useNotifications'
 import { useWalletsStore } from '@/stores/wallets'
+import ConfirmModal from '@/components/Shared/ConfirmModal.vue'
 
 const props = defineProps<{ wallet: Wallet }>()
 
@@ -150,25 +151,13 @@ async function onDelete() {
         </template>
     </UCard>
 
-    <UModal v-model:open="deleteConfirmOpen" :title="t('wallets.delete')">
-        <template #body>
-            <p class="text-sm text-muted">{{ t('wallets.deletingConfirm') }}</p>
-        </template>
-        <template #footer>
-            <div class="flex justify-end gap-2">
-                <UButton
-                    variant="ghost"
-                    :label="t('wallets.cancel')"
-                    :disabled="deleting"
-                    @click="deleteConfirmOpen = false"
-                />
-                <UButton
-                    color="error"
-                    :label="t('wallets.delete')"
-                    :loading="deleting"
-                    @click="onDelete"
-                />
-            </div>
-        </template>
-    </UModal>
+    <ConfirmModal
+        v-model:open="deleteConfirmOpen"
+        :title="t('wallets.delete')"
+        :description="t('wallets.deletingConfirm')"
+        :confirm-label="t('wallets.delete')"
+        :cancel-label="t('wallets.cancel')"
+        :loading="deleting"
+        @confirm="onDelete"
+    />
 </template>

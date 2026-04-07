@@ -3,6 +3,10 @@ export default {
     flag: '🇺🇸',
     help: 'Help',
     about: 'About',
+    common: {
+        cancel: 'Cancel',
+        delete: 'Delete',
+    },
     myProfile: 'My Profile',
     settings: 'Settings',
     signOut: 'Sign Out',

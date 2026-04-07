@@ -6,6 +6,7 @@ import type { Tag } from '@/api/models/tag'
 import TagComponent from '@/components/tags/Tag.vue'
 import CreateTag from '@/components/tags/CreateTag.vue'
 import TagForm from '@/components/tags/TagForm.vue'
+import ConfirmModal from '@/components/Shared/ConfirmModal.vue'
 
 const { t } = useI18n()
 
@@ -163,33 +164,14 @@ onMounted(loadTags)
             </template>
         </UModal>
 
-        <!-- Delete confirmation modal -->
-        <UModal
+        <ConfirmModal
             v-model:open="deleteModalOpen"
-            :title="t('charges.delete')"
+            :title="t('common.delete')"
+            :description="t('tags.deletingConfirm')"
+            :loading="deleteLoading"
+            @confirm="confirmDelete"
         >
-            <template #body>
-                <div class="space-y-3">
-                    <TagComponent v-if="deletingTag" :tag="deletingTag" />
-                    <p class="text-sm text-muted">{{ t('tags.deletingConfirm') }}</p>
-                </div>
-            </template>
-            <template #footer>
-                <div class="flex justify-end gap-2">
-                    <UButton
-                        variant="ghost"
-                        :label="t('charges.cancel')"
-                        :disabled="deleteLoading"
-                        @click="deleteModalOpen = false"
-                    />
-                    <UButton
-                        color="error"
-                        :label="t('charges.delete')"
-                        :loading="deleteLoading"
-                        @click="confirmDelete"
-                    />
-                </div>
-            </template>
-        </UModal>
+            <TagComponent v-if="deletingTag" :tag="deletingTag" />
+        </ConfirmModal>
     </div>
 </template>

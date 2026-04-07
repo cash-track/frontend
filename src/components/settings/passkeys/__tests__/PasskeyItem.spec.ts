@@ -34,6 +34,11 @@ const globalStubs = {
                 emits: ['click'],
             },
             UIcon: { template: '<span />', props: ['name', 'class'] },
+            ConfirmModal: {
+                template: '<div><slot /><button class="confirm-btn" @click="$emit(\'confirm\')">confirm</button></div>',
+                props: ['open', 'title', 'description', 'confirmLabel', 'cancelLabel', 'loading'],
+                emits: ['update:open', 'confirm'],
+            },
         },
     },
 }
@@ -66,42 +71,36 @@ describe('PasskeyItem', () => {
     it('shows formatted date when usedAt is set', () => {
         const usedAt = new Date('2024-09-15T12:00:00Z')
         const wrapper = mount(PasskeyItem, { ...globalStubs, props: { passkey: makePasskey(usedAt) } })
-        // Should contain the date in some localized format, not the "never" text
         expect(wrapper.text()).not.toContain('passkeySettings.usedAtNever')
-        // The date string will vary by locale but should be rendered
         expect(wrapper.text()).toContain('passkeySettings.used')
     })
 
-    it('emits deleted after successful delete confirmation', async () => {
-        vi.spyOn(window, 'confirm').mockReturnValue(true)
+    it('opens confirm modal when delete button is clicked', async () => {
+        const wrapper = mount(PasskeyItem, { ...globalStubs, props: { passkey: makePasskey() } })
+        const vm = wrapper.vm as unknown as { confirmOpen: boolean }
+
+        expect(vm.confirmOpen).toBe(false)
+        await wrapper.find('button').trigger('click')
+        expect(vm.confirmOpen).toBe(true)
+    })
+
+    it('calls deletePasskey and emits deleted after confirmation', async () => {
         mockDeletePasskey.mockResolvedValue(undefined)
 
         const wrapper = mount(PasskeyItem, { ...globalStubs, props: { passkey: makePasskey() } })
-        const vm = wrapper.vm as unknown as { onDelete: () => Promise<void> }
-        await vm.onDelete()
+        const vm = wrapper.vm as unknown as { onDeleteConfirmed: () => Promise<void> }
+        await vm.onDeleteConfirmed()
 
         expect(mockDeletePasskey).toHaveBeenCalledWith(1)
         expect(wrapper.emitted('deleted')).toBeTruthy()
     })
 
-    it('does not call deletePasskey when confirm is cancelled', async () => {
-        vi.spyOn(window, 'confirm').mockReturnValue(false)
-
-        const wrapper = mount(PasskeyItem, { ...globalStubs, props: { passkey: makePasskey() } })
-        const vm = wrapper.vm as unknown as { onDelete: () => Promise<void> }
-        await vm.onDelete()
-
-        expect(mockDeletePasskey).not.toHaveBeenCalled()
-        expect(wrapper.emitted('deleted')).toBeFalsy()
-    })
-
     it('shows error notification when delete fails', async () => {
-        vi.spyOn(window, 'confirm').mockReturnValue(true)
         mockDeletePasskey.mockRejectedValue(new Error('Network error'))
 
         const wrapper = mount(PasskeyItem, { ...globalStubs, props: { passkey: makePasskey() } })
-        const vm = wrapper.vm as unknown as { onDelete: () => Promise<void> }
-        await vm.onDelete()
+        const vm = wrapper.vm as unknown as { onDeleteConfirmed: () => Promise<void> }
+        await vm.onDeleteConfirmed()
 
         expect(mockNotifyError).toHaveBeenCalled()
         expect(wrapper.emitted('deleted')).toBeFalsy()

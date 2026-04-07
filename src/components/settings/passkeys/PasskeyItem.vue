@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import type { Passkey } from '@/api/models/passkey'
 import { deletePasskey } from '@/api/profile/passkeys'
 import { useNotifications } from '@/composables/useNotifications'
+import ConfirmModal from '@/components/Shared/ConfirmModal.vue'
 
 const props = defineProps<{
     passkey: Passkey
@@ -17,6 +18,7 @@ const { t } = useI18n()
 const { notifyError } = useNotifications()
 
 const loading = shallowRef(false)
+const confirmOpen = shallowRef(false)
 
 const createdAt = computed(() =>
     props.passkey.createdAt.toLocaleDateString(undefined, {
@@ -37,13 +39,15 @@ const usedAt = computed(() => {
     })
 })
 
-async function onDelete() {
-    const msg = t('passkeySettings.deleteConfirm').replace(/\{name\}/g, props.passkey.name)
-    if (!window.confirm(msg)) return
+const deleteConfirmDescription = computed(() =>
+    t('passkeySettings.deleteConfirm').replace(/\{name\}/g, props.passkey.name),
+)
 
+async function onDeleteConfirmed() {
     loading.value = true
     try {
         await deletePasskey(props.passkey.id)
+        confirmOpen.value = false
         emit('deleted')
     } catch {
         notifyError(t('passkeySettings.delete') + ' failed')
@@ -70,7 +74,15 @@ async function onDelete() {
             size="sm"
             :loading="loading"
             class="ml-4 shrink-0"
-            @click="onDelete"
+            @click="confirmOpen = true"
+        />
+
+        <ConfirmModal
+            v-model:open="confirmOpen"
+            :title="t('passkeySettings.delete')"
+            :description="deleteConfirmDescription"
+            :loading="loading"
+            @confirm="onDeleteConfirmed"
         />
     </div>
 </template>

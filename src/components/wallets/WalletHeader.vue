@@ -9,6 +9,7 @@ import { activateWallet, disableWallet, archiveWallet, unarchiveWallet, deleteWa
 import { useMoneyFormatter } from '@/composables/useMoneyFormatter'
 import { useAuthStore } from '@/stores/auth'
 import { useNotifications } from '@/composables/useNotifications'
+import ConfirmModal from '@/components/Shared/ConfirmModal.vue'
 
 const props = defineProps<{
     wallet: Wallet
@@ -194,27 +195,14 @@ async function onDeleteConfirmed() {
                 </div>
             </div>
         </div>
-        <!-- Delete confirmation modal -->
-        <UModal v-model:open="deleteConfirmOpen" :title="t('wallets.delete')">
-            <template #body>
-                <p class="text-sm text-muted">{{ t('wallets.deletingConfirm') }}</p>
-            </template>
-            <template #footer>
-                <div class="flex justify-end gap-2">
-                    <UButton
-                        variant="ghost"
-                        :label="t('wallets.cancel')"
-                        :disabled="deleting"
-                        @click="deleteConfirmOpen = false"
-                    />
-                    <UButton
-                        color="error"
-                        :label="t('wallets.delete')"
-                        :loading="deleting"
-                        @click="onDeleteConfirmed"
-                    />
-                </div>
-            </template>
-        </UModal>
+        <ConfirmModal
+            v-model:open="deleteConfirmOpen"
+            :title="t('wallets.delete')"
+            :description="t('wallets.deletingConfirm')"
+            :confirm-label="t('wallets.delete')"
+            :cancel-label="t('wallets.cancel')"
+            :loading="deleting"
+            @confirm="onDeleteConfirmed"
+        />
     </div>
 </template>

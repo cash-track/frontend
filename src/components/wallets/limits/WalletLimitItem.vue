@@ -8,6 +8,7 @@ import type { Wallet } from '@/api/models/wallet'
 import { useMoneyFormatter } from '@/composables/useMoneyFormatter'
 import Tag from '@/components/tags/Tag.vue'
 import LimitForm from './LimitForm.vue'
+import ConfirmModal from '@/components/Shared/ConfirmModal.vue'
 
 const props = defineProps<{
     walletLimit: WalletLimit
@@ -134,27 +135,14 @@ function onEditCancelled() {
             />
         </div>
 
-        <!-- Delete confirmation modal -->
-        <UModal v-model:open="deleteConfirmOpen" :title="t('limits.delete')">
-            <template #body>
-                <p class="text-sm text-muted">{{ t('limits.deletingConfirm') }}</p>
-            </template>
-            <template #footer>
-                <div class="flex justify-end gap-2">
-                    <UButton
-                        variant="ghost"
-                        :label="t('limits.cancel')"
-                        :disabled="deleting"
-                        @click="deleteConfirmOpen = false"
-                    />
-                    <UButton
-                        color="error"
-                        :label="t('limits.delete')"
-                        :loading="deleting"
-                        @click="onDeleteConfirmed"
-                    />
-                </div>
-            </template>
-        </UModal>
+        <ConfirmModal
+            v-model:open="deleteConfirmOpen"
+            :title="t('limits.delete')"
+            :description="t('limits.deletingConfirm')"
+            :confirm-label="t('limits.delete')"
+            :cancel-label="t('limits.cancel')"
+            :loading="deleting"
+            @confirm="onDeleteConfirmed"
+        />
     </div>
 </template>

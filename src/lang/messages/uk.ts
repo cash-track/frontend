@@ -1,5 +1,9 @@
 export default {
     name: 'Українська',
+    common: {
+        cancel: 'Скасувати',
+        delete: 'Видалити',
+    },
     flag: '🇺🇦',
     help: 'Допомога',
     about: 'Про нас',
