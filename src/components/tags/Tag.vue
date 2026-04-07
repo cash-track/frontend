@@ -2,6 +2,8 @@
 import { useRouter } from 'vue-router'
 import type { Tag } from '@/api/models/tag'
 
+defineOptions({ name: 'TagChip' })
+
 const props = withDefaults(defineProps<{
     tag: Tag
     removable?: boolean

@@ -39,6 +39,7 @@ certs
 
 test-results/
 playwright-report/
+e2e/setup/.auth.json
 
 # Auto-generated type declarations
 auto-imports.d.ts
