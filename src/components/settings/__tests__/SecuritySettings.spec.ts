@@ -54,11 +54,12 @@ describe('SecuritySettings', () => {
         vi.clearAllMocks()
     })
 
-    it('does not submit when newPassword is shorter than 6 characters', async () => {
+    it('shows field error and does not submit when newPassword is shorter than 6 characters', async () => {
         const wrapper = mount(SecuritySettings, globalStubs)
         const vm = wrapper.vm as unknown as {
             form: { currentPassword: string; newPassword: string; newPasswordConfirmation: string }
             onSubmit: () => Promise<void>
+            fieldErrors: Record<string, string[]>
         }
 
         vm.form.currentPassword = 'oldpass'
@@ -67,13 +68,15 @@ describe('SecuritySettings', () => {
         await vm.onSubmit()
 
         expect(mockUpdatePassword).not.toHaveBeenCalled()
+        expect(vm.fieldErrors.newPassword?.[0]).toBeTruthy()
     })
 
-    it('does not submit when newPassword and confirmation do not match', async () => {
+    it('shows field error and does not submit when passwords do not match', async () => {
         const wrapper = mount(SecuritySettings, globalStubs)
         const vm = wrapper.vm as unknown as {
             form: { currentPassword: string; newPassword: string; newPasswordConfirmation: string }
             onSubmit: () => Promise<void>
+            fieldErrors: Record<string, string[]>
         }
 
         vm.form.currentPassword = 'oldpass'
@@ -82,6 +85,7 @@ describe('SecuritySettings', () => {
         await vm.onSubmit()
 
         expect(mockUpdatePassword).not.toHaveBeenCalled()
+        expect(vm.fieldErrors.newPasswordConfirmation?.[0]).toBeTruthy()
     })
 
     it('calls updatePassword with correct payload on valid submit', async () => {

@@ -27,10 +27,12 @@ async function onSubmit() {
     reset()
 
     if (form.newPassword.length < 6) {
+        fieldErrors.value = { newPassword: [t('securitySettings.newPasswordDescription')] }
         return
     }
 
     if (form.newPassword !== form.newPasswordConfirmation) {
+        fieldErrors.value = { newPasswordConfirmation: [t('securitySettings.newPasswordConfirmationDescription')] }
         return
     }
 
