@@ -54,6 +54,7 @@ export default {
         newPasswordConfirmation: 'Confirm New Password',
         newPasswordConfirmationDescription: 'Repeat new password here just for sure',
         updatePassword: 'Update Password',
+        success: 'Password has been updated successfully',
     },
 
     passkeySettings: {

@@ -10,6 +10,7 @@ import TagView from '@/views/TagView.vue'
 import DummyView from '@/views/DummyView.vue'
 import SettingsView from '@/views/settings/SettingsView.vue'
 import ProfileSettingsView from '@/views/settings/ProfileSettingsView.vue'
+import SecuritySettingsView from '@/views/settings/SecuritySettingsView.vue'
 
 const router = createRouter({
     history: createWebHistory(import.meta.env.BASE_URL),
@@ -57,7 +58,7 @@ const router = createRouter({
                 {
                     path: 'security',
                     name: 'settings.security',
-                    component: DummyView,
+                    component: SecuritySettingsView,
                     meta: {
                         title: 'Security Settings | Cash Track',
                     },

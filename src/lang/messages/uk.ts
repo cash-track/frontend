@@ -54,6 +54,7 @@ export default {
         newPasswordConfirmation: 'Новий Пароль ще раз',
         newPasswordConfirmationDescription: 'Повторіть новий пароль, просто щоб переконатись',
         updatePassword: 'Змінити Пароль',
+        success: 'Пароль успішно змінено',
     },
 
     passkeySettings: {
