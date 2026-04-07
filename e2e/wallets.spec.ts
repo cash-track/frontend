@@ -7,67 +7,68 @@ test.describe('Wallets flow', () => {
     test('navigates to wallets page', async ({ page }) => {
         await page.goto('/wallets')
         await expect(page).toHaveURL(/\/wallets/)
-        await expect(page.locator('h1, h2, [data-testid="wallets-title"]').first()).toBeVisible()
+        await expect(page.getByRole('heading', { name: /wallets/i })).toBeVisible({ timeout: 10000 })
     })
 
     test('creates a wallet', async ({ page }) => {
         await page.goto('/wallets/create')
-        await expect(page.locator('input[type="text"]').first()).toBeVisible()
+        await page.waitForLoadState('networkidle')
 
-        // Fill wallet name
-        await page.locator('input[type="text"]').first().fill(WALLET_NAME)
+        // Fill wallet name — UForm uses textbox role
+        await page.getByRole('textbox', { name: /name/i }).fill(WALLET_NAME)
 
-        // Submit form
-        await page.locator('button[type="submit"]').click()
+        // "Create" button becomes enabled after filling required fields
+        await expect(page.getByRole('button', { name: /create/i })).toBeEnabled({ timeout: 5000 })
+        await page.getByRole('button', { name: /create/i }).click()
 
-        // Should redirect to wallet detail
-        await expect(page).toHaveURL(/\/wallets\/\d+/)
+        // Should redirect to wallet detail page
+        await expect(page).toHaveURL(/\/wallets\/\d+/, { timeout: 15000 })
     })
 
     test('adds a charge to a wallet', async ({ page }) => {
         await page.goto('/wallets')
         await page.waitForLoadState('networkidle')
 
-        // Click on the first wallet card
-        const firstWallet = page.locator('[class*="cursor-pointer"]').first()
-        await firstWallet.waitFor({ state: 'visible' })
-        await firstWallet.click()
+        // Wallet cards have h3 headings — click the first one (click bubbles to card div)
+        const firstWalletHeading = page.getByRole('heading', { level: 3 }).first()
+        await firstWalletHeading.waitFor({ state: 'visible', timeout: 10000 })
+        await firstWalletHeading.click()
 
-        await expect(page).toHaveURL(/\/wallets\/\d+/)
+        await expect(page).toHaveURL(/\/wallets\/\d+/, { timeout: 10000 })
+        await page.waitForLoadState('networkidle')
 
-        // Open charge form
-        const newChargeBtn = page.getByText(/new charge|add charge|нова операція|додати операцію/i)
-        await newChargeBtn.waitFor({ state: 'visible' })
+        // Open charge create form
+        const newChargeBtn = page.getByRole('button', { name: /new charge|add charge|нова операція|додати/i })
+        await newChargeBtn.waitFor({ state: 'visible', timeout: 10000 })
         await newChargeBtn.click()
 
-        // Fill amount
-        const amountInput = page.locator('input[inputmode="decimal"], input[type="number"]').first()
+        // Fill amount — decimal/number input
+        const amountInput = page.getByRole('spinbutton').first()
+        await amountInput.waitFor({ state: 'visible', timeout: 5000 })
         await amountInput.fill('10.00')
 
         // Fill title
-        const titleInput = page.locator('input[type="text"]').first()
-        await titleInput.fill(CHARGE_TITLE)
+        await page.getByRole('textbox', { name: /title/i }).fill(CHARGE_TITLE)
 
-        // Submit
-        await page.locator('button[type="submit"]').first().click()
+        // Submit — look for "Create" button in the form
+        await page.getByRole('button', { name: /^create$/i }).click()
 
         // Charge should appear in the list
-        await expect(page.getByText(CHARGE_TITLE)).toBeVisible({ timeout: 10000 })
+        await expect(page.getByText(CHARGE_TITLE)).toBeVisible({ timeout: 15000 })
     })
 
     test('wallet detail page shows charges list', async ({ page }) => {
         await page.goto('/wallets')
         await page.waitForLoadState('networkidle')
 
-        const firstWallet = page.locator('[class*="cursor-pointer"]').first()
-        await firstWallet.waitFor({ state: 'visible' })
-        await firstWallet.click()
+        const firstWalletHeading = page.getByRole('heading', { level: 3 }).first()
+        await firstWalletHeading.waitFor({ state: 'visible', timeout: 10000 })
+        await firstWalletHeading.click()
 
-        await expect(page).toHaveURL(/\/wallets\/\d+/)
-        // Charges section should render
-        await page.waitForSelector('[class*="charges"], [data-testid="charges"]', { timeout: 10000 }).catch(() => {
-            // Charges section may not have a specific test id — just verify page loaded
-        })
+        await expect(page).toHaveURL(/\/wallets\/\d+/, { timeout: 10000 })
+        await page.waitForLoadState('networkidle')
+
         await expect(page.locator('body')).not.toContainText('Unknown error')
+        await expect(page.locator('body')).not.toContainText('Unable to load your wallet')
     })
 })

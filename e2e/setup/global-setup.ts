@@ -14,9 +14,18 @@ const PASSWORD = process.env.E2E_PASSWORD
 
 export default async function globalSetup() {
     if (!EMAIL || !PASSWORD) {
+        if (fs.existsSync(AUTH_FILE)) {
+            const state = JSON.parse(fs.readFileSync(AUTH_FILE, 'utf8'))
+            const cookieCount = state.cookies?.length ?? 0
+            if (cookieCount > 0) {
+                console.log(`[e2e] No credentials — reusing existing auth state (${cookieCount} cookies).`)
+                return
+            }
+        }
         console.warn(
-            '[e2e] No credentials found. Set E2E_EMAIL and E2E_PASSWORD in environment or .env.local. ' +
-            'Authenticated tests will fail.',
+            '[e2e] No credentials found and no existing auth state. ' +
+            'Set E2E_EMAIL and E2E_PASSWORD in environment or .env.local, ' +
+            'or run: agent-browser --auto-connect state save e2e/setup/.auth.json',
         )
         fs.writeFileSync(AUTH_FILE, JSON.stringify({ cookies: [], origins: [] }))
         return
