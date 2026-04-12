@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { CalendarDateTime } from '@internationalized/date'
 import { updateCharge } from '@/api/charges'
 import type { Charge } from '@/api/models/charge'
-import type { Wallet } from '@/api/models/wallet'
+import type { Wallet, WalletShort } from '@/api/models/wallet'
 import type { Tag } from '@/api/models/tag'
 import { useApiErrors } from '@/composables/useApiErrors'
 import { useAuthStore } from '@/stores/auth'
@@ -14,8 +14,9 @@ import TagChip from '@/components/tags/Tag.vue'
 import DateTimePicker from '@/components/DateTimePicker.vue'
 
 const props = defineProps<{
-    wallet: Wallet
+    wallet: Wallet | WalletShort
     charge: Charge
+    walletTags?: Tag[]
 }>()
 
 const emit = defineEmits<{
@@ -96,7 +97,7 @@ const maxDateTime = computed(() => {
     <form @submit.prevent="onSubmit" class="space-y-4 py-2">
         <!-- Operation toggle + Amount -->
         <div class="flex flex-col sm:flex-row gap-3">
-            <div class="flex gap-0 sm:w-2/5">
+            <div class="flex items-start gap-0 sm:w-2/5">
                 <UButton
                     icon="i-lucide-arrow-down"
                     :variant="operation === '-' ? 'solid' : 'outline'"
@@ -154,6 +155,7 @@ const maxDateTime = computed(() => {
             <TagFormInput
                 :wallet-id="wallet.id"
                 :tags="selectedTags"
+                :initial-tags="walletTags"
                 :disabled="loading"
                 @selected="onTagSelected"
             />
@@ -161,7 +163,7 @@ const maxDateTime = computed(() => {
 
         <!-- Description -->
         <div v-if="!showDescription && !fieldErrors.description">
-            <button type="button" class="text-sm text-primary hover:underline" @click="showDescription = true">
+            <button type="button" class="text-sm text-primary hover:underline cursor-pointer" @click="showDescription = true">
                 {{ t('charges.changeDescription') }}
             </button>
         </div>
@@ -170,12 +172,13 @@ const maxDateTime = computed(() => {
                 v-model="description"
                 :placeholder="t('charges.description')"
                 :disabled="loading"
+                class="w-full"
             />
         </UFormField>
 
         <!-- DateTime -->
         <div v-if="!showDateTime && !fieldErrors.dateTime">
-            <button type="button" class="text-sm text-primary hover:underline" @click="showDateTime = true">
+            <button type="button" class="text-sm text-primary hover:underline cursor-pointer" @click="showDateTime = true">
                 {{ t('charges.changeDate') }}
             </button>
         </div>

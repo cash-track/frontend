@@ -1,13 +1,16 @@
 <script setup lang="ts">
-import { ref, shallowRef, computed, onMounted } from 'vue'
+import { ref, shallowRef, computed, onMounted, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { getTags, getTagCharges, getTagTotals } from '@/api/tags'
+import { useRouter } from 'vue-router'
+import { getTagById, getTagCharges, getTagTotals } from '@/api/tags'
 import type { Tag } from '@/api/models/tag'
 import type { Charge, ChargeTotal } from '@/api/models/charge'
 import type { Pagination } from '@/api/models/pagination'
 import type { FilterState } from '@/components/wallets/charges/ChargesFilter.vue'
 import TagChip from '@/components/tags/Tag.vue'
 import ChargesFilter from '@/components/wallets/charges/ChargesFilter.vue'
+import ChargeItem from '@/components/wallets/charges/ChargeItem.vue'
+import TagChargesFlowChart from '@/components/wallets/charges/TagChargesFlowChart.vue'
 import { useMoneyFormatter } from '@/composables/useMoneyFormatter'
 import WalletsActiveShortList from '@/components/wallets/WalletsActiveShortList.vue'
 
@@ -15,6 +18,9 @@ const props = defineProps<{ tagID: string }>()
 
 const { t } = useI18n()
 const { format } = useMoneyFormatter()
+const router = useRouter()
+
+const chartRef = useTemplateRef<InstanceType<typeof TagChargesFlowChart>>('chartRef')
 
 const tag = shallowRef<Tag | null>(null)
 const totals = shallowRef<ChargeTotal | null>(null)
@@ -37,12 +43,7 @@ async function loadTag() {
     loading.value = true
     error.value = null
     try {
-        const allTags = await getTags()
-        tag.value = allTags.find(t => t.id === tagId.value) ?? null
-        if (!tag.value) {
-            error.value = t('tags.statsLoadingError')
-            return
-        }
+        tag.value = await getTagById(tagId.value)
         await Promise.all([loadTotals(), loadCharges(1)])
     } catch {
         error.value = t('tags.statsLoadingError')
@@ -83,10 +84,24 @@ async function loadMore() {
 function onFilterChange(f: FilterState) {
     filter.value = f
     loadCharges(1).catch(() => {})
+    chartRef.value?.reload()
 }
 
-function formatDate(date: Date): string {
-    return date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })
+async function onChargeUpdated(charge: Charge) {
+    const index = charges.value.findIndex(c => c.id === charge.id)
+    if (index !== -1) charges.value[index] = charge
+    await loadTotals()
+    chartRef.value?.reload()
+}
+
+async function onChargeDeleted(chargeId: string) {
+    charges.value = charges.value.filter(c => c.id !== chargeId)
+    await loadTotals()
+    chartRef.value?.reload()
+}
+
+function onTagSelected(selectedTagId: number) {
+    router.push({ name: 'tags.show', params: { tagID: selectedTagId.toString() } })
 }
 
 onMounted(loadTag)
@@ -138,6 +153,16 @@ onMounted(loadTag)
                 </div>
             </div>
 
+            <!-- Chart -->
+            <div class="border border-default rounded-lg p-4">
+                <TagChargesFlowChart
+                    ref="chartRef"
+                    :tag-id="tagId"
+                    :currency="totals?.currency ?? null"
+                    :filter="filter"
+                />
+            </div>
+
             <!-- Filter toggle -->
             <div class="flex gap-2">
                 <UButton
@@ -158,26 +183,19 @@ onMounted(loadTag)
             </div>
 
             <!-- Charges list -->
-            <div class="border border-default rounded-lg divide-y divide-default">
-                <div
+            <div class="border border-default rounded-lg">
+                <ChargeItem
                     v-for="charge in charges"
                     :key="charge.id"
-                    class="flex items-center justify-between px-4 py-3 gap-4"
-                >
-                    <div class="flex-1 min-w-0">
-                        <p class="text-sm font-medium truncate">{{ charge.title }}</p>
-                        <p class="text-xs text-muted">{{ formatDate(charge.dateTime) }}</p>
-                    </div>
-                    <span
-                        class="text-sm font-semibold shrink-0"
-                        :class="charge.operation === '+' ? 'text-success' : 'text-error'"
-                    >
-                        {{ charge.operation === '+' ? '+' : '-' }}{{ charge.wallet?.defaultCurrency ? format(charge.amount, charge.wallet.defaultCurrency) : charge.amount }}
-                    </span>
-                </div>
+                    :charge="charge"
+                    :wallet="charge.wallet!"
+                    @updated="onChargeUpdated"
+                    @deleted="onChargeDeleted"
+                    @tag-selected="onTagSelected"
+                />
 
                 <!-- Empty state -->
-                <div v-if="charges.length === 0" class="flex flex-col items-center justify-center py-12 text-muted">
+                <div v-if="charges.length === 0 && !loading" class="flex flex-col items-center justify-center py-12 text-muted">
                     <UIcon name="i-lucide-receipt" class="size-10 mb-2 opacity-30" />
                     <p class="text-sm">{{ t('charges.empty') }}</p>
                 </div>

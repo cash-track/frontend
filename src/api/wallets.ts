@@ -87,9 +87,9 @@ export async function unarchiveWallet(walletId: number): Promise<void> {
     })
 }
 
-export async function getWalletTotals(walletId: number): Promise<WalletTotal> {
+export async function getWalletTotals(walletId: number, params?: { tags?: string }): Promise<WalletTotal> {
     return apiCall(async client => {
-        const res = await client.get(`/api/wallets/${walletId}/total`)
+        const res = await client.get(`/api/wallets/${walletId}/total`, { params })
         return WalletTotal.from(res.data.data)
     })
 }

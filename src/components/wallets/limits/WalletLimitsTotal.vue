@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { getLimits, copyLimits } from '@/api/limits'
 import type { WalletLimit } from '@/api/models/limit'
@@ -103,6 +103,7 @@ function onLimitDeleted(limit: Limit) {
 }
 
 onMounted(() => loadLimits())
+watch(() => props.wallet.id, () => loadLimits())
 
 defineExpose({ reload: loadLimits, copyDropdownItems })
 </script>

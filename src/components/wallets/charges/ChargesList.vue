@@ -1,28 +1,36 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { getCharges, type GetChargesParams } from '@/api/charges'
+import { getCharges, moveCharges, type GetChargesParams } from '@/api/charges'
 import type { Charge } from '@/api/models/charge'
 import type { Wallet } from '@/api/models/wallet'
+import type { Tag } from '@/api/models/tag'
 import type { Pagination } from '@/api/models/pagination'
 import type { FilterState } from './ChargesFilter.vue'
 import ChargeItem from './ChargeItem.vue'
+import { useWalletsStore } from '@/stores/wallets'
+import { useMoneyFormatter } from '@/composables/useMoneyFormatter'
 
 const props = defineProps<{
     wallet: Wallet
+    walletTags?: Tag[]
     filter?: FilterState
 }>()
 
 const emit = defineEmits<{
     'charge-updated': [charge: Charge]
     'charge-deleted': [chargeId: string]
-    'charge-created': []
     'tag-selected': [tagId: number]
 }>()
 
 const { t } = useI18n()
+const walletsStore = useWalletsStore()
+const { format } = useMoneyFormatter()
 
 const charges = ref<Charge[]>([])
+const selectedCharges = ref<Charge[]>([])
+const moveLoading = ref(false)
+const moveError = ref<string | null>(null)
 const pagination = ref<Pagination | null>(null)
 const loading = ref(false)
 const loadingMore = ref(false)
@@ -65,6 +73,67 @@ const chargesGrouped = computed(() => {
     return map
 })
 
+const moveTargetWallets = computed(() =>
+    walletsStore.activeWallets.filter(w => w.isActive && w.id !== props.wallet.id),
+)
+
+const moveDropdownItems = computed(() =>
+    moveTargetWallets.value.map(w => ({
+        label: w.defaultCurrency
+            ? `${w.name} — ${format(w.totalAmount, w.defaultCurrency)}`
+            : w.name,
+        onSelect: () => onMoveTo(w),
+    })),
+)
+
+function onToggleSelected(charge: Charge) {
+    const index = selectedCharges.value.findIndex(c => c.id === charge.id)
+    if (index === -1) {
+        selectedCharges.value.push(charge)
+    } else {
+        selectedCharges.value.splice(index, 1)
+    }
+}
+
+function isGroupSelected(groupCharges: Charge[]): boolean {
+    return groupCharges.length > 0 && groupCharges.every(c => selectedCharges.value.some(s => s.id === c.id))
+}
+
+function onToggleGroup(groupCharges: Charge[]) {
+    const allSelected = groupCharges.every(c => selectedCharges.value.some(s => s.id === c.id))
+    if (allSelected) {
+        const groupIds = new Set(groupCharges.map(c => c.id))
+        selectedCharges.value = selectedCharges.value.filter(s => !groupIds.has(s.id))
+    } else {
+        const alreadySelected = new Set(selectedCharges.value.map(c => c.id))
+        for (const charge of groupCharges) {
+            if (!alreadySelected.has(charge.id)) {
+                selectedCharges.value.push(charge)
+            }
+        }
+    }
+}
+
+async function onMoveTo(targetWallet: Wallet) {
+    if (!selectedCharges.value.length) return
+    moveLoading.value = true
+    moveError.value = null
+    try {
+        await moveCharges(
+            props.wallet.id,
+            targetWallet.id,
+            selectedCharges.value.map(c => c.id),
+        )
+        const movedIds = new Set(selectedCharges.value.map(c => c.id))
+        charges.value = charges.value.filter(c => !movedIds.has(c.id))
+        selectedCharges.value = []
+    } catch {
+        moveError.value = t('charges.moveError')
+    } finally {
+        moveLoading.value = false
+    }
+}
+
 async function loadCharges(page = 1, append = false) {
     if (append) {
         loadingMore.value = true
@@ -76,6 +145,7 @@ async function loadCharges(page = 1, append = false) {
     const params: GetChargesParams = { page }
     if (props.filter?.dateFrom) params['date-from'] = props.filter.dateFrom
     if (props.filter?.dateTo) params['date-to'] = props.filter.dateTo
+    if (props.filter?.tags) params.tags = props.filter.tags
 
     try {
         const result = await getCharges(props.wallet.id, params)
@@ -113,9 +183,16 @@ function onChargeDeleted(chargeId: string) {
     emit('charge-deleted', chargeId)
 }
 
-function onChargeCreated() {
-    loadCharges(1)
-    emit('charge-created')
+function onChargeCreated(charge: Charge) {
+    // Insert at the correct position in the descending-dateTime list
+    const index = charges.value.findIndex(c => c.dateTime < charge.dateTime)
+    if (index === -1) {
+        charges.value = [...charges.value, charge]
+    } else {
+        const next = [...charges.value]
+        next.splice(index, 0, charge)
+        charges.value = next
+    }
 }
 
 function setupObserver() {
@@ -136,8 +213,14 @@ function observeSentinel() {
     })
 }
 
-watch(() => props.filter, () => loadCharges(1), { deep: true })
-watch(() => props.wallet.id, () => loadCharges(1))
+watch(() => props.filter, () => {
+    selectedCharges.value = []
+    loadCharges(1)
+}, { deep: true })
+watch(() => props.wallet.id, () => {
+    selectedCharges.value = []
+    loadCharges(1)
+})
 
 // Re-observe sentinel whenever loading finishes (sentinel enters DOM)
 watch(loading, (val) => {
@@ -178,9 +261,50 @@ defineExpose({ onChargeCreated })
 
         <!-- Charges list -->
         <div v-if="!loading && !error">
+            <!-- Move toolbar -->
+            <div
+                v-if="selectedCharges.length && moveTargetWallets.length"
+                class="flex items-center gap-2 px-4 py-2 border-b border-default bg-elevated flex-wrap"
+            >
+                <span class="text-sm text-muted">
+                    {{ t('charges.selectedCount', { count: selectedCharges.length }) }}
+                </span>
+
+                <UDropdownMenu :items="moveDropdownItems">
+                    <UButton
+                        variant="outline"
+                        color="primary"
+                        size="sm"
+                        icon="i-lucide-move"
+                        :loading="moveLoading"
+                    >
+                        {{ t('charges.move') }}
+                    </UButton>
+                </UDropdownMenu>
+
+                <UButton
+                    variant="ghost"
+                    color="neutral"
+                    size="sm"
+                    @click="selectedCharges = []"
+                >
+                    {{ t('charges.clearSelection') }}
+                </UButton>
+
+                <UAlert v-if="moveError" color="warning" :description="moveError" class="flex-1" />
+            </div>
+
             <template v-for="[group, groupCharges] in chargesGrouped" :key="group">
                 <!-- Group header -->
-                <div v-if="group" class="px-4 py-2 border-b border-default">
+                <div
+                    v-if="group"
+                    class="px-4 py-2 border-b border-default transition-colors"
+                    :class="[
+                        isGroupSelected(groupCharges) ? 'bg-elevated' : (wallet.isActive ? 'hover:bg-muted' : ''),
+                        wallet.isActive ? 'cursor-pointer' : '',
+                    ]"
+                    @click="wallet.isActive ? onToggleGroup(groupCharges) : undefined"
+                >
                     <span class="text-sm text-muted">{{ group }}</span>
                 </div>
 
@@ -189,10 +313,14 @@ defineExpose({ onChargeCreated })
                     :key="charge.id"
                     :charge="charge"
                     :wallet="wallet"
+                    :wallet-tags="walletTags"
                     :read-only="!wallet.isActive"
+                    :selectable="wallet.isActive"
+                    :selected="selectedCharges.some(c => c.id === charge.id)"
                     @updated="onChargeUpdated"
                     @deleted="onChargeDeleted"
                     @tag-selected="(tagId) => emit('tag-selected', tagId)"
+                    @toggle-selected="onToggleSelected"
                 />
             </template>
 

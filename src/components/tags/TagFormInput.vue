@@ -8,6 +8,7 @@ import TagChip from '@/components/tags/Tag.vue'
 const props = defineProps<{
     walletId: number
     tags: Tag[]
+    initialTags?: Tag[]
     disabled?: boolean
 }>()
 
@@ -36,6 +37,10 @@ const displayedTags = computed(() => {
 })
 
 function loadSuggestions() {
+    if (props.initialTags !== undefined) {
+        suggestions.value = props.initialTags
+        return
+    }
     getWalletTags(props.walletId)
         .then(tags => { suggestions.value = tags })
         .catch(() => {})
@@ -124,6 +129,9 @@ watch(query, (val) => {
 })
 
 watch(() => props.walletId, () => loadSuggestions())
+watch(() => props.initialTags, (tags) => {
+    if (tags !== undefined) suggestions.value = tags
+}, { deep: true })
 
 onMounted(() => loadSuggestions())
 

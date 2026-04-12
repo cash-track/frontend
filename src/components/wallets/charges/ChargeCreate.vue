@@ -15,10 +15,12 @@ import DateTimePicker from '@/components/DateTimePicker.vue'
 
 const props = defineProps<{
     wallet: Wallet
+    walletTags?: Tag[]
 }>()
 
 const emit = defineEmits<{
     'charge-created': [charge: Charge]
+    cancelled: []
 }>()
 
 const { t } = useI18n()
@@ -113,7 +115,7 @@ const maxDateTime = computed(() => {
     <form @submit.prevent="onSubmit" class="space-y-4">
         <!-- Operation toggle + Amount -->
         <div class="flex flex-col sm:flex-row gap-3">
-            <div class="flex gap-0 sm:w-2/5">
+            <div class="flex items-start gap-0 sm:w-2/5">
                 <UButton
                     icon="i-lucide-arrow-down"
                     :variant="isExpense ? 'solid' : 'outline'"
@@ -174,6 +176,7 @@ const maxDateTime = computed(() => {
                 ref="tagInputRef"
                 :wallet-id="wallet.id"
                 :tags="selectedTags"
+                :initial-tags="walletTags"
                 :disabled="loading"
                 @selected="onTagSelected"
             />
@@ -181,7 +184,7 @@ const maxDateTime = computed(() => {
 
         <!-- Optional: description -->
         <div v-if="!showDescription && !fieldErrors.description">
-            <button type="button" class="text-sm text-primary hover:underline" @click="showDescription = true">
+            <button type="button" class="text-sm text-primary hover:underline cursor-pointer" @click="showDescription = true">
                 {{ t('charges.changeDescription') }}
             </button>
         </div>
@@ -190,12 +193,13 @@ const maxDateTime = computed(() => {
                 v-model="description"
                 :placeholder="t('charges.description')"
                 :disabled="loading"
+                class="w-full"
             />
         </UFormField>
 
         <!-- Optional: dateTime -->
         <div v-if="!showDateTime && !fieldErrors.dateTime">
-            <button type="button" class="text-sm text-primary hover:underline" @click="showDateTime = true">
+            <button type="button" class="text-sm text-primary hover:underline cursor-pointer" @click="showDateTime = true">
                 {{ t('charges.changeDate') }}
             </button>
         </div>
@@ -240,6 +244,14 @@ const maxDateTime = computed(() => {
                 :disabled="!authStore.isEmailConfirmed || loading"
             >
                 {{ t('charges.create') }}
+            </UButton>
+            <UButton
+                variant="outline"
+                color="neutral"
+                :disabled="loading"
+                @click="emit('cancelled')"
+            >
+                {{ t('charges.cancel') }}
             </UButton>
         </div>
     </form>

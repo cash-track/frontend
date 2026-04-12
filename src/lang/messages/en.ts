@@ -219,6 +219,8 @@ export default {
 
         move: 'Move To',
         moveError: 'Unable to move selected charges to target wallet. Please try again later.',
+        selectedCount: '{count} selected',
+        clearSelection: 'Clear',
     },
 
     tags: {

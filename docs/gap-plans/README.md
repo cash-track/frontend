@@ -7,10 +7,10 @@ This directory contains implementation plans for features present in the old Vue
 | Plan | Feature | Priority | Complexity | Status |
 |------|---------|----------|------------|--------|
 | [01](./01-wallets-active-short-list.md) | WalletsActiveShortList — horizontal wallet navigation strip | Medium | Low | ✅ Done |
-| [02](./02-wallet-tags-filter-section.md) | WalletView Tags Section — tag-based filtering + per-tag stats + chart stacking | High | High | ⬜ Pending |
+| [02](./02-wallet-tags-filter-section.md) | WalletView Tags Section — tag-based filtering + per-tag stats + chart stacking | High | High | ✅ Done |
 | [03](./03-copy-limits-from-wallet.md) | Copy Limits from Another Wallet | Medium | Low | ✅ Done |
-| [04](./04-bulk-move-charges.md) | Bulk Move Charges between wallets | Medium | Medium | ⬜ Pending |
-| [05](./05-tag-view-chart-and-charges.md) | TagView — ChargesFlowChart + full ChargeItem (edit/delete/expand) | High | Medium | ⬜ Pending |
+| [04](./04-bulk-move-charges.md) | Bulk Move Charges between wallets | Medium | Medium | ✅ Done |
+| [05](./05-tag-view-chart-and-charges.md) | TagView — ChargesFlowChart + full ChargeItem (edit/delete/expand) | High | Medium | ✅ Done |
 
 ---
 
@@ -39,11 +39,11 @@ Plans 01, 03, and 05A can be done in any order or in parallel. Plan 02 and 04 ha
 | Function | File | Status |
 |----------|------|--------|
 | `getWalletsWithLimits(archived)` | `src/api/wallets.ts` | ✓ Exists |
-| `getTagChargesFlow(tagId, params)` | `src/api/graph.ts` | **Missing** |
+| `getTagChargesFlow(tagId, params)` | `src/api/graph.ts` | ✓ Exists |
 | `copyLimits(walletId, sourceId)` | `src/api/limits.ts` | ✓ Exists |
 | `moveCharges(walletId, targetId, ids)` | `src/api/charges.ts` | ✓ Exists |
 | `getWalletTags(walletId)` | `src/api/tags.ts` | ✓ Exists |
-| `getChargesFlowByDate(walletId, params)` | `src/api/graph.ts` | ✓ Exists (needs `tags` param wired) |
+| `getChargesFlowByDate(walletId, params)` | `src/api/graph.ts` | ✓ Exists |
 
 ---
 

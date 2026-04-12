@@ -197,7 +197,7 @@ describe('getWalletTotals', () => {
 
         const result = await getWalletTotals(1)
 
-        expect(mockAxios.get).toHaveBeenCalledWith('/api/wallets/1/total')
+        expect(mockAxios.get).toHaveBeenCalledWith('/api/wallets/1/total', { params: undefined })
         expect(result).toBeInstanceOf(WalletTotal)
         expect(result.totalAmount).toBe(500)
         expect(result.totalIncomeAmount).toBe(800)

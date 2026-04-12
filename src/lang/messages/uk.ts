@@ -219,6 +219,8 @@ export default {
 
         move: 'Перемістити До',
         moveError: 'Помилка перенесення обраних операцій у гаманець. Будь ласка, спробуйте пізніше.',
+        selectedCount: '{count} обрано',
+        clearSelection: 'Скасувати',
     },
 
     tags: {

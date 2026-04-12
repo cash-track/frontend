@@ -6,6 +6,7 @@ import type { DateValue } from '@internationalized/date'
 export interface FilterState {
     dateFrom: string
     dateTo: string
+    tags?: string
 }
 
 const emit = defineEmits<{
@@ -50,13 +51,13 @@ watch(dateTo, emitChange)
         <div class="flex flex-wrap gap-2 items-center sm:w-1/3">
             <UBadge v-if="dateFrom" color="primary" variant="subtle" class="gap-1">
                 {{ t('charges.filterFrom') }}: {{ toDateString(dateFrom) }}
-                <button type="button" class="hover:opacity-70" @click="resetDateFrom">
+                <button type="button" class="hover:opacity-70 cursor-pointer" @click="resetDateFrom">
                     <UIcon name="i-lucide-x" class="size-3" />
                 </button>
             </UBadge>
             <UBadge v-if="dateTo" color="primary" variant="subtle" class="gap-1">
                 {{ t('charges.filterTo') }}: {{ toDateString(dateTo) }}
-                <button type="button" class="hover:opacity-70" @click="resetDateTo">
+                <button type="button" class="hover:opacity-70 cursor-pointer" @click="resetDateTo">
                     <UIcon name="i-lucide-x" class="size-3" />
                 </button>
             </UBadge>

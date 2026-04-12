@@ -16,6 +16,12 @@ button, a {
     @apply transition-colors;
 }
 
+button:not(:disabled),
+a,
+[role="menuitem"]:not([data-disabled]) {
+    cursor: pointer;
+}
+
 .row {
     @apply sm:flex -mx-3.5;
 }

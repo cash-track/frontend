@@ -12,9 +12,11 @@ import {
     LinearScale,
     type ChartData,
     type ChartOptions,
+    type ChartDataset,
 } from 'chart.js'
 import { getChargesFlowByDate, type ChargesFlowDataPoint, type GetChargesFlowParams } from '@/api/graph'
 import type { Currency } from '@/api/models/currency'
+import type { Tag } from '@/api/models/tag'
 import { useMoneyFormatter } from '@/composables/useMoneyFormatter'
 
 ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale)
@@ -22,6 +24,7 @@ ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale)
 const props = defineProps<{
     walletId: number
     currency: Currency | null
+    tags?: Tag[]
 }>()
 
 const { t } = useI18n()
@@ -41,27 +44,67 @@ const groupByOptions = computed(() => [
     { label: t('wallets.groupByYear'), value: 'year' as GroupBy },
 ])
 
-const chartData = computed<ChartData<'bar'>>(() => ({
-    labels: dataPoints.value.map(d => d.date),
-    datasets: [
-        {
-            label: t('wallets.expense'),
-            backgroundColor: '#dc3545',
-            data: dataPoints.value.map(d => d.expense),
-        },
-        {
-            label: t('wallets.income'),
-            backgroundColor: '#28a745',
-            data: dataPoints.value.map(d => d.income),
-        },
-    ],
-}))
+function stableColor(key: string): string {
+    let hash = 0
+    for (const char of key) hash = (hash << 5) - hash + char.charCodeAt(0)
+    hash = hash & hash
+    const h = Math.abs(hash) % 360
+    return `hsl(${h}, 60%, 50%)`
+}
+
+const isTagMode = computed(() => !!props.tags?.length)
+
+const chartData = computed<ChartData<'bar'>>(() => {
+    if (isTagMode.value) {
+        const labels = dataPoints.value.map(d => d.date)
+        const datasets: ChartDataset<'bar'>[] = []
+        const multiTag = props.tags!.length > 1
+        for (const tag of props.tags!) {
+            const expenseData = dataPoints.value.map(d => d.tags?.[tag.id]?.expense ?? 0)
+            const incomeData = dataPoints.value.map(d => d.tags?.[tag.id]?.income ?? 0)
+            if (expenseData.some(v => v !== 0)) {
+                datasets.push({
+                    label: `↓ ${tag.name}`,
+                    backgroundColor: multiTag ? stableColor(`exp-${tag.id}`) : '#dc3545',
+                    stack: 'expense',
+                    data: expenseData,
+                })
+            }
+            if (incomeData.some(v => v !== 0)) {
+                datasets.push({
+                    label: `↑ ${tag.name}`,
+                    backgroundColor: multiTag ? stableColor(`inc-${tag.id}`) : '#28a745',
+                    stack: 'income',
+                    data: incomeData,
+                })
+            }
+        }
+        return { labels, datasets }
+    }
+    return {
+        labels: dataPoints.value.map(d => d.date),
+        datasets: [
+            {
+                label: t('wallets.expense'),
+                backgroundColor: '#dc3545',
+                data: dataPoints.value.map(d => d.expense),
+            },
+            {
+                label: t('wallets.income'),
+                backgroundColor: '#28a745',
+                data: dataPoints.value.map(d => d.income),
+            },
+        ],
+    }
+})
 
 const chartOptions = computed<ChartOptions<'bar'>>(() => ({
     responsive: true,
     maintainAspectRatio: false,
     scales: {
+        x: isTagMode.value ? { stacked: true } : {},
         y: {
+            stacked: isTagMode.value,
             ticks: {
                 callback: (value) => {
                     if (typeof value !== 'number' || !props.currency) return value
@@ -91,6 +134,9 @@ async function loadData() {
     error.value = null
     try {
         const params: GetChargesFlowParams = { 'group-by': groupBy.value }
+        if (props.tags?.length) {
+            params.tags = props.tags.map(t => t.id).join(',')
+        }
         dataPoints.value = await getChargesFlowByDate(props.walletId, params)
         hasLoaded.value = true
     } catch {
@@ -101,6 +147,7 @@ async function loadData() {
 }
 
 watch(groupBy, () => loadData())
+watch(() => props.tags, () => loadData(), { deep: true })
 onMounted(() => loadData())
 
 defineExpose({ reload: loadData })

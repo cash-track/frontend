@@ -2,8 +2,9 @@
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { Charge } from '@/api/models/charge'
-import type { Wallet } from '@/api/models/wallet'
+import type { Wallet, WalletShort } from '@/api/models/wallet'
 import type { Currency } from '@/api/models/currency'
+import type { Tag as TagModel } from '@/api/models/tag'
 import { deleteCharge } from '@/api/charges'
 import { useMoneyFormatter } from '@/composables/useMoneyFormatter'
 import { useAuthStore } from '@/stores/auth'
@@ -13,14 +14,18 @@ import ConfirmModal from '@/components/Shared/ConfirmModal.vue'
 
 const props = defineProps<{
     charge: Charge
-    wallet: Wallet
+    wallet: Wallet | WalletShort
+    walletTags?: TagModel[]
     readOnly?: boolean
+    selectable?: boolean
+    selected?: boolean
 }>()
 
 const emit = defineEmits<{
     updated: [charge: Charge]
     deleted: [chargeId: string]
     'tag-selected': [tagId: number]
+    'toggle-selected': [charge: Charge]
 }>()
 
 const { t } = useI18n()
@@ -55,7 +60,7 @@ function toggleExpand() {
 
 function startEdit() {
     isEdit.value = true
-    isExpanded.value = true
+    isExpanded.value = false
 }
 
 function cancelEdit() {
@@ -103,20 +108,30 @@ const actionItems = computed(() => [
 
 <template>
     <div
-        class="flex items-stretch border-b border-default transition-colors"
-        :class="{ 'bg-elevated': isExpanded }"
+        class="group flex items-stretch border-b border-default transition-colors"
+        :class="[
+            isExpanded || selected || isEdit ? 'bg-elevated' : 'hover:bg-muted',
+            !isEdit ? 'cursor-pointer' : '',
+        ]"
+        @click="toggleExpand()"
     >
         <!-- Timeline column: fixed width, centered icon + vertical line -->
         <div class="flex flex-col items-center w-10 shrink-0 py-3">
-            <div
-                class="flex items-center justify-center size-7 rounded-full border-2 shrink-0"
-                :class="charge.operation === '+' ? 'border-success text-success' : 'border-error text-error'"
+            <button
+                type="button"
+                class="flex items-center justify-center size-7 rounded-full border-2 shrink-0 transition-colors"
+                :class="[
+                    selected
+                        ? 'bg-primary border-primary text-white'
+                        : charge.operation === '+' ? 'border-success text-success' : 'border-error text-error',
+                    selectable && !isEdit ? 'cursor-pointer hover:ring-2 ring-primary ring-offset-1' : 'cursor-default',
+                ]"
+                :disabled="!selectable || isEdit"
+                @click.stop="selectable && !isEdit ? emit('toggle-selected', charge) : undefined"
             >
-                <UIcon
-                    :name="charge.operation === '+' ? 'i-lucide-arrow-up' : 'i-lucide-arrow-down'"
-                    class="size-4"
-                />
-            </div>
+                <UIcon v-if="selected" name="i-lucide-check" class="size-4" />
+                <UIcon v-else :name="charge.operation === '+' ? 'i-lucide-arrow-up' : 'i-lucide-arrow-down'" class="size-4" />
+            </button>
             <div class="w-px flex-1 bg-default mt-1" />
         </div>
 
@@ -125,7 +140,7 @@ const actionItems = computed(() => [
             <div v-if="!isEdit">
                 <!-- First row: amount + title + actions -->
                 <div class="flex items-start justify-between gap-2">
-                    <div class="flex items-center gap-2 min-w-0 cursor-pointer" @click="toggleExpand">
+                    <div class="flex items-center gap-2 min-w-0">
                         <span
                             class="font-bold whitespace-nowrap"
                             :class="charge.operation === '+' ? 'text-success' : 'text-error'"
@@ -135,7 +150,7 @@ const actionItems = computed(() => [
                         </span>
                     </div>
 
-                    <div v-if="!readOnly" class="shrink-0">
+                    <div v-if="!readOnly" class="shrink-0" :class="{ 'invisible group-hover:visible': !selected && !isExpanded }" @click.stop>
                         <UDropdownMenu :items="actionItems">
                             <UButton
                                 icon="i-lucide-ellipsis-vertical"
@@ -163,7 +178,7 @@ const actionItems = computed(() => [
                             v-for="tag in charge.tags"
                             :key="tag.id"
                             :tag="tag"
-                            @click="emit('tag-selected', tag.id)"
+                            @click.stop="emit('tag-selected', tag.id)"
                         />
                     </template>
                 </div>
@@ -179,6 +194,7 @@ const actionItems = computed(() => [
                 v-if="isEdit"
                 :wallet="wallet"
                 :charge="charge"
+                :wallet-tags="walletTags"
                 @updated="onUpdated"
                 @cancelled="cancelEdit"
             />

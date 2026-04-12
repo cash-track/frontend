@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Doughnut } from 'vue-chartjs'
 import {
@@ -22,6 +22,7 @@ ChartJS.register(Title, Tooltip, Legend, ArcElement)
 const props = defineProps<{
     walletId: number
     currency: Currency | null
+    walletTags?: Tag[]
 }>()
 
 const { t } = useI18n()
@@ -153,14 +154,14 @@ async function loadData() {
     loading.value = true
     error.value = null
     try {
-        const [expenseResult, incomeResult, walletTags] = await Promise.all([
+        const [expenseResult, incomeResult, resolvedTags] = await Promise.all([
             getChargesTotalByType(props.walletId, { 'charge-type': 'expense' }),
             getChargesTotalByType(props.walletId, { 'charge-type': 'income' }),
-            getWalletTags(props.walletId),
+            props.walletTags !== undefined ? Promise.resolve(props.walletTags) : getWalletTags(props.walletId),
         ])
         expenseData.value = expenseResult
         incomeData.value = incomeResult
-        tags.value = walletTags
+        tags.value = resolvedTags
         hasLoaded.value = true
     } catch {
         error.value = t('wallets.chartLoadingError')
@@ -168,6 +169,10 @@ async function loadData() {
         loading.value = false
     }
 }
+
+watch(() => props.walletTags, (t) => {
+    if (t !== undefined) tags.value = t
+}, { deep: true })
 
 onMounted(() => loadData())
 
