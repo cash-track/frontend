@@ -264,7 +264,7 @@ defineExpose({ onChargeCreated })
             <!-- Move toolbar -->
             <div
                 v-if="selectedCharges.length && moveTargetWallets.length"
-                class="flex items-center gap-2 px-4 py-2 border-b border-default bg-elevated flex-wrap"
+                class="flex items-center gap-2 px-4 py-2 bg-elevated flex-wrap"
             >
                 <span class="text-sm text-muted">
                     {{ t('charges.selectedCount', { count: selectedCharges.length }) }}
@@ -298,14 +298,18 @@ defineExpose({ onChargeCreated })
                 <!-- Group header -->
                 <div
                     v-if="group"
-                    class="px-4 py-2 border-b border-default transition-colors"
+                    class="px-4 py-2 transition-colors"
                     :class="[
                         isGroupSelected(groupCharges) ? 'bg-elevated' : (wallet.isActive ? 'hover:bg-muted' : ''),
                         wallet.isActive ? 'cursor-pointer' : '',
                     ]"
                     @click="wallet.isActive ? onToggleGroup(groupCharges) : undefined"
                 >
-                    <span class="text-sm text-muted">{{ group }}</span>
+                    <div class="flex items-center gap-2">
+                        <div class="w-6 shrink-0 h-px transition-colors" :class="isGroupSelected(groupCharges) ? '' : 'bg-black/10 dark:bg-white/10'" />
+                        <span class="text-sm text-muted">{{ group }}</span>
+                        <div class="flex-1 h-px transition-colors" :class="isGroupSelected(groupCharges) ? '' : 'bg-black/10 dark:bg-white/10'" />
+                    </div>
                 </div>
 
                 <ChargeItem
