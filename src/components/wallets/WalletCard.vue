@@ -72,7 +72,7 @@ function navigate() {
                 {{ wallet.defaultCurrency ? t(`currency.${wallet.defaultCurrency.code}`) : '' }}
                 <template v-if="wallet.defaultCurrency">({{ wallet.defaultCurrency.code }})</template>
             </span>
-            <MoneyAmount class="font-bold text-primary whitespace-nowrap ml-2" :amount="wallet.totalAmount" :currency="wallet.defaultCurrency" />
+            <MoneyAmount class="font-bold text-secondary whitespace-nowrap ml-2" :amount="wallet.totalAmount" :currency="wallet.defaultCurrency" />
         </div>
 
         <!-- Members + last updated -->

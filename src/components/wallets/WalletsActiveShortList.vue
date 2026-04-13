@@ -32,11 +32,11 @@ onMounted(() => {
             <button
                 v-for="wallet in wallets"
                 :key="wallet.id"
-                class="flex-none flex items-center gap-3 px-4 py-2 border border-default bg-elevated hover:bg-accented text-sm whitespace-nowrap first:rounded-l-lg last:rounded-r-lg cursor-pointer transition-colors"
+                class="flex-none flex items-center gap-3 px-4 py-2 border border-default border-l-0 first:border-l hover:bg-accented text-sm whitespace-nowrap first:rounded-l-lg last:rounded-r-lg cursor-pointer transition-colors"
                 @click="navigate(wallet)"
             >
                 <span class="max-w-[200px] truncate font-medium">{{ wallet.name }}</span>
-                <MoneyAmount class="text-primary font-semibold" :amount="wallet.totalAmount" :currency="wallet.defaultCurrency" />
+                <MoneyAmount class="text-secondary font-semibold" :amount="wallet.totalAmount" :currency="wallet.defaultCurrency" />
             </button>
         </div>
     </div>
