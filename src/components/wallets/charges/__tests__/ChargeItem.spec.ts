@@ -107,7 +107,7 @@ describe('ChargeItem', () => {
         expect(wrapper.text()).toContain('Coffee break')
     })
 
-    it('passes amount to MoneyAmount and applies expense color class', () => {
+    it('passes amount to MoneyAmount and applies neutral color class', () => {
         const charge = makeCharge({ amount: 1234.56, operation: '-' })
         const wrapper = shallowMount(ChargeItem, {
             props: { charge, wallet: makeWallet() },
@@ -116,17 +116,17 @@ describe('ChargeItem', () => {
         const moneyAmount = wrapper.findComponent(MoneyAmount)
         expect(moneyAmount.exists()).toBe(true)
         expect(moneyAmount.props('amount')).toBe(1234.56)
-        expect(moneyAmount.attributes('class')).toContain('text-error')
+        expect(moneyAmount.attributes('class')).toContain('text-neutral')
     })
 
-    it('applies income color class to MoneyAmount for income charge', () => {
+    it('applies neutral color class to MoneyAmount for income charge', () => {
         const charge = makeCharge({ operation: '+' })
         const wrapper = shallowMount(ChargeItem, {
             props: { charge, wallet: makeWallet() },
         })
 
         const moneyAmount = wrapper.findComponent(MoneyAmount)
-        expect(moneyAmount.attributes('class')).toContain('text-success')
+        expect(moneyAmount.attributes('class')).toContain('text-neutral')
     })
 
     it('does not render dropdown when readOnly is true', () => {

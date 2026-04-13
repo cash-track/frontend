@@ -27,7 +27,7 @@ function onClick() {
 <template>
     <button
         type="button"
-        class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-sm border transition-colors cursor-pointer"
+        class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-sm border transition-colors cursor-pointer whitespace-nowrap"
         :class="highlighted ? 'border-gray-400' : 'border-default hover:border-gray-400'"
         :style="tag.color ? { backgroundColor: tag.color + '1a' } : {}"
         @click="onClick"

@@ -146,14 +146,18 @@ defineExpose({ reset })
             :disabled="disabled"
             autocomplete="off"
             class="w-full"
-            :loading="loading"
+            size="lg"
             @focus="onFocus"
             @blur="onBlur"
             @keydown="onKeyDown"
-        />
+        >
+            <template #trailing>
+                <UIcon v-if="loading" name="i-lucide-loader-circle" class="animate-spin size-4 shrink-0 text-dimmed" />
+            </template>
+        </UInput>
         <div
             v-if="dropdownOpen && displayedTags.length > 0"
-            class="absolute z-10 mt-1 w-full rounded-md border border-default bg-default shadow-lg p-2 flex flex-wrap gap-1 max-h-40 overflow-y-auto"
+            class="absolute z-10 mt-1 w-full rounded-md border border-default bg-default shadow-lg p-2 flex gap-1 overflow-x-auto"
         >
             <TagChip
                 v-for="(tag, index) in displayedTags"

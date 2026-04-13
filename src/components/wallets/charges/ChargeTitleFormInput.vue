@@ -163,19 +163,23 @@ defineExpose({ reset })
             v-model="localValue"
             :placeholder="t('charges.title')"
             :disabled="disabled"
-            :loading="loading"
             autocomplete="off"
             class="w-full"
+            size="lg"
             @focus="onFocus"
             @blur="onBlur"
             @keydown="onKeyDown"
-        />
+        >
+            <template #trailing>
+                <UIcon v-if="loading" name="i-lucide-loader-circle" class="animate-spin size-4 shrink-0 text-dimmed" />
+            </template>
+        </UInput>
         <div
             v-if="dropdownOpen"
             class="absolute z-10 mt-1 w-full rounded-md border border-default bg-default shadow-lg max-h-60 overflow-y-auto"
         >
             <!-- Tag suggestions -->
-            <div v-if="filteredTagSuggestions.length > 0" class="p-2 flex flex-wrap gap-1 border-b border-default">
+            <div v-if="filteredTagSuggestions.length > 0" class="p-2 flex gap-1 border-b border-default overflow-x-auto">
                 <TagChip
                     v-for="(tag, index) in filteredTagSuggestions"
                     :key="tag.id"

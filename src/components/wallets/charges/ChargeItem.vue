@@ -134,8 +134,7 @@ const actionItems = computed(() => [
                 <div class="flex items-start justify-between gap-2">
                     <div class="flex items-center gap-2 min-w-0">
                         <MoneyAmount
-                            class="font-bold whitespace-nowrap"
-                            :class="charge.operation === '+' ? 'text-success' : 'text-error'"
+                            class="font-bold whitespace-nowrap text-neutral"
                             :amount="charge.amount"
                             :currency="wallet.defaultCurrency"
                         />
