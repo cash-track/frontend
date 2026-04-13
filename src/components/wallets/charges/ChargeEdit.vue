@@ -102,6 +102,7 @@ const maxDateTime = computed(() => {
                     icon="i-lucide-arrow-down"
                     :variant="operation === '-' ? 'solid' : 'outline'"
                     color="error"
+                    size="lg"
                     :disabled="loading"
                     class="rounded-r-none"
                     @click="operation = '-'"
@@ -110,6 +111,7 @@ const maxDateTime = computed(() => {
                     icon="i-lucide-arrow-up"
                     :variant="operation === '+' ? 'solid' : 'outline'"
                     color="success"
+                    size="lg"
                     :disabled="loading"
                     class="rounded-none border-l-0"
                     @click="operation = '+'"
@@ -123,6 +125,7 @@ const maxDateTime = computed(() => {
                         :placeholder="t('charges.amount')"
                         :disabled="loading"
                         class="w-full"
+                        size="lg"
                         :ui="{ root: '-ml-[2px] focus-within:z-[1]', base: 'rounded-l-none' }"
                     />
                 </UFormField>

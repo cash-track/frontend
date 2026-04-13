@@ -122,6 +122,7 @@ const maxDateTime = computed(() => {
                     color="error"
                     :disabled="loading"
                     class="rounded-r-none"
+                    size="lg"
                     @click="setExpense"
                 />
                 <UButton
@@ -130,6 +131,7 @@ const maxDateTime = computed(() => {
                     color="success"
                     :disabled="loading"
                     class="rounded-none border-l-0"
+                    size="lg"
                     @click="setIncome"
                 />
                 <UFormField class="flex-1" :error="fieldErrors.amount?.[0] || fieldErrors.type?.[0]">
@@ -141,6 +143,7 @@ const maxDateTime = computed(() => {
                         :placeholder="t('charges.amount')"
                         :disabled="loading"
                         class="w-full"
+                        size="lg"
                         :ui="{ root: '-ml-[2px] focus-within:z-[1]', base: 'rounded-l-none' }"
                     />
                 </UFormField>
