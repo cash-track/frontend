@@ -176,7 +176,7 @@ defineExpose({ reset })
         </UInput>
         <div
             v-if="dropdownOpen"
-            class="absolute z-10 mt-1 w-full rounded-md border border-default bg-default shadow-lg max-h-60 overflow-y-auto"
+            class="absolute z-10 -mt-1 border-t-0 rounded-t-none w-full rounded-md border border-default bg-default shadow-lg max-h-60 overflow-y-auto"
         >
             <!-- Tag suggestions -->
             <div v-if="filteredTagSuggestions.length > 0" class="p-2 flex gap-1 border-b border-default overflow-x-auto">

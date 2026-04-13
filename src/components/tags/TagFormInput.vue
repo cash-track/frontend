@@ -157,7 +157,7 @@ defineExpose({ reset })
         </UInput>
         <div
             v-if="dropdownOpen && displayedTags.length > 0"
-            class="absolute z-10 mt-1 w-full rounded-md border border-default bg-default shadow-lg p-2 flex gap-1 overflow-x-auto"
+            class="absolute z-10 -mt-1 border-t-0 rounded-t-none w-full rounded-md border border-default bg-default shadow-lg p-2 flex gap-1 overflow-x-auto"
         >
             <TagChip
                 v-for="(tag, index) in displayedTags"

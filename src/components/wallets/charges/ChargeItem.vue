@@ -100,7 +100,7 @@ const actionItems = computed(() => [
 
 <template>
     <div
-        class="group flex items-stretch transition-colors"
+        class="group flex items-stretch transition-colors -mx-4 sm:mx-0 sm:px-4 sm:py-2"
         :class="[
             isExpanded || selected || isEdit ? 'bg-elevated' : 'hover:bg-muted',
             !isEdit ? 'cursor-pointer' : '',
@@ -108,10 +108,11 @@ const actionItems = computed(() => [
         @click="toggleExpand()"
     >
         <!-- Timeline column: fixed width, centered icon + vertical line -->
-        <div class="flex flex-col items-center w-10 shrink-0 py-3">
+        <div class="flex flex-col items-center w-10 shrink-0 py-0 -my-2">
+            <div class="w-px h-[20px] bg-black/10 dark:bg-white/10" />
             <button
                 type="button"
-                class="flex items-center justify-center size-7 rounded-full border-2 shrink-0 transition-colors"
+                class="flex items-center justify-center size-7 rounded-full border-0 shrink-0 transition-colors"
                 :class="[
                     selected
                         ? 'bg-primary border-primary text-white'
@@ -122,9 +123,9 @@ const actionItems = computed(() => [
                 @click.stop="selectable && !isEdit ? emit('toggle-selected', charge) : undefined"
             >
                 <UIcon v-if="selected" name="i-lucide-check" class="size-4" />
-                <UIcon v-else :name="charge.operation === '+' ? 'i-lucide-arrow-up' : 'i-lucide-arrow-down'" class="size-4" />
+                <UIcon v-else :name="charge.operation === '+' ? 'i-lucide-arrow-up' : 'i-lucide-arrow-down'" class="size-6" />
             </button>
-            <div class="w-px flex-1 bg-default mt-1" />
+            <div class="w-px flex-1 bg-black/10 dark:bg-white/10" />
         </div>
 
         <!-- Main content -->
