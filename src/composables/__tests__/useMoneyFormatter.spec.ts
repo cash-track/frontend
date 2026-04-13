@@ -25,26 +25,42 @@ const eurCurrency = new Currency({
     updatedAt: new Date(),
 })
 
+// \u00A0 is used as thousands separator and between number and currency char
 describe('useMoneyFormatter', () => {
-    it('format(1234.5, usdCurrency) returns $1,234.50', () => {
+    it('format(1234.5, usdCurrency) places char after amount with spacing', () => {
         const { format } = useMoneyFormatter()
-        expect(format(1234.5, usdCurrency)).toBe('$1,234.50')
+        expect(format(1234.5, usdCurrency)).toBe('1\u00A0234.50\u00A0$')
     })
 
-    it('format(1000, usdCurrency) returns $1,000.00', () => {
+    it('format(1000, usdCurrency) uses space as thousands separator', () => {
         const { format } = useMoneyFormatter()
-        expect(format(1000, usdCurrency)).toBe('$1,000.00')
+        expect(format(1000, usdCurrency)).toBe('1\u00A0000.00\u00A0$')
     })
 
-    it('format(0.5, usdCurrency) returns $0.50', () => {
+    it('format(0.5, usdCurrency) returns sub-thousand with fraction', () => {
         const { format } = useMoneyFormatter()
-        expect(format(0.5, usdCurrency)).toBe('$0.50')
+        expect(format(0.5, usdCurrency)).toBe('0.50\u00A0$')
     })
 
-    it('format works with EUR currency', () => {
+    it('format works with EUR currency char', () => {
         const { format } = useMoneyFormatter()
         const result = format(100, eurCurrency)
         expect(result).toContain('100')
         expect(result).toContain('€')
+    })
+
+    it('format(1234.56, usdCurrency, false) hides fractional part', () => {
+        const { format } = useMoneyFormatter()
+        expect(format(1234.56, usdCurrency, false)).toBe('1\u00A0235\u00A0$')
+    })
+
+    it('format(1000, usdCurrency, false) shows no decimals', () => {
+        const { format } = useMoneyFormatter()
+        expect(format(1000, usdCurrency, false)).toBe('1\u00A0000\u00A0$')
+    })
+
+    it('format(0.5, usdCurrency, false) rounds and hides fraction', () => {
+        const { format } = useMoneyFormatter()
+        expect(format(0.5, usdCurrency, false)).toBe('1\u00A0$')
     })
 })

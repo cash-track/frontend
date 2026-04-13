@@ -4,19 +4,14 @@ import type { Currency } from '@/api/models/currency'
 export function useMoneyFormatter() {
     const { locale } = useI18n()
 
-    function format(amount: number, currency: Currency): string {
-        try {
-            return new Intl.NumberFormat(locale.value, {
-                style: 'currency',
-                currency: currency.code,
-            }).format(amount)
-        } catch {
-            const n = new Intl.NumberFormat(locale.value, {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-            }).format(amount)
-            return `${n} ${currency.char}`
-        }
+    function format(amount: number, currency: Currency, showFraction = true): string {
+        const digits = showFraction ? 2 : 0
+        const parts = new Intl.NumberFormat(locale.value, {
+            minimumFractionDigits: digits,
+            maximumFractionDigits: digits,
+        }).formatToParts(amount)
+        const n = parts.map(p => p.type === 'group' ? '\u00A0' : p.value).join('')
+        return `${n}\u00A0${currency.char}`
     }
 
     return { format }

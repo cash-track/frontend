@@ -85,10 +85,11 @@ describe('WalletsActiveShortList', () => {
         expect(wrapper.text()).toContain('Checking')
     })
 
-    it('renders formatted balance for each wallet', () => {
+    it('renders formatted balance without fraction, char after, spaces for thousands', () => {
         mockActiveWallets.value = [makeWallet(1, 'Test Wallet', true, 1234.56)]
         const wrapper = mountComponent()
-        expect(wrapper.text()).toContain('1,234.56')
+        // 1234.56 rounds to 1 235 $ (NBSP as thousands sep and before char)
+        expect(wrapper.text()).toContain('1\u00A0235\u00A0$')
     })
 
     it('filters out inactive wallets', () => {

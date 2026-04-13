@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { ChargesFlowPeriod } from '@/api/profile'
 import type { Currency } from '@/api/models/currency'
-import { useMoneyFormatter } from '@/composables/useMoneyFormatter'
+import MoneyAmount from '@/components/Shared/MoneyAmount.vue'
 
 const props = defineProps<{
     type: '+' | '-'
@@ -12,14 +12,8 @@ const props = defineProps<{
 }>()
 
 const { t } = useI18n()
-const { format } = useMoneyFormatter()
 
 const isIncome = computed(() => props.type === '+')
-
-function fmt(amount: number): string {
-    if (!props.currency) return String(amount)
-    return format(amount, props.currency)
-}
 
 const rows = computed(() => [
     { label: t('profile.allTime'), value: props.stats.total },
@@ -50,12 +44,7 @@ const rows = computed(() => [
                 class="flex justify-between items-center py-2 text-sm"
             >
                 <span class="text-muted">{{ row.label }}</span>
-                <span
-                    class="font-semibold"
-                    :class="isIncome ? 'text-success' : 'text-error'"
-                >
-                    {{ fmt(row.value) }}
-                </span>
+                <MoneyAmount class="font-semibold" :class="isIncome ? 'text-success' : 'text-error'" :amount="row.value" :currency="currency" />
             </div>
         </div>
     </UCard>

@@ -22,12 +22,6 @@ vi.mock('@/api/wallets', () => ({
     getWalletsWithLimits: vi.fn(),
 }))
 
-vi.mock('@/composables/useMoneyFormatter', () => ({
-    useMoneyFormatter: () => ({
-        format: (amount: number) => amount.toFixed(2),
-    }),
-}))
-
 import { getLimits, copyLimits } from '@/api/limits'
 import { getWalletsWithLimits } from '@/api/wallets'
 
@@ -65,6 +59,7 @@ const mountOptions = {
             UDropdownMenu: true,
             WalletLimitItem: true,
             LimitForm: true,
+            MoneyAmount: true,
         },
     },
 }

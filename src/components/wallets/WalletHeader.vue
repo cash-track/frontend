@@ -6,10 +6,10 @@ import type { Wallet } from '@/api/models/wallet'
 import type { WalletTotal } from '@/api/models/wallet'
 import type { User } from '@/api/models/user'
 import { activateWallet, disableWallet, archiveWallet, unarchiveWallet, deleteWallet } from '@/api/wallets'
-import { useMoneyFormatter } from '@/composables/useMoneyFormatter'
 import { useAuthStore } from '@/stores/auth'
 import { useNotifications } from '@/composables/useNotifications'
 import ConfirmModal from '@/components/Shared/ConfirmModal.vue'
+import MoneyAmount from '@/components/Shared/MoneyAmount.vue'
 
 const props = defineProps<{
     wallet: Wallet
@@ -26,27 +26,8 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const router = useRouter()
-const { format } = useMoneyFormatter()
 const authStore = useAuthStore()
 const { notifyError } = useNotifications()
-
-const formattedTotal = computed(() =>
-    props.wallet.defaultCurrency && props.totals
-        ? format(props.totals.totalAmount, props.wallet.defaultCurrency)
-        : '',
-)
-
-const formattedIncome = computed(() =>
-    props.wallet.defaultCurrency && props.totals
-        ? format(props.totals.totalIncomeAmount, props.wallet.defaultCurrency)
-        : '',
-)
-
-const formattedExpense = computed(() =>
-    props.wallet.defaultCurrency && props.totals
-        ? format(props.totals.totalExpenseAmount, props.wallet.defaultCurrency)
-        : '',
-)
 
 const actionItems = computed(() => [
     [
@@ -178,20 +159,22 @@ async function onDeleteConfirmed() {
         <div v-if="totals" class="flex flex-wrap justify-center items-end gap-8 mt-6 py-4">
             <div class="text-center">
                 <div class="text-sm text-muted">{{ t('wallets.available') }}</div>
-                <div class="text-3xl sm:text-4xl font-bold text-success">{{ formattedTotal }}</div>
+                <div class="text-3xl sm:text-4xl font-bold text-success">
+                    <MoneyAmount :amount="totals.totalAmount" :currency="wallet.defaultCurrency" />
+                </div>
             </div>
             <div class="text-center">
                 <div class="text-sm text-muted">{{ t('wallets.income') }}</div>
                 <div class="text-lg font-semibold text-primary flex items-center justify-center gap-1">
                     <UIcon name="i-lucide-arrow-up" class="size-4 hidden sm:inline" />
-                    {{ formattedIncome }}
+                    <MoneyAmount :amount="totals.totalIncomeAmount" :currency="wallet.defaultCurrency" />
                 </div>
             </div>
             <div class="text-center">
                 <div class="text-sm text-muted">{{ t('wallets.expense') }}</div>
                 <div class="text-lg font-semibold text-error flex items-center justify-center gap-1">
                     <UIcon name="i-lucide-arrow-down" class="size-4 hidden sm:inline" />
-                    {{ formattedExpense }}
+                    <MoneyAmount :amount="totals.totalExpenseAmount" :currency="wallet.defaultCurrency" />
                 </div>
             </div>
         </div>

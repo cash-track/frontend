@@ -3,13 +3,12 @@ import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useWalletsStore } from '@/stores/wallets'
-import { useMoneyFormatter } from '@/composables/useMoneyFormatter'
 import type { WalletShort } from '@/api/models/wallet'
+import MoneyAmount from '@/components/Shared/MoneyAmount.vue'
 
 const router = useRouter()
 const walletsStore = useWalletsStore()
 const { activeWallets, loading, failed } = storeToRefs(walletsStore)
-const { format } = useMoneyFormatter()
 
 const wallets = computed(() => activeWallets.value.filter(w => w.isActive))
 
@@ -37,9 +36,7 @@ onMounted(() => {
                 @click="navigate(wallet)"
             >
                 <span class="max-w-[200px] truncate font-medium">{{ wallet.name }}</span>
-                <span class="text-primary font-semibold">
-                    {{ wallet.defaultCurrency ? format(wallet.totalAmount, wallet.defaultCurrency) : wallet.totalAmount }}
-                </span>
+                <MoneyAmount class="text-primary font-semibold" :amount="wallet.totalAmount" :currency="wallet.defaultCurrency" />
             </button>
         </div>
     </div>

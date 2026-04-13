@@ -19,12 +19,11 @@ import ChargesFlowChart from '@/components/wallets/charges/ChargesFlowChart.vue'
 import ChargesTotalChart from '@/components/wallets/charges/ChargesTotalChart.vue'
 import WalletLimitsTotal from '@/components/wallets/limits/WalletLimitsTotal.vue'
 import WalletsActiveShortList from '@/components/wallets/WalletsActiveShortList.vue'
-import { useMoneyFormatter } from '@/composables/useMoneyFormatter'
+import MoneyAmount from '@/components/Shared/MoneyAmount.vue'
 
 const props = defineProps<{ walletID: string }>()
 
 const { t } = useI18n()
-const { format } = useMoneyFormatter()
 const router = useRouter()
 
 const wallet = shallowRef<Wallet | null>(null)
@@ -227,20 +226,9 @@ watch(() => props.walletID, () => {
             <!-- Tool buttons -->
             <div class="flex flex-wrap gap-2 mt-6 mb-4">
                 <UButton
-                    v-if="wallet.isActive"
                     variant="outline"
                     color="neutral"
-                    size="sm"
-                    icon="i-lucide-plus"
-                    :class="{ '!bg-elevated': showCreateForm }"
-                    @click="showCreateForm = !showCreateForm"
-                >
-                    {{ t('charges.new') }}
-                </UButton>
-                <UButton
-                    variant="outline"
-                    color="neutral"
-                    size="sm"
+                    size="md"
                     icon="i-lucide-tags"
                     :disabled="!walletTags.length"
                     :class="{ '!bg-elevated': showTags }"
@@ -251,7 +239,7 @@ watch(() => props.walletID, () => {
                 <UButton
                     variant="outline"
                     color="neutral"
-                    size="sm"
+                    size="md"
                     icon="i-lucide-sliders-horizontal"
                     :class="{ '!bg-elevated': showLimits }"
                     @click="showLimits = !showLimits"
@@ -261,7 +249,7 @@ watch(() => props.walletID, () => {
                 <UButton
                     variant="outline"
                     color="neutral"
-                    size="sm"
+                    size="md"
                     icon="i-lucide-bar-chart-3"
                     :class="{ '!bg-elevated': showGraph }"
                     @click="showGraph = !showGraph"
@@ -271,12 +259,23 @@ watch(() => props.walletID, () => {
                 <UButton
                     variant="outline"
                     color="neutral"
-                    size="sm"
+                    size="md"
                     icon="i-lucide-filter"
                     :class="{ '!bg-elevated': showFilters }"
                     @click="showFilters = !showFilters"
                 >
                     {{ t('wallets.filters') }}
+                </UButton>
+                <UButton
+                    v-if="wallet.isActive"
+                    variant="solid"
+                    color="primary"
+                    size="md"
+                    icon="i-lucide-plus"
+                    :class="{ '!bg-elevated': showCreateForm }"
+                    @click="showCreateForm = !showCreateForm"
+                >
+                    {{ t('charges.new') }}
                 </UButton>
             </div>
 
@@ -315,12 +314,12 @@ watch(() => props.walletID, () => {
                 >
                     <TagChip :tag="item.tag" :highlighted="true" :removable="true" @click="onTagToggle(item.tag)" />
                     <div class="flex gap-4 text-sm">
-                        <span v-if="item.hasIncome" class="text-success font-semibold">
-                            ↑ {{ format(item.totalIncomeAmount, wallet!.defaultCurrency!) }}
+                        <span v-if="item.hasIncome" class="font-semibold">
+                            ↑ <MoneyAmount class="text-success" :amount="item.totalIncomeAmount" :currency="wallet!.defaultCurrency" />
                             <span class="text-muted font-normal text-xs">/ {{ item.incomePercent }}%</span>
                         </span>
-                        <span v-if="item.hasExpense" class="text-error font-semibold">
-                            ↓ {{ format(item.totalExpenseAmount, wallet!.defaultCurrency!) }}
+                        <span v-if="item.hasExpense" class="font-semibold">
+                            ↓ <MoneyAmount class="text-error" :amount="item.totalExpenseAmount" :currency="wallet!.defaultCurrency" />
                             <span class="text-muted font-normal text-xs">/ {{ item.expensePercent }}%</span>
                         </span>
                     </div>
@@ -364,7 +363,7 @@ watch(() => props.walletID, () => {
             </div>
 
             <!-- Charges list -->
-            <div class="border border-default rounded-lg">
+            <div class="rounded-lg">
                 <ChargesList
                     ref="chargesListRef"
                     :wallet="wallet"

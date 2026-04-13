@@ -6,16 +6,15 @@ import type { WalletLimit } from '@/api/models/limit'
 import type { Limit } from '@/api/models/limit'
 import type { Wallet } from '@/api/models/wallet'
 import { getWalletsWithLimits } from '@/api/wallets'
-import { useMoneyFormatter } from '@/composables/useMoneyFormatter'
 import WalletLimitItem from './WalletLimitItem.vue'
 import LimitForm from './LimitForm.vue'
+import MoneyAmount from '@/components/Shared/MoneyAmount.vue'
 
 const props = defineProps<{
     wallet: Wallet
 }>()
 
 const { t } = useI18n()
-const { format } = useMoneyFormatter()
 
 const limits = ref<WalletLimit[]>([])
 const loading = ref(false)
@@ -43,11 +42,6 @@ const copyDropdownItems = computed(() =>
         click: () => onCopyFrom(w),
     })),
 )
-
-function formatAmount(value: number): string {
-    if (!props.wallet.defaultCurrency) return String(value)
-    return format(value, props.wallet.defaultCurrency)
-}
 
 async function loadWalletsWithLimits() {
     try {
@@ -132,8 +126,8 @@ defineExpose({ reload: loadLimits, copyDropdownItems })
                     <span class="text-sm text-muted">{{ t('limits.total') }}</span>
                     <span class="text-red-500">
                         <UIcon name="i-lucide-arrow-down" class="hidden sm:inline-block" />
-                        {{ formatAmount(totalExpenseAmount) }}
-                        <span class="text-sm text-muted">/ {{ formatAmount(totalExpenseLimitAmount) }}</span>
+                        <MoneyAmount :amount="totalExpenseAmount" :currency="wallet.defaultCurrency" />
+                        <span class="text-sm text-muted">/ <MoneyAmount :amount="totalExpenseLimitAmount" :currency="wallet.defaultCurrency" /></span>
                     </span>
                 </div>
             </div>

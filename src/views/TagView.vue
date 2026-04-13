@@ -11,13 +11,12 @@ import TagChip from '@/components/tags/Tag.vue'
 import ChargesFilter from '@/components/wallets/charges/ChargesFilter.vue'
 import ChargeItem from '@/components/wallets/charges/ChargeItem.vue'
 import TagChargesFlowChart from '@/components/wallets/charges/TagChargesFlowChart.vue'
-import { useMoneyFormatter } from '@/composables/useMoneyFormatter'
 import WalletsActiveShortList from '@/components/wallets/WalletsActiveShortList.vue'
+import MoneyAmount from '@/components/Shared/MoneyAmount.vue'
 
 const props = defineProps<{ tagID: string }>()
 
 const { t } = useI18n()
-const { format } = useMoneyFormatter()
 const router = useRouter()
 
 const chartRef = useTemplateRef<InstanceType<typeof TagChargesFlowChart>>('chartRef')
@@ -137,8 +136,8 @@ onMounted(loadTag)
                     <UIcon name="i-lucide-arrow-up" class="size-5 text-success" />
                     <div>
                         <p class="text-xs text-muted uppercase tracking-wide">{{ t('wallets.income') }}</p>
-                        <p class="text-lg font-semibold text-success">
-                            {{ format(totals!.totalIncomeAmount, totals!.currency!) }}
+                        <p class="text-lg font-semibold">
+                            <MoneyAmount class="text-success" :amount="totals!.totalIncomeAmount" :currency="totals!.currency" />
                         </p>
                     </div>
                 </div>
@@ -146,8 +145,8 @@ onMounted(loadTag)
                     <UIcon name="i-lucide-arrow-down" class="size-5 text-error" />
                     <div>
                         <p class="text-xs text-muted uppercase tracking-wide">{{ t('wallets.expense') }}</p>
-                        <p class="text-lg font-semibold text-error">
-                            {{ format(totals!.totalExpenseAmount, totals!.currency!) }}
+                        <p class="text-lg font-semibold">
+                            <MoneyAmount class="text-error" :amount="totals!.totalExpenseAmount" :currency="totals!.currency" />
                         </p>
                     </div>
                 </div>
@@ -183,7 +182,7 @@ onMounted(loadTag)
             </div>
 
             <!-- Charges list -->
-            <div class="border border-default rounded-lg">
+            <div class="rounded-lg">
                 <ChargeItem
                     v-for="charge in charges"
                     :key="charge.id"

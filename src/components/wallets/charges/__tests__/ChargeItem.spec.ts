@@ -6,6 +6,7 @@ import { Charge } from '@/api/models/charge'
 import { Wallet } from '@/api/models/wallet'
 import { Currency } from '@/api/models/currency'
 import ChargeItem from '../ChargeItem.vue'
+import MoneyAmount from '@/components/Shared/MoneyAmount.vue'
 
 vi.mock('vue-i18n', () => ({
     useI18n: () => ({
@@ -106,13 +107,26 @@ describe('ChargeItem', () => {
         expect(wrapper.text()).toContain('Coffee break')
     })
 
-    it('renders formatted amount', () => {
-        const charge = makeCharge({ amount: 1234.56 })
+    it('passes amount to MoneyAmount and applies expense color class', () => {
+        const charge = makeCharge({ amount: 1234.56, operation: '-' })
         const wrapper = shallowMount(ChargeItem, {
             props: { charge, wallet: makeWallet() },
         })
 
-        expect(wrapper.text()).toContain('1,234.56')
+        const moneyAmount = wrapper.findComponent(MoneyAmount)
+        expect(moneyAmount.exists()).toBe(true)
+        expect(moneyAmount.props('amount')).toBe(1234.56)
+        expect(moneyAmount.attributes('class')).toContain('text-error')
+    })
+
+    it('applies income color class to MoneyAmount for income charge', () => {
+        const charge = makeCharge({ operation: '+' })
+        const wrapper = shallowMount(ChargeItem, {
+            props: { charge, wallet: makeWallet() },
+        })
+
+        const moneyAmount = wrapper.findComponent(MoneyAmount)
+        expect(moneyAmount.attributes('class')).toContain('text-success')
     })
 
     it('does not render dropdown when readOnly is true', () => {

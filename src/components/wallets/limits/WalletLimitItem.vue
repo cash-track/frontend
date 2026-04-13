@@ -5,10 +5,10 @@ import { deleteLimit } from '@/api/limits'
 import type { WalletLimit } from '@/api/models/limit'
 import type { Limit } from '@/api/models/limit'
 import type { Wallet } from '@/api/models/wallet'
-import { useMoneyFormatter } from '@/composables/useMoneyFormatter'
 import Tag from '@/components/tags/Tag.vue'
 import LimitForm from './LimitForm.vue'
 import ConfirmModal from '@/components/Shared/ConfirmModal.vue'
+import MoneyAmount from '@/components/Shared/MoneyAmount.vue'
 
 const props = defineProps<{
     walletLimit: WalletLimit
@@ -21,7 +21,6 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const { format } = useMoneyFormatter()
 
 const isEditing = ref(false)
 const deleteConfirmOpen = ref(false)
@@ -33,11 +32,6 @@ const isExceeded = computed(() => props.walletLimit.isExceeded)
 const barPercent = computed(() => Math.min(props.walletLimit.percentage, 100))
 const displayPercent = computed(() => props.walletLimit.percentage.toFixed(0))
 const showBarLabel = computed(() => props.walletLimit.percentage > 10)
-
-function formatAmount(value: number): string {
-    if (!props.wallet.defaultCurrency) return String(value)
-    return format(value, props.wallet.defaultCurrency)
-}
 
 const menuItems = computed(() => [
     [
@@ -98,8 +92,8 @@ function onEditCancelled() {
                         :name="isIncome ? 'i-lucide-arrow-up' : 'i-lucide-arrow-down'"
                         class="hidden sm:inline-block"
                     />
-                    {{ formatAmount(walletLimit.amount) }}
-                    <span class="text-sm text-muted">/ {{ formatAmount(walletLimit.limit.amount) }}</span>
+                    <MoneyAmount :amount="walletLimit.amount" :currency="wallet.defaultCurrency" />
+                    <span class="text-sm text-muted">/ <MoneyAmount :amount="walletLimit.limit.amount" :currency="wallet.defaultCurrency" /></span>
                 </span>
                 <UDropdownMenu :items="menuItems">
                     <UButton

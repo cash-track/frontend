@@ -3,14 +3,13 @@ import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { Charge } from '@/api/models/charge'
 import type { Wallet, WalletShort } from '@/api/models/wallet'
-import type { Currency } from '@/api/models/currency'
 import type { Tag as TagModel } from '@/api/models/tag'
 import { deleteCharge } from '@/api/charges'
-import { useMoneyFormatter } from '@/composables/useMoneyFormatter'
 import { useAuthStore } from '@/stores/auth'
 import ChargeEdit from './ChargeEdit.vue'
 import Tag from '@/components/tags/Tag.vue'
 import ConfirmModal from '@/components/Shared/ConfirmModal.vue'
+import MoneyAmount from '@/components/Shared/MoneyAmount.vue'
 
 const props = defineProps<{
     charge: Charge
@@ -29,19 +28,12 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const { format } = useMoneyFormatter()
 const authStore = useAuthStore()
 
 const isExpanded = ref(false)
 const isEdit = ref(false)
 const deleting = ref(false)
 const deleteConfirmOpen = ref(false)
-
-const currency = computed<Currency | null>(() => props.wallet.defaultCurrency)
-
-const formattedAmount = computed(() =>
-    currency.value ? format(props.charge.amount, currency.value) : props.charge.amount.toString(),
-)
 
 const fullDateTime = computed(() => {
     const d = props.charge.dateTime
@@ -108,7 +100,7 @@ const actionItems = computed(() => [
 
 <template>
     <div
-        class="group flex items-stretch border-b border-default transition-colors"
+        class="group flex items-stretch transition-colors"
         :class="[
             isExpanded || selected || isEdit ? 'bg-elevated' : 'hover:bg-muted',
             !isEdit ? 'cursor-pointer' : '',
@@ -141,22 +133,24 @@ const actionItems = computed(() => [
                 <!-- First row: amount + title + actions -->
                 <div class="flex items-start justify-between gap-2">
                     <div class="flex items-center gap-2 min-w-0">
-                        <span
+                        <MoneyAmount
                             class="font-bold whitespace-nowrap"
                             :class="charge.operation === '+' ? 'text-success' : 'text-error'"
-                        >{{ formattedAmount }}</span>
+                            :amount="charge.amount"
+                            :currency="wallet.defaultCurrency"
+                        />
                         <span class="truncate text-default" :class="{ 'whitespace-normal': isExpanded }">
                             {{ charge.title.trim() }}
                         </span>
                     </div>
 
-                    <div v-if="!readOnly" class="shrink-0" :class="{ 'invisible group-hover:visible': !selected && !isExpanded }" @click.stop>
-                        <UDropdownMenu :items="actionItems">
+                    <div v-if="!readOnly" class="shrink-0" :class="{ 'invisible active:visible group-hover:visible': !selected && !isExpanded }" @click.stop>
+                        <UDropdownMenu :items="actionItems" arrow size="md" :content="{align: 'end', side: 'bottom'}" modal>
                             <UButton
                                 icon="i-lucide-ellipsis-vertical"
                                 variant="ghost"
                                 color="neutral"
-                                size="xs"
+                                size="md"
                             />
                         </UDropdownMenu>
                     </div>

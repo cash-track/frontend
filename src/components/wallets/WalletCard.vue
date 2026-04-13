@@ -4,9 +4,9 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import type { Wallet } from '@/api/models/wallet'
 import type { User } from '@/api/models/user'
-import { useMoneyFormatter } from '@/composables/useMoneyFormatter'
 import { useTimeAgo } from '@/composables/useTimeAgo'
 import { useProfileStore } from '@/stores/profile'
+import MoneyAmount from '@/components/Shared/MoneyAmount.vue'
 
 const USERS_LIMIT = 4
 
@@ -14,7 +14,6 @@ const props = defineProps<{ wallet: Wallet }>()
 
 const { t } = useI18n()
 const router = useRouter()
-const { format } = useMoneyFormatter()
 const { timeAgo } = useTimeAgo()
 const profileStore = useProfileStore()
 
@@ -37,12 +36,6 @@ const members = computed<User[]>(() => {
 
 const hasOneMember = computed(() => props.wallet.users.length === 1)
 const hasMoreMembers = computed(() => props.wallet.users.length > USERS_LIMIT)
-
-const formattedBalance = computed(() =>
-    props.wallet.defaultCurrency
-        ? format(props.wallet.totalAmount, props.wallet.defaultCurrency)
-        : props.wallet.totalAmount.toString(),
-)
 
 const lastUpdated = computed(() => timeAgo(props.wallet.updatedAt))
 
@@ -79,9 +72,7 @@ function navigate() {
                 {{ wallet.defaultCurrency ? t(`currency.${wallet.defaultCurrency.code}`) : '' }}
                 <template v-if="wallet.defaultCurrency">({{ wallet.defaultCurrency.code }})</template>
             </span>
-            <span class="font-bold text-primary whitespace-nowrap ml-2">
-                {{ formattedBalance }}
-            </span>
+            <MoneyAmount class="font-bold text-primary whitespace-nowrap ml-2" :amount="wallet.totalAmount" :currency="wallet.defaultCurrency" />
         </div>
 
         <!-- Members + last updated -->
@@ -133,12 +124,11 @@ function navigate() {
                     />
                     <span class="truncate">{{ charge.title }}</span>
                 </span>
-                <span
-                    v-if="wallet.defaultCurrency"
+                <MoneyAmount
                     class="text-sm text-muted font-medium whitespace-nowrap ml-2"
-                >
-                    {{ format(charge.amount, wallet.defaultCurrency) }}
-                </span>
+                    :amount="charge.amount"
+                    :currency="wallet.defaultCurrency"
+                />
             </div>
         </div>
     </div>

@@ -75,11 +75,11 @@ describe('WalletCard', () => {
         expect(wrapper.text()).toContain('My Savings')
     })
 
-    it('renders formatted balance', () => {
+    it('renders formatted balance without fraction, char after, spaces for thousands', () => {
         const wallet = makeWallet({ totalAmount: 1234.56 })
         const wrapper = mount(WalletCard, { props: { wallet }, ...globalStubs })
-        // Intl.NumberFormat formats 1234.56 USD as "$1,234.56" in en locale
-        expect(wrapper.text()).toContain('1,234.56')
+        // 1234.56 rounds to 1 235 $ (NBSP as thousands sep and before char)
+        expect(wrapper.text()).toContain('1\u00A0235\u00A0$')
     })
 
     it('shows active badge when isActive is true', () => {
