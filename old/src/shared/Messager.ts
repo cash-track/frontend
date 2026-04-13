@@ -92,7 +92,7 @@ export default class Messager extends Vue {
     }
 
     protected onUnprocessableEntityResponse(
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+         
         response: ValidationResponseInterface
     ) {
         this.setMessage('One or more fields is not valid')
