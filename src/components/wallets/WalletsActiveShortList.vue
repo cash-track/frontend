@@ -26,7 +26,7 @@ onMounted(() => {
 <template>
     <div v-if="wallets.length" class="relative overflow-hidden mb-4">
         <!-- Right fade gradient -->
-        <div class="absolute right-0 top-0 bottom-0 w-12 z-10 pointer-events-none" style="background: linear-gradient(to right, transparent, var(--ui-bg))" />
+        <div class="absolute right-0 top-0 bottom-0 w-12 z-10 pointer-events-none bg-gradient-to-r from-transparent to-white dark:to-gray-700" />
         <!-- Scrollable row -->
         <div class="flex overflow-x-auto scrollbar-hide pr-12">
             <button

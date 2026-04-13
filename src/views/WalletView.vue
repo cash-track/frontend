@@ -272,7 +272,6 @@ watch(() => props.walletID, () => {
                     color="primary"
                     size="md"
                     icon="i-lucide-plus"
-                    :class="{ '!bg-elevated': showCreateForm }"
                     @click="showCreateForm = !showCreateForm"
                 >
                     {{ t('charges.new') }}

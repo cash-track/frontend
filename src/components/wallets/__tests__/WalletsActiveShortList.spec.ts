@@ -117,10 +117,10 @@ describe('WalletsActiveShortList', () => {
     it('renders gradient fade element at the right edge', () => {
         mockActiveWallets.value = [makeWallet(1, 'Wallet')]
         const wrapper = mountComponent()
-        // Gradient div is the absolute-positioned overlay using inline style
         const gradientDiv = wrapper.find('div.absolute')
         expect(gradientDiv.exists()).toBe(true)
-        expect(gradientDiv.attributes('style')).toContain('linear-gradient')
+        expect(gradientDiv.classes()).toContain('bg-gradient-to-r')
+        expect(gradientDiv.classes()).toContain('from-transparent')
     })
 
     it('shows total amount as string when no currency', () => {
