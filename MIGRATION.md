@@ -28,6 +28,16 @@ Cash-Track frontend is mid-migration. The new Vue 3 skeleton lives at `/frontend
 - Each sub-stage is sized to fit in one focused conversation session (~5–10 files of moderate complexity)
 - Do not start a sub-stage unless its prerequisite sub-stage testing checkpoint has passed
 - **Tooltips:** Replace all old `v-b-tooltip` / Bootstrap tooltip directives with `UTooltip` wrapper components from Nuxt UI. Wherever the old code used `v-b-tooltip` (member avatars, action buttons, time displays, counter items), the new component must use `<UTooltip :text="..." :arrow="true">` wrapping the trigger element. Always include `:arrow="true"` so the tooltip shows a directional pointer. Do not use native HTML `title` attribute as a substitute — use `UTooltip` for visual consistency.
+- **Per-section loading skeletons (required pattern):** Never use a single top-level `loading` boolean that gates the entire page. Instead, give each independently-loaded section its own `loading` ref (e.g. `loadingTag`, `loadingCharges`, `loadingTotals`), initialised to `true`. Show `USkeleton` placeholders shaped like the real content while that section loads; show real content when done. Sections that load concurrently fire their fetches without `await` so each resolves independently. The chart's built-in overlay counts as its own skeleton. Example structure:
+  ```vue
+  <!-- Section with skeleton -->
+  <template v-if="loadingFoo">
+    <USkeleton class="h-8 w-40 rounded-md" />
+  </template>
+  <template v-else-if="foo">
+    <!-- real content -->
+  </template>
+  ```
 
 ---
 

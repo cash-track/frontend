@@ -9,7 +9,7 @@ import { activateWallet, disableWallet, archiveWallet, unarchiveWallet, deleteWa
 import { useAuthStore } from '@/stores/auth'
 import { useNotifications } from '@/composables/useNotifications'
 import ConfirmModal from '@/components/Shared/ConfirmModal.vue'
-import MoneyAmount from '@/components/Shared/MoneyAmount.vue'
+import TotalsRow from '@/components/Shared/TotalsRow.vue'
 
 const props = defineProps<{
     wallet: Wallet
@@ -156,28 +156,13 @@ async function onDeleteConfirmed() {
         </div>
 
         <!-- Totals -->
-        <div v-if="totals" class="flex flex-wrap justify-center items-end gap-4 sm:gap-8 mt-6 py-4">
-            <div class="w-full sm:w-auto text-center sm:text-left">
-                <div class="text-sm text-muted">{{ t('wallets.available') }}</div>
-                <div class="text-4xl sm:text-5xl font-medium text-success">
-                    <MoneyAmount :amount="totals.totalAmount" :currency="wallet.defaultCurrency" />
-                </div>
-            </div>
-            <div class="text-center sm:text-left">
-                <div class="text-sm text-muted">{{ t('wallets.income') }}</div>
-                <div class="text-lg text-primary font-medium flex items-center justify-center gap-0 sm:gap-1">
-                    <UIcon name="i-lucide-arrow-up" class="size-4 hidden sm:inline" />
-                    <MoneyAmount :amount="totals.totalIncomeAmount" :currency="wallet.defaultCurrency" />
-                </div>
-            </div>
-            <div class="text-center sm:text-left">
-                <div class="text-sm text-muted">{{ t('wallets.expense') }}</div>
-                <div class="text-lg text-error font-medium flex items-center justify-center gap-0 sm:gap-1">
-                    <UIcon name="i-lucide-arrow-down" class="size-4 hidden sm:inline" />
-                    <MoneyAmount :amount="totals.totalExpenseAmount" :currency="wallet.defaultCurrency" />
-                </div>
-            </div>
-        </div>
+        <TotalsRow
+            v-if="totals"
+            :total-amount="totals.totalAmount"
+            :income-amount="totals.totalIncomeAmount"
+            :expense-amount="totals.totalExpenseAmount"
+            :currency="wallet.defaultCurrency"
+        />
         <ConfirmModal
             v-model:open="deleteConfirmOpen"
             :title="t('wallets.delete')"

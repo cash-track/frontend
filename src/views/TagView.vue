@@ -1,73 +1,90 @@
 <script setup lang="ts">
-import { ref, shallowRef, computed, onMounted, useTemplateRef } from 'vue'
+import { ref, shallowRef, onMounted, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
-import { getTagById, getTagCharges, getTagTotals } from '@/api/tags'
+import { getTagById, getTagCharges, getTagTotals, getCommonTags } from '@/api/tags'
 import type { Tag } from '@/api/models/tag'
 import type { Charge, ChargeTotal } from '@/api/models/charge'
 import type { Pagination } from '@/api/models/pagination'
 import type { FilterState } from '@/components/wallets/charges/ChargesFilter.vue'
 import TagChip from '@/components/tags/Tag.vue'
+import TotalsRow from '@/components/Shared/TotalsRow.vue'
 import ChargesFilter from '@/components/wallets/charges/ChargesFilter.vue'
 import ChargeItem from '@/components/wallets/charges/ChargeItem.vue'
 import TagChargesFlowChart from '@/components/wallets/charges/TagChargesFlowChart.vue'
 import WalletsActiveShortList from '@/components/wallets/WalletsActiveShortList.vue'
-import MoneyAmount from '@/components/Shared/MoneyAmount.vue'
 
 const props = defineProps<{ tagID: string }>()
 
 const { t } = useI18n()
-const router = useRouter()
 
 const chartRef = useTemplateRef<InstanceType<typeof TagChargesFlowChart>>('chartRef')
 
+const selectedTagId = ref(parseInt(props.tagID, 10))
+
 const tag = shallowRef<Tag | null>(null)
+const commonTags = shallowRef<Tag[]>([])
 const totals = shallowRef<ChargeTotal | null>(null)
 const charges = ref<Charge[]>([])
 const pagination = ref<Pagination | null>(null)
-const loading = ref(false)
+const loadingTag = ref(true)
+const loadingTotals = ref(true)
+const loadingCharges = ref(true)
+const loadingCommonTags = ref(true)
 const loadingMore = ref(false)
-const error = ref<string | null>(null)
+const errorTag = ref<string | null>(null)
 const currentPage = ref(1)
 const filter = ref<FilterState>({ dateFrom: '', dateTo: '' })
 const showFilters = ref(false)
 
-const tagId = computed(() => parseInt(props.tagID, 10))
-
-const hasIncome = computed(() => (totals.value?.totalIncomeAmount ?? 0) > 0)
-const hasExpense = computed(() => (totals.value?.totalExpenseAmount ?? 0) > 0)
-const hasTotals = computed(() => totals.value?.currency != null && (hasIncome.value || hasExpense.value))
 
 async function loadTag() {
-    loading.value = true
-    error.value = null
+    loadingTag.value = true
+    errorTag.value = null
     try {
-        tag.value = await getTagById(tagId.value)
-        await Promise.all([loadTotals(), loadCharges(1)])
+        tag.value = await getTagById(selectedTagId.value)
+        loadTotals()
+        loadCharges(1)
     } catch {
-        error.value = t('tags.statsLoadingError')
+        errorTag.value = t('tags.statsLoadingError')
+        loadingTotals.value = false
+        loadingCharges.value = false
     } finally {
-        loading.value = false
+        loadingTag.value = false
     }
 }
 
 async function loadTotals() {
+    loadingTotals.value = true
     try {
-        totals.value = await getTagTotals(tagId.value)
+        totals.value = await getTagTotals(selectedTagId.value, {
+            'date-from': filter.value.dateFrom || undefined,
+            'date-to': filter.value.dateTo || undefined,
+        })
     } catch {
         // Non-fatal — just don't show totals
+    } finally {
+        loadingTotals.value = false
     }
 }
 
 async function loadCharges(page: number) {
-    const res = await getTagCharges(tagId.value, page)
-    if (page === 1) {
-        charges.value = res.data
-    } else {
-        charges.value = [...charges.value, ...res.data]
+    if (page === 1) loadingCharges.value = true
+    try {
+        const res = await getTagCharges(selectedTagId.value, {
+            page,
+            'date-from': filter.value.dateFrom || undefined,
+            'date-to': filter.value.dateTo || undefined,
+        })
+        if (page === 1) {
+            charges.value = res.data
+        } else {
+            charges.value = [...charges.value, ...res.data]
+        }
+        pagination.value = res.pagination
+        currentPage.value = page
+    } finally {
+        if (page === 1) loadingCharges.value = false
     }
-    pagination.value = res.pagination
-    currentPage.value = page
 }
 
 async function loadMore() {
@@ -80,10 +97,25 @@ async function loadMore() {
     }
 }
 
+async function selectTag(id: number) {
+    if (id === selectedTagId.value) return
+    selectedTagId.value = id
+    tag.value = null
+    totals.value = null
+    charges.value = []
+    pagination.value = null
+    currentPage.value = 1
+    loadingTotals.value = true
+    loadingCharges.value = true
+    await loadTag()
+}
+
 function onFilterChange(f: FilterState) {
     filter.value = f
+    loadTotals()
     loadCharges(1).catch(() => {})
-    chartRef.value?.reload()
+    // Chart reloads via its own watch(() => props.filter) after parent re-renders and propagates the new prop.
+    // Calling chartRef.reload() here would run before the prop update and use the stale filter.
 }
 
 async function onChargeUpdated(charge: Charge) {
@@ -99,90 +131,109 @@ async function onChargeDeleted(chargeId: string) {
     chartRef.value?.reload()
 }
 
-function onTagSelected(selectedTagId: number) {
-    router.push({ name: 'tags.show', params: { tagID: selectedTagId.toString() } })
-}
-
-onMounted(loadTag)
+onMounted(() => {
+    getCommonTags()
+        .then(tags => { commonTags.value = tags })
+        .catch(() => {})
+        .finally(() => { loadingCommonTags.value = false })
+    loadTag()
+})
 </script>
 
 <template>
     <div class="space-y-6">
-        <!-- Loading -->
-        <div v-if="loading" class="flex justify-center py-12">
-            <UIcon name="i-lucide-loader-circle" class="size-8 animate-spin text-muted" />
+        <WalletsActiveShortList />
+
+        <!-- Tag header -->
+        <div class="flex items-center gap-3">
+            <template v-if="loadingTag">
+                <USkeleton class="h-7 w-20 rounded-full" />
+                <USkeleton class="h-8 w-40 rounded-md" />
+            </template>
+            <template v-else-if="tag">
+                <TagChip :tag="tag" class="text-base" />
+                <h1 class="text-2xl font-semibold">{{ t('tags.stats') }}</h1>
+            </template>
         </div>
 
-        <!-- Error -->
+        <USeparator />
+
+        <!-- Common tags navigation -->
+        <div class="flex flex-wrap gap-2">
+            <template v-if="loadingCommonTags">
+                <USkeleton v-for="i in 6" :key="i" class="h-7 w-16 rounded-full" />
+            </template>
+            <template v-else-if="commonTags.length > 0">
+                <TagChip
+                    v-for="commonTag in commonTags"
+                    :key="commonTag.id"
+                    :tag="commonTag"
+                    :highlighted="commonTag.id === selectedTagId"
+                    @click="selectTag(commonTag.id)"
+                />
+            </template>
+        </div>
+
+        <!-- Tag load error -->
         <UAlert
-            v-else-if="error"
+            v-if="errorTag"
             color="error"
-            :description="error"
+            :description="errorTag"
             icon="i-lucide-alert-circle"
         />
 
-        <template v-else-if="tag">
-            <WalletsActiveShortList />
+        <USeparator />
 
-            <!-- Tag header -->
-            <div class="flex items-center gap-3">
-                <TagChip :tag="tag" class="text-base" />
-                <h1 class="text-2xl font-semibold">{{ t('tags.stats') }}</h1>
-            </div>
+        <!-- Totals -->
+        <TotalsRow
+            :loading="loadingTotals"
+            :income-amount="totals?.totalIncomeAmount"
+            :expense-amount="totals?.totalExpenseAmount"
+            :currency="totals?.currency"
+        />
 
-            <!-- Totals -->
-            <div v-if="hasTotals" class="flex flex-wrap gap-6">
-                <div v-if="hasIncome" class="flex items-center gap-2">
-                    <UIcon name="i-lucide-arrow-up" class="size-5 text-success" />
-                    <div>
-                        <p class="text-xs text-muted uppercase tracking-wide">{{ t('wallets.income') }}</p>
-                        <p class="text-lg font-semibold">
-                            <MoneyAmount class="text-success" :amount="totals!.totalIncomeAmount" :currency="totals!.currency" />
-                        </p>
+        <!-- Chart (manages its own loading overlay) -->
+        <div class="border border-default rounded-lg p-4">
+            <TagChargesFlowChart
+                ref="chartRef"
+                :tag-id="selectedTagId"
+                :currency="totals?.currency ?? null"
+                :filter="filter"
+            />
+        </div>
+
+        <!-- Filter toggle -->
+        <div class="flex gap-2">
+            <UButton
+                variant="outline"
+                color="neutral"
+                size="md"
+                icon="i-lucide-filter"
+                :class="{ '!bg-elevated': showFilters }"
+                @click="showFilters = !showFilters"
+            >
+                {{ t('wallets.filters') }}
+            </UButton>
+        </div>
+
+        <!-- Filters -->
+        <div v-if="showFilters" class="border border-default rounded-lg p-4">
+            <ChargesFilter @filter-change="onFilterChange" />
+        </div>
+
+        <!-- Charges list -->
+        <div class="rounded-lg">
+            <template v-if="loadingCharges">
+                <div v-for="i in 5" :key="i" class="flex items-center gap-3 px-4 py-3 border-b border-default last:border-b-0">
+                    <USkeleton class="size-8 rounded-full shrink-0" />
+                    <div class="flex-1 space-y-1.5">
+                        <USkeleton class="h-4 w-1/3 rounded" />
+                        <USkeleton class="h-3 w-1/4 rounded" />
                     </div>
+                    <USkeleton class="h-5 w-20 rounded" />
                 </div>
-                <div v-if="hasExpense" class="flex items-center gap-2">
-                    <UIcon name="i-lucide-arrow-down" class="size-5 text-error" />
-                    <div>
-                        <p class="text-xs text-muted uppercase tracking-wide">{{ t('wallets.expense') }}</p>
-                        <p class="text-lg font-semibold">
-                            <MoneyAmount class="text-error" :amount="totals!.totalExpenseAmount" :currency="totals!.currency" />
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Chart -->
-            <div class="border border-default rounded-lg p-4">
-                <TagChargesFlowChart
-                    ref="chartRef"
-                    :tag-id="tagId"
-                    :currency="totals?.currency ?? null"
-                    :filter="filter"
-                />
-            </div>
-
-            <!-- Filter toggle -->
-            <div class="flex gap-2">
-                <UButton
-                    variant="outline"
-                    color="neutral"
-                    size="sm"
-                    icon="i-lucide-filter"
-                    :class="{ '!bg-elevated': showFilters }"
-                    @click="showFilters = !showFilters"
-                >
-                    {{ t('wallets.filters') }}
-                </UButton>
-            </div>
-
-            <!-- Filters -->
-            <div v-if="showFilters" class="border border-default rounded-lg p-4">
-                <ChargesFilter @filter-change="onFilterChange" />
-            </div>
-
-            <!-- Charges list -->
-            <div class="rounded-lg">
+            </template>
+            <template v-else>
                 <ChargeItem
                     v-for="charge in charges"
                     :key="charge.id"
@@ -190,27 +241,25 @@ onMounted(loadTag)
                     :wallet="charge.wallet!"
                     @updated="onChargeUpdated"
                     @deleted="onChargeDeleted"
-                    @tag-selected="onTagSelected"
+                    @tag-selected="selectTag"
                 />
-
-                <!-- Empty state -->
-                <div v-if="charges.length === 0 && !loading" class="flex flex-col items-center justify-center py-12 text-muted">
+                <div v-if="charges.length === 0" class="flex flex-col items-center justify-center py-12 text-muted">
                     <UIcon name="i-lucide-receipt" class="size-10 mb-2 opacity-30" />
                     <p class="text-sm">{{ t('charges.empty') }}</p>
                 </div>
-            </div>
+            </template>
+        </div>
 
-            <!-- Load more -->
-            <div v-if="pagination && currentPage < pagination.totalPages" class="flex justify-center">
-                <UButton
-                    variant="outline"
-                    color="neutral"
-                    :loading="loadingMore"
-                    @click="loadMore"
-                >
-                    {{ t('charges.loadingMore') }}
-                </UButton>
-            </div>
-        </template>
+        <!-- Load more -->
+        <div v-if="pagination && currentPage < pagination.totalPages" class="flex justify-center">
+            <UButton
+                variant="outline"
+                color="neutral"
+                :loading="loadingMore"
+                @click="loadMore"
+            >
+                {{ t('charges.loadingMore') }}
+            </UButton>
+        </div>
     </div>
 </template>

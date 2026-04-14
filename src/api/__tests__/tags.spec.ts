@@ -90,7 +90,7 @@ describe('getTagCharges', () => {
     it('calls GET /api/tags/{id}/charges with page param and returns paginated Charge[]', async () => {
         mockAxios.get = vi.fn().mockResolvedValue({ data: { data: [rawCharge], pagination: rawPagination } })
 
-        const result = await getTagCharges(3, 2)
+        const result = await getTagCharges(3, { page: 2 })
 
         expect(mockAxios.get).toHaveBeenCalledWith('/api/tags/3/charges', { params: { page: 2 } })
         expect(result.data[0]).toBeInstanceOf(Charge)
@@ -109,7 +109,7 @@ describe('getTagCharges', () => {
     it('includes limit param when provided', async () => {
         mockAxios.get = vi.fn().mockResolvedValue({ data: { data: [], pagination: rawPagination } })
 
-        await getTagCharges(3, 1, 10)
+        await getTagCharges(3, { page: 1, limit: 10 })
 
         expect(mockAxios.get).toHaveBeenCalledWith('/api/tags/3/charges', { params: { page: 1, limit: 10 } })
     })
@@ -125,7 +125,7 @@ describe('getTagTotals', () => {
 
         const result = await getTagTotals(3)
 
-        expect(mockAxios.get).toHaveBeenCalledWith('/api/tags/3/charges/total')
+        expect(mockAxios.get).toHaveBeenCalledWith('/api/tags/3/charges/total', { params: {} })
         expect(result).toBeInstanceOf(ChargeTotal)
         expect(result.totalAmount).toBe(100)
         expect(result.totalIncomeAmount).toBe(150)

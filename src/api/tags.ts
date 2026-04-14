@@ -51,11 +51,20 @@ export async function deleteTag(tagId: number): Promise<void> {
     })
 }
 
-export async function getTagCharges(tagId: number, page = 1, limit?: number): Promise<PaginatedResponse<Charge>> {
+export interface TagChargesParams {
+    page?: number
+    limit?: number
+    'date-from'?: string
+    'date-to'?: string
+}
+
+export async function getTagCharges(tagId: number, params: TagChargesParams = {}): Promise<PaginatedResponse<Charge>> {
     return apiCall(async client => {
-        const params: Record<string, unknown> = { page }
-        if (limit !== undefined) params.limit = limit
-        const res = await client.get(`/api/tags/${tagId}/charges`, { params })
+        const query: Record<string, unknown> = { page: params.page ?? 1 }
+        if (params.limit !== undefined) query.limit = params.limit
+        if (params['date-from']) query['date-from'] = params['date-from']
+        if (params['date-to']) query['date-to'] = params['date-to']
+        const res = await client.get(`/api/tags/${tagId}/charges`, { params: query })
         return {
             data: (res.data.data as unknown[]).map(Charge.from),
             pagination: Pagination.from(res.data.pagination),
@@ -63,9 +72,17 @@ export async function getTagCharges(tagId: number, page = 1, limit?: number): Pr
     })
 }
 
-export async function getTagTotals(tagId: number): Promise<ChargeTotal> {
+export interface TagTotalsParams {
+    'date-from'?: string
+    'date-to'?: string
+}
+
+export async function getTagTotals(tagId: number, params: TagTotalsParams = {}): Promise<ChargeTotal> {
     return apiCall(async client => {
-        const res = await client.get(`/api/tags/${tagId}/charges/total`)
+        const query: Record<string, unknown> = {}
+        if (params['date-from']) query['date-from'] = params['date-from']
+        if (params['date-to']) query['date-to'] = params['date-to']
+        const res = await client.get(`/api/tags/${tagId}/charges/total`, { params: query })
         return ChargeTotal.from(res.data.data)
     })
 }

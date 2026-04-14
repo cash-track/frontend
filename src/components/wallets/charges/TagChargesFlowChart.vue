@@ -105,6 +105,7 @@ async function loadData() {
 }
 
 watch(groupBy, () => loadData())
+watch(() => props.tagId, () => loadData())
 watch(() => props.filter, () => loadData(), { deep: true })
 onMounted(() => loadData())
 
