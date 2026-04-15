@@ -73,8 +73,11 @@ async function refreshTotals() {
     if (!wallet.value) return
     if (wallet.value.id !== Number(props.walletID)) return
     try {
-        const params = tagFilterString.value ? { tags: tagFilterString.value } : undefined
-        totals.value = await getWalletTotals(wallet.value.id, params)
+        const params: { tags?: string; 'date-from'?: string; 'date-to'?: string } = {}
+        if (tagFilterString.value) params.tags = tagFilterString.value
+        if (filter.value.dateFrom) params['date-from'] = filter.value.dateFrom
+        if (filter.value.dateTo) params['date-to'] = filter.value.dateTo
+        totals.value = await getWalletTotals(wallet.value.id, Object.keys(params).length ? params : undefined)
     } catch {
         // Silently fail
     }
@@ -121,6 +124,11 @@ function onWalletChanged() {
 
 function onFilterChange(f: FilterState) {
     filter.value = f
+    refreshTotals()
+    if (showGraph.value) {
+        flowChartRef.value?.reload()
+        totalChartRef.value?.reload()
+    }
 }
 
 const tagFilterString = computed(() =>
@@ -344,6 +352,8 @@ watch(() => props.walletID, () => {
                         :wallet-id="wallet.id"
                         :currency="wallet.defaultCurrency"
                         :tags="selectedTags"
+                        :date-from="filter.dateFrom || undefined"
+                        :date-to="filter.dateTo || undefined"
                     />
                 </div>
                 <div class="border border-default rounded-lg p-4">
@@ -352,6 +362,8 @@ watch(() => props.walletID, () => {
                         :wallet-id="wallet.id"
                         :currency="wallet.defaultCurrency"
                         :wallet-tags="walletTags"
+                        :date-from="filter.dateFrom || undefined"
+                        :date-to="filter.dateTo || undefined"
                     />
                 </div>
             </div>

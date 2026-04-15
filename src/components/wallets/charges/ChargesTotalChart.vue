@@ -23,6 +23,8 @@ const props = defineProps<{
     walletId: number
     currency: Currency | null
     walletTags?: Tag[]
+    dateFrom?: string
+    dateTo?: string
 }>()
 
 const { t } = useI18n()
@@ -154,9 +156,13 @@ async function loadData() {
     loading.value = true
     error.value = null
     try {
+        const dateParams = {
+            ...(props.dateFrom ? { 'date-from': props.dateFrom } : {}),
+            ...(props.dateTo ? { 'date-to': props.dateTo } : {}),
+        }
         const [expenseResult, incomeResult, resolvedTags] = await Promise.all([
-            getChargesTotalByType(props.walletId, { 'charge-type': 'expense' }),
-            getChargesTotalByType(props.walletId, { 'charge-type': 'income' }),
+            getChargesTotalByType(props.walletId, { 'charge-type': 'expense', ...dateParams }),
+            getChargesTotalByType(props.walletId, { 'charge-type': 'income', ...dateParams }),
             props.walletTags !== undefined ? Promise.resolve(props.walletTags) : getWalletTags(props.walletId),
         ])
         expenseData.value = expenseResult
@@ -173,6 +179,7 @@ async function loadData() {
 watch(() => props.walletTags, (t) => {
     if (t !== undefined) tags.value = t
 }, { deep: true })
+watch(() => [props.dateFrom, props.dateTo], () => loadData())
 
 onMounted(() => loadData())
 

@@ -79,6 +79,8 @@ async function onDeleteConfirmed() {
     }
 }
 
+const isDropdownOpen = ref(false)
+
 const actionItems = computed(() => [
     [
         {
@@ -144,13 +146,14 @@ const actionItems = computed(() => [
                         </span>
                     </div>
 
-                    <div v-if="!readOnly" class="shrink-0" :class="{ 'invisible active:visible group-hover:visible': !selected && !isExpanded }" @click.stop>
-                        <UDropdownMenu :items="actionItems" arrow size="md" :content="{align: 'end', side: 'bottom'}" modal>
+                    <div v-if="!readOnly" class="shrink-0" :class="{ 'invisible active:visible group-hover:visible': !selected && !isExpanded && !isDropdownOpen }" @click.stop>
+                        <UDropdownMenu v-model:open="isDropdownOpen" :items="actionItems" arrow size="md" :content="{align: 'end', side: 'bottom'}" modal>
                             <UButton
                                 icon="i-lucide-ellipsis-vertical"
                                 variant="ghost"
                                 color="neutral"
                                 size="md"
+                                :class="{ 'bg-elevated': isDropdownOpen }"
                             />
                         </UDropdownMenu>
                     </div>

@@ -25,6 +25,8 @@ const props = defineProps<{
     walletId: number
     currency: Currency | null
     tags?: Tag[]
+    dateFrom?: string
+    dateTo?: string
 }>()
 
 const { t } = useI18n()
@@ -137,6 +139,8 @@ async function loadData() {
         if (props.tags?.length) {
             params.tags = props.tags.map(t => t.id).join(',')
         }
+        if (props.dateFrom) params['date-from'] = props.dateFrom
+        if (props.dateTo) params['date-to'] = props.dateTo
         dataPoints.value = await getChargesFlowByDate(props.walletId, params)
         hasLoaded.value = true
     } catch {
@@ -148,6 +152,7 @@ async function loadData() {
 
 watch(groupBy, () => loadData())
 watch(() => props.tags, () => loadData(), { deep: true })
+watch(() => [props.dateFrom, props.dateTo], () => loadData())
 onMounted(() => loadData())
 
 defineExpose({ reload: loadData })
