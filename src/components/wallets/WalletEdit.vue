@@ -22,7 +22,6 @@ const { notifySuccess } = useNotifications()
 const form = reactive({
     name: props.wallet.name,
     defaultCurrencyCode: props.wallet.defaultCurrencyCode ?? '',
-    isPublic: props.wallet.isPublic,
 })
 
 const currencies = shallowRef<Currency[]>([])
@@ -37,7 +36,6 @@ const currencyOptions = computed(() =>
 watch(() => props.wallet, (wallet) => {
     form.name = wallet.name
     form.defaultCurrencyCode = wallet.defaultCurrencyCode ?? ''
-    form.isPublic = wallet.isPublic
 })
 
 onMounted(async () => {
@@ -54,7 +52,6 @@ async function onSubmit() {
     try {
         await updateWallet(props.wallet.id, {
             name: form.name,
-            isPublic: form.isPublic,
             defaultCurrencyCode: form.defaultCurrencyCode,
         })
         await walletsStore.loadActive()
@@ -119,10 +116,6 @@ async function onDelete() {
                     :disabled="loading"
                     class="w-full"
                 />
-            </UFormField>
-
-            <UFormField :label="t('wallets.formIsPublic')">
-                <USwitch v-model="form.isPublic" :disabled="loading" />
             </UFormField>
 
             <UAlert

@@ -11,7 +11,7 @@ export interface CreateWalletRequest {
 
 export interface UpdateWalletRequest {
     name: string
-    isPublic: boolean
+    isPublic?: boolean
     defaultCurrencyCode: string
 }
 

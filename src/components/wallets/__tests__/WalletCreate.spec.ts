@@ -81,7 +81,7 @@ describe('WalletCreate', () => {
 
         const wrapper = mount(WalletCreate, globalStubs)
 
-        const vm = wrapper.vm as unknown as { form: { name: string; defaultCurrencyCode: string; isPublic: boolean }; onSubmit: () => Promise<void> }
+        const vm = wrapper.vm as unknown as { form: { name: string; defaultCurrencyCode: string }; onSubmit: () => Promise<void> }
         vm.form.name = 'Test Wallet'
         vm.form.defaultCurrencyCode = 'USD'
         await wrapper.vm.$nextTick()
@@ -91,7 +91,6 @@ describe('WalletCreate', () => {
         expect(mockCreateWallet).toHaveBeenCalledWith(
             expect.objectContaining({
                 name: 'Test Wallet',
-                isPublic: false,
                 defaultCurrencyCode: 'USD',
             }),
         )

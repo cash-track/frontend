@@ -20,7 +20,6 @@ const { notifySuccess } = useNotifications()
 const form = reactive({
     name: '',
     defaultCurrencyCode: profileStore.profile?.defaultCurrencyCode ?? '',
-    isPublic: false,
 })
 
 const currencies = shallowRef<Currency[]>([])
@@ -52,7 +51,6 @@ async function onSubmit() {
         const wallet = await createWallet({
             name: form.name,
             slug: makeSlug(form.name),
-            isPublic: form.isPublic,
             defaultCurrencyCode: form.defaultCurrencyCode,
         })
         await walletsStore.loadActive()
@@ -94,10 +92,6 @@ async function onSubmit() {
                     :disabled="loading"
                     class="w-full"
                 />
-            </UFormField>
-
-            <UFormField :label="t('wallets.formIsPublic')">
-                <USwitch v-model="form.isPublic" :disabled="loading" />
             </UFormField>
 
             <UAlert
