@@ -101,6 +101,7 @@ async function onDelete() {
                     :disabled="loading"
                     :placeholder="t('wallets.formName')"
                     class="w-full"
+                    size="lg"
                 />
             </UFormField>
 
@@ -115,6 +116,7 @@ async function onDelete() {
                     :items="currencyOptions"
                     :disabled="loading"
                     class="w-full"
+                    size="lg"
                 />
             </UFormField>
 

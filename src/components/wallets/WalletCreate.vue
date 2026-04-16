@@ -77,6 +77,7 @@ async function onSubmit() {
                     :disabled="loading"
                     :placeholder="t('wallets.formName')"
                     class="w-full"
+                    size="lg"
                 />
             </UFormField>
 
@@ -91,6 +92,7 @@ async function onSubmit() {
                     :items="currencyOptions"
                     :disabled="loading"
                     class="w-full"
+                    size="lg"
                 />
             </UFormField>
 
