@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { Charge } from '@/api/models/charge'
 import type { Wallet, WalletShort } from '@/api/models/wallet'
@@ -80,6 +80,17 @@ async function onDeleteConfirmed() {
 }
 
 const isDropdownOpen = ref(false)
+const dropdownMounted = ref(false)
+const confirmMounted = ref(false)
+
+function preloadDropdown() {
+    dropdownMounted.value = true
+}
+
+function openDropdown() {
+    dropdownMounted.value = true
+    nextTick(() => { isDropdownOpen.value = true })
+}
 
 const actionItems = computed(() => [
     [
@@ -94,7 +105,7 @@ const actionItems = computed(() => [
             icon: 'i-lucide-trash-2',
             color: 'error' as const,
             disabled: !authStore.isEmailConfirmed || deleting.value,
-            onSelect: () => { deleteConfirmOpen.value = true },
+            onSelect: () => { confirmMounted.value = true; deleteConfirmOpen.value = true },
         },
     ],
 ])
@@ -146,8 +157,8 @@ const actionItems = computed(() => [
                         </span>
                     </div>
 
-                    <div v-if="!readOnly" class="shrink-0" :class="{ 'invisible active:visible group-hover:visible': !selected && !isExpanded && !isDropdownOpen }" @click.stop>
-                        <UDropdownMenu v-model:open="isDropdownOpen" :items="actionItems" arrow size="md" :content="{align: 'end', side: 'bottom'}" modal>
+                    <div v-if="!readOnly" class="shrink-0" :class="{ 'invisible active:visible group-hover:visible': !selected && !isExpanded && !isDropdownOpen }" @click.stop @pointerenter.once="preloadDropdown">
+                        <UDropdownMenu v-if="dropdownMounted" v-model:open="isDropdownOpen" :items="actionItems" arrow size="md" :content="{align: 'end', side: 'bottom'}" modal>
                             <UButton
                                 icon="i-lucide-ellipsis-vertical"
                                 variant="ghost"
@@ -156,6 +167,15 @@ const actionItems = computed(() => [
                                 :class="{ 'bg-elevated': isDropdownOpen }"
                             />
                         </UDropdownMenu>
+                        <UButton
+                            v-else
+                            icon="i-lucide-ellipsis-vertical"
+                            variant="ghost"
+                            color="neutral"
+                            size="md"
+                            class="cursor-pointer"
+                            @click="openDropdown"
+                        />
                     </div>
                 </div>
 
@@ -197,6 +217,7 @@ const actionItems = computed(() => [
             />
         </div>
         <ConfirmModal
+            v-if="confirmMounted"
             v-model:open="deleteConfirmOpen"
             :title="t('charges.delete')"
             :description="t('charges.deletingConfirm')"

@@ -73,7 +73,7 @@ function mountComponent(wallet = makeWallet()) {
 
 // Helper to access component's exposed copyDropdownItems
 function getCopyItems(wrapper: ReturnType<typeof mountComponent>) {
-    return (wrapper.vm as unknown as { copyDropdownItems: Array<{ label: string; click: () => void }> }).copyDropdownItems
+    return (wrapper.vm as unknown as { copyDropdownItems: Array<{ label: string; onSelect: () => void }> }).copyDropdownItems
 }
 
 describe('WalletLimitsTotal', () => {
@@ -141,7 +141,7 @@ describe('WalletLimitsTotal', () => {
         await flushPromises()
         expect(wrapper.text()).toContain('limits.copyFrom')
 
-        getCopyItems(wrapper)[0].click()
+        getCopyItems(wrapper)[0].onSelect()
         await flushPromises()
 
         expect(vi.mocked(copyLimits)).toHaveBeenCalledWith(1, 2)

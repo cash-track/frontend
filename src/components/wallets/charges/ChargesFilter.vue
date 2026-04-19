@@ -49,16 +49,16 @@ watch(dateTo, emitChange)
     <div class="flex flex-col sm:flex-row gap-3 items-start">
         <!-- Active filter badges -->
         <div class="flex flex-wrap gap-2 items-center sm:w-1/3">
-            <UBadge v-if="dateFrom" color="primary" variant="subtle" class="gap-1">
+            <UBadge v-if="dateFrom" color="secondary" variant="soft" class="gap-1 overflow-hidden" size="lg">
                 {{ t('charges.filterFrom') }}: {{ toDateString(dateFrom) }}
-                <button type="button" class="hover:opacity-70 cursor-pointer" @click="resetDateFrom">
-                    <UIcon name="i-lucide-x" class="size-3" />
+                <button type="button" class="hover:bg-secondary/20 dark:hover:bg-secondary/20 inline-block h-fit w-fit -my-1.5 p-1.5 -mr-2 cursor-pointer" @click="resetDateFrom">
+                    <UIcon name="i-lucide-x" class="size-4" />
                 </button>
             </UBadge>
-            <UBadge v-if="dateTo" color="primary" variant="subtle" class="gap-1">
+            <UBadge v-if="dateTo" color="secondary" variant="soft" class="gap-1 overflow-hidden" size="lg">
                 {{ t('charges.filterTo') }}: {{ toDateString(dateTo) }}
-                <button type="button" class="hover:opacity-70 cursor-pointer" @click="resetDateTo">
-                    <UIcon name="i-lucide-x" class="size-3" />
+                <button type="button" class="hover:bg-secondary/20 dark:hover:bg-secondary/20 inline-block h-fit w-fit -my-1.5 p-1.5 -mr-2 cursor-pointer" @click="resetDateTo">
+                    <UIcon name="i-lucide-x" class="size-4" />
                 </button>
             </UBadge>
         </div>

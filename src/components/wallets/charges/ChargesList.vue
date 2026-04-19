@@ -245,7 +245,7 @@ defineExpose({ onChargeCreated })
 <template>
     <div class="relative">
         <!-- Loading overlay -->
-        <div v-if="loading" class="flex justify-center py-8">
+        <div v-if="loading" class="absolute inset-0 z-10 flex items-start justify-center pt-8 bg-default/60 backdrop-blur-xs rounded-lg">
             <UIcon name="i-lucide-loader-circle" class="size-6 animate-spin text-muted" />
             <span class="ml-2 text-muted">{{ t('charges.loading') }}</span>
         </div>
@@ -260,7 +260,7 @@ defineExpose({ onChargeCreated })
         />
 
         <!-- Charges list -->
-        <div v-if="!loading && !error">
+        <div v-if="!error">
             <!-- Move toolbar -->
             <div
                 v-if="selectedCharges.length && moveTargetWallets.length"

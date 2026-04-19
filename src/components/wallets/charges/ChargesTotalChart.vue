@@ -23,6 +23,7 @@ const props = defineProps<{
     walletId: number
     currency: Currency | null
     walletTags?: Tag[]
+    tags?: Tag[]
     dateFrom?: string
     dateTo?: string
 }>()
@@ -34,7 +35,7 @@ const loading = ref(false)
 const error = ref<string | null>(null)
 const expenseData = ref<ChargesTotalDataPoint[]>([])
 const incomeData = ref<ChargesTotalDataPoint[]>([])
-const tags = ref<Tag[]>([])
+const allWalletTags = ref<Tag[]>([])
 const hasLoaded = ref(false)
 
 const hideThresholdAmount = 8
@@ -55,7 +56,7 @@ function hashColor(name: string): string {
 }
 
 function getTagById(id: number): Tag | null {
-    return tags.value.find(t => t.id === id) ?? null
+    return allWalletTags.value.find(t => t.id === id) ?? null
 }
 
 function getLabel(tagIds: number[]): string {
@@ -159,6 +160,7 @@ async function loadData() {
         const dateParams = {
             ...(props.dateFrom ? { 'date-from': props.dateFrom } : {}),
             ...(props.dateTo ? { 'date-to': props.dateTo } : {}),
+            ...(props.tags?.length ? { tags: props.tags.map(t => t.id).join(',') } : {}),
         }
         const [expenseResult, incomeResult, resolvedTags] = await Promise.all([
             getChargesTotalByType(props.walletId, { 'charge-type': 'expense', ...dateParams }),
@@ -167,7 +169,7 @@ async function loadData() {
         ])
         expenseData.value = expenseResult
         incomeData.value = incomeResult
-        tags.value = resolvedTags
+        allWalletTags.value = resolvedTags
         hasLoaded.value = true
     } catch {
         error.value = t('wallets.chartLoadingError')
@@ -177,8 +179,9 @@ async function loadData() {
 }
 
 watch(() => props.walletTags, (t) => {
-    if (t !== undefined) tags.value = t
+    if (t !== undefined) allWalletTags.value = t
 }, { deep: true })
+watch(() => props.tags, () => loadData(), { deep: true })
 watch(() => [props.dateFrom, props.dateTo], () => loadData())
 
 onMounted(() => loadData())

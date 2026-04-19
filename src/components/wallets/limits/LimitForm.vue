@@ -100,47 +100,51 @@ function onCancel() {
             />
         </div>
 
-        <!-- Tag search -->
-        <UFormField :error="fieldErrors.tags?.[0]">
-            <TagFormInput
-                ref="tagInputRef"
-                :wallet-id="wallet.id"
-                :tags="selectedTags"
-                :disabled="loading"
-                @selected="onTagSelected"
-            />
-        </UFormField>
-
-        <!-- Operation toggle + Amount -->
-        <div class="flex gap-0">
-            <UButton
-                icon="i-lucide-arrow-down"
-                :variant="operation === '-' ? 'solid' : 'outline'"
-                color="error"
-                :disabled="loading"
-                class="rounded-r-none"
-                @click="operation = '-'"
-            />
-            <UButton
-                icon="i-lucide-arrow-up"
-                :variant="operation === '+' ? 'solid' : 'outline'"
-                color="success"
-                :disabled="loading"
-                class="rounded-none border-l-0"
-                @click="operation = '+'"
-            />
-            <UFormField class="flex-1" :error="fieldErrors.amount?.[0] || fieldErrors.type?.[0]">
-                <UInput
-                    v-model="amount"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    :placeholder="t('limits.amount')"
+        <!-- Tag search + Operation toggle + Amount -->
+        <div class="flex gap-2">
+            <UFormField class="w-3/5" :error="fieldErrors.tags?.[0]">
+                <TagFormInput
+                    ref="tagInputRef"
+                    :wallet-id="wallet.id"
+                    :tags="selectedTags"
                     :disabled="loading"
-                    class="w-full"
-                    :ui="{ root: '-ml-[2px] focus-within:z-[1]', base: 'rounded-l-none' }"
+                    @selected="onTagSelected"
                 />
             </UFormField>
+
+            <div class="flex items-start gap-0 w-2/5">
+                <UButton
+                    icon="i-lucide-arrow-down"
+                    :variant="operation === '-' ? 'solid' : 'outline'"
+                    color="error"
+                    :disabled="loading"
+                    class="rounded-r-none"
+                    size="lg"
+                    @click="operation = '-'"
+                />
+                <UButton
+                    icon="i-lucide-arrow-up"
+                    :variant="operation === '+' ? 'solid' : 'outline'"
+                    color="success"
+                    :disabled="loading"
+                    class="rounded-none border-l-0"
+                    size="lg"
+                    @click="operation = '+'"
+                />
+                <UFormField class="flex-1" :error="fieldErrors.amount?.[0] || fieldErrors.type?.[0]">
+                    <UInput
+                        v-model="amount"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        :placeholder="t('limits.amount')"
+                        :disabled="loading"
+                        class="w-full"
+                        size="lg"
+                        :ui="{ root: '-ml-[2px] focus-within:z-[1]', base: 'rounded-l-none' }"
+                    />
+                </UFormField>
+            </div>
         </div>
 
         <!-- Error message -->
@@ -156,7 +160,7 @@ function onCancel() {
             <UButton
                 type="submit"
                 color="primary"
-                size="sm"
+                size="lg"
                 :loading="loading"
             >
                 {{ edit ? t('limits.update') : t('limits.create') }}
@@ -164,7 +168,7 @@ function onCancel() {
             <UButton
                 variant="outline"
                 color="neutral"
-                size="sm"
+                size="lg"
                 :disabled="loading"
                 @click="onCancel"
             >

@@ -306,7 +306,7 @@ watch(() => props.walletID, () => {
 
             <!-- Tags section -->
             <div v-if="showTags" class="border border-default rounded-lg p-4 mb-4">
-                <div class="flex flex-wrap gap-2 mb-2">
+                <div class="flex flex-wrap gap-2 mb-6">
                     <TagChip
                         v-for="tag in unselectedTags"
                         :key="tag.id"
@@ -317,25 +317,27 @@ watch(() => props.walletID, () => {
                 <div
                     v-for="item in totalPerTags"
                     :key="item.tag.id"
-                    class="flex items-center justify-between py-2 border-t border-default"
+                    class="flex items-center justify-between py-3 border-t border-default"
                 >
                     <TagChip :tag="item.tag" :highlighted="true" :removable="true" @click="onTagToggle(item.tag)" />
-                    <div class="flex gap-4 text-sm">
-                        <span v-if="item.hasIncome" class="font-semibold">
-                            ↑ <MoneyAmount class="text-success" :amount="item.totalIncomeAmount" :currency="wallet!.defaultCurrency" />
-                            <span class="text-muted font-normal text-xs">/ {{ item.incomePercent }}%</span>
+                    <div class="flex gap-4 text-lg">
+                        <span v-if="item.hasIncome" class="font-medium">
+                            <UIcon name="i-lucide-arrow-up" class="size-5 hidden sm:inline text-success mr-2 -mt-1" />
+                            <MoneyAmount class="text-success" :amount="item.totalIncomeAmount" :currency="wallet!.defaultCurrency" />
+                            <span class="text-muted font-normal text-xs"> / {{ item.incomePercent }}%</span>
                         </span>
-                        <span v-if="item.hasExpense" class="font-semibold">
-                            ↓ <MoneyAmount class="text-error" :amount="item.totalExpenseAmount" :currency="wallet!.defaultCurrency" />
-                            <span class="text-muted font-normal text-xs">/ {{ item.expensePercent }}%</span>
+                        <span v-if="item.hasExpense" class="font-medium">
+                            <UIcon name="i-lucide-arrow-down" class="size-5 hidden sm:inline text-error mr-2 -mt-1" />
+                            <MoneyAmount class="text-error" :amount="item.totalExpenseAmount" :currency="wallet!.defaultCurrency" />
+                            <span class="text-muted font-normal text-xs"> / {{ item.expensePercent }}%</span>
                         </span>
                     </div>
                 </div>
-                <div v-if="selectedTags.length" class="pt-2 border-t border-default mt-2">
+                <div v-if="selectedTags.length" class="pt-3 border-t border-default">
                     <UButton
-                        variant="outline"
+                        variant="soft"
                         color="neutral"
-                        size="sm"
+                        size="md"
                         icon="i-lucide-x"
                         @click="selectedTags = []"
                     >
@@ -362,6 +364,7 @@ watch(() => props.walletID, () => {
                         :wallet-id="wallet.id"
                         :currency="wallet.defaultCurrency"
                         :wallet-tags="walletTags"
+                        :tags="selectedTags"
                         :date-from="filter.dateFrom || undefined"
                         :date-to="filter.dateTo || undefined"
                     />

@@ -73,12 +73,12 @@ function onEditCancelled() {
                 <UIcon
                     v-if="isIncome"
                     name="i-lucide-arrow-up"
-                    class="text-primary hidden sm:inline-block"
+                    class="text-primary hidden sm:inline-block size-6"
                 />
                 <UIcon
                     v-if="isExpense"
                     name="i-lucide-arrow-down"
-                    class="text-red-500 hidden sm:inline-block"
+                    class="text-red-500 hidden sm:inline-block size-6"
                 />
                 <Tag
                     v-for="tag in walletLimit.limit.tags"
@@ -90,17 +90,17 @@ function onEditCancelled() {
                 <span class="text-lg whitespace-nowrap" :class="isIncome ? 'text-primary' : 'text-red-500'">
                     <UIcon
                         :name="isIncome ? 'i-lucide-arrow-up' : 'i-lucide-arrow-down'"
-                        class="hidden sm:inline-block"
+                        class="hidden sm:inline-block size-6 mr-1 -mt-0.5"
                     />
                     <MoneyAmount :amount="walletLimit.amount" :currency="wallet.defaultCurrency" />
-                    <span class="text-sm text-muted">/ <MoneyAmount :amount="walletLimit.limit.amount" :currency="wallet.defaultCurrency" /></span>
+                    <span class="text-sm text-muted"> / <MoneyAmount :amount="walletLimit.limit.amount" :currency="wallet.defaultCurrency" /></span>
                 </span>
                 <UDropdownMenu :items="menuItems">
                     <UButton
                         icon="i-lucide-ellipsis-vertical"
                         variant="ghost"
                         color="neutral"
-                        size="xs"
+                        size="md"
                     />
                 </UDropdownMenu>
             </div>

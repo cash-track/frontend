@@ -2,7 +2,7 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { getLimits, copyLimits } from '@/api/limits'
-import type { WalletLimit } from '@/api/models/limit'
+import { WalletLimit } from '@/api/models/limit'
 import type { Limit } from '@/api/models/limit'
 import type { Wallet } from '@/api/models/wallet'
 import { getWalletsWithLimits } from '@/api/wallets'
@@ -39,7 +39,7 @@ const hasExpenseTotals = computed(() => totalExpenseLimitAmount.value > 0)
 const copyDropdownItems = computed(() =>
     walletsWithLimits.value.map(w => ({
         label: w.name,
-        click: () => onCopyFrom(w),
+        onSelect: () => onCopyFrom(w),
     })),
 )
 
@@ -71,6 +71,14 @@ async function loadLimits() {
     }
 }
 
+async function reloadLimitsSilently() {
+    try {
+        limits.value = await getLimits(props.wallet.id)
+    } catch {
+        // Non-fatal
+    }
+}
+
 async function onCopyFrom(sourceWallet: Wallet) {
     copyLoading.value = true
     try {
@@ -83,13 +91,20 @@ async function onCopyFrom(sourceWallet: Wallet) {
     }
 }
 
-function onLimitCreated() {
+function onLimitCreated(limit: Limit) {
     showCreateForm.value = false
-    void loadLimits()
+    limits.value = [...limits.value, new WalletLimit({ amount: 0, percentage: 0, limit })]
+    walletsWithLimits.value = []
+    void reloadLimitsSilently()
 }
 
-function onLimitUpdated() {
-    void loadLimits()
+function onLimitUpdated(limit: Limit) {
+    limits.value = limits.value.map(wl =>
+        wl.limit.id === limit.id
+            ? new WalletLimit({ amount: wl.amount, percentage: wl.percentage, limit })
+            : wl,
+    )
+    void reloadLimitsSilently()
 }
 
 function onLimitDeleted(limit: Limit) {
@@ -121,13 +136,13 @@ defineExpose({ reload: loadLimits, copyDropdownItems })
             />
 
             <!-- Totals -->
-            <div v-if="hasExpenseTotals" class="pt-3 mt-1 border-t border-default">
+            <div v-if="hasExpenseTotals" class="pt-4 mt-4 border-t border-default">
                 <div class="flex justify-between items-center">
-                    <span class="text-sm text-muted">{{ t('limits.total') }}</span>
+                    <span class="text-lg">{{ t('limits.total') }}</span>
                     <span class="text-red-500">
-                        <UIcon name="i-lucide-arrow-down" class="hidden sm:inline-block" />
+                        <UIcon name="i-lucide-arrow-down" class="hidden sm:inline-block size-6 mr-1 -mt-0.5" />
                         <MoneyAmount :amount="totalExpenseAmount" :currency="wallet.defaultCurrency" />
-                        <span class="text-sm text-muted">/ <MoneyAmount :amount="totalExpenseLimitAmount" :currency="wallet.defaultCurrency" /></span>
+                        <span class="text-sm text-muted"> / <MoneyAmount :amount="totalExpenseLimitAmount" :currency="wallet.defaultCurrency" /></span>
                     </span>
                 </div>
             </div>
@@ -136,9 +151,9 @@ defineExpose({ reload: loadLimits, copyDropdownItems })
             <div class="pt-3 flex gap-2">
                 <UButton
                     v-if="!showCreateForm"
-                    variant="outline"
+                    variant="solid"
                     color="primary"
-                    size="sm"
+                    size="md"
                     icon="i-lucide-plus"
                     @click="showCreateForm = true"
                 >
@@ -148,11 +163,12 @@ defineExpose({ reload: loadLimits, copyDropdownItems })
                 <UDropdownMenu
                     v-if="!limits.length && walletsWithLimits.length"
                     :items="copyDropdownItems"
+                    arrow size="md"
                 >
                     <UButton
                         variant="outline"
                         color="neutral"
-                        size="sm"
+                        size="md"
                         icon="i-lucide-copy"
                         :loading="copyLoading"
                     >

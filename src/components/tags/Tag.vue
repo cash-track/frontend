@@ -27,13 +27,13 @@ function onClick() {
 <template>
     <button
         type="button"
-        class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-sm border transition-colors cursor-pointer whitespace-nowrap"
+        class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-sm border transition-colors cursor-pointer whitespace-nowrap overflow-hidden shrink-0"
         :class="highlighted ? 'border-gray-400' : 'border-default hover:border-gray-400'"
         :style="tag.color ? { backgroundColor: tag.color + '1a' } : {}"
         @click="onClick"
     >
         <span v-if="tag.icon">{{ tag.icon }}</span>
         {{ tag.name }}
-        <UIcon v-if="removable" name="i-lucide-x" class="size-3" />
+        <UIcon v-if="removable" name="i-lucide-x" class="size-3 -my-2 -mr-2.5 p-2 inline-block h-fit w-fit hover:bg-gray-300" />
     </button>
 </template>
