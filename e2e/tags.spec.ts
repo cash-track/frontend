@@ -5,7 +5,6 @@ const TAG_NAME = `e2eTag${Date.now()}`
 test.describe('Tags CRUD', () => {
     test('tags list page loads', async ({ page }) => {
         await page.goto('/tags')
-        await page.waitForLoadState('networkidle')
 
         // Tags heading visible
         await expect(page.locator('body')).toContainText(/tags|теги/i)
@@ -14,7 +13,6 @@ test.describe('Tags CRUD', () => {
 
     test('creates a tag', async ({ page }) => {
         await page.goto('/tags')
-        await page.waitForLoadState('networkidle')
 
         // Open create tag form — click "Add New" button
         const addBtn = page.getByText(/add new|додати новий/i).first()
@@ -34,7 +32,6 @@ test.describe('Tags CRUD', () => {
 
     test('navigates to tag detail page', async ({ page }) => {
         await page.goto('/tags')
-        await page.waitForLoadState('networkidle')
 
         // Click on a tag chip
         const firstTagChip = page.locator('button[class*="rounded-full"]').first()

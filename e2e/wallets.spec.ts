@@ -12,7 +12,6 @@ test.describe('Wallets flow', () => {
 
     test('creates a wallet', async ({ page }) => {
         await page.goto('/wallets/create')
-        await page.waitForLoadState('networkidle')
 
         // Fill wallet name — UForm uses textbox role
         await page.getByRole('textbox', { name: /name/i }).fill(WALLET_NAME)
@@ -27,7 +26,6 @@ test.describe('Wallets flow', () => {
 
     test('adds a charge to a wallet', async ({ page }) => {
         await page.goto('/wallets')
-        await page.waitForLoadState('networkidle')
 
         // Wallet cards have h3 headings — click the first one (click bubbles to card div)
         const firstWalletHeading = page.getByRole('heading', { level: 3 }).first()
@@ -35,7 +33,6 @@ test.describe('Wallets flow', () => {
         await firstWalletHeading.click()
 
         await expect(page).toHaveURL(/\/wallets\/\d+/, { timeout: 10000 })
-        await page.waitForLoadState('networkidle')
 
         // Open charge create form
         const newChargeBtn = page.getByRole('button', { name: /new charge|add charge|нова операція|додати/i })
@@ -59,14 +56,12 @@ test.describe('Wallets flow', () => {
 
     test('wallet detail page shows charges list', async ({ page }) => {
         await page.goto('/wallets')
-        await page.waitForLoadState('networkidle')
 
         const firstWalletHeading = page.getByRole('heading', { level: 3 }).first()
         await firstWalletHeading.waitFor({ state: 'visible', timeout: 10000 })
         await firstWalletHeading.click()
 
         await expect(page).toHaveURL(/\/wallets\/\d+/, { timeout: 10000 })
-        await page.waitForLoadState('networkidle')
 
         await expect(page.locator('body')).not.toContainText('Unknown error')
         await expect(page.locator('body')).not.toContainText('Unable to load your wallet')
