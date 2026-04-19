@@ -64,11 +64,11 @@ watch(dateTo, emitChange)
         </div>
 
         <!-- Date inputs with calendar popups -->
-        <div class="flex flex-col sm:flex-row gap-2 sm:w-2/3">
+        <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-2/3">
             <UInputDate
                 ref="dateFromRef"
                 v-model="dateFrom"
-                class="flex-1"
+                class="w-full sm:flex-1"
             >
                 <template #trailing>
                     <UPopover>
@@ -88,7 +88,7 @@ watch(dateTo, emitChange)
             <UInputDate
                 ref="dateToRef"
                 v-model="dateTo"
-                class="flex-1"
+                class="w-full sm:flex-1"
             >
                 <template #trailing>
                     <UPopover>

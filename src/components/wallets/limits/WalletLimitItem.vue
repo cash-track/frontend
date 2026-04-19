@@ -68,7 +68,7 @@ function onEditCancelled() {
 <template>
     <div class="py-2">
         <!-- Header: tags + amount -->
-        <div class="flex flex-wrap items-end justify-between gap-2 mb-1">
+        <div class="flex flex-col sm:flex-row sm:flex-wrap sm:items-end sm:justify-between gap-2 mb-1">
             <div class="flex flex-wrap items-center gap-1">
                 <UIcon
                     v-if="isIncome"
@@ -86,7 +86,7 @@ function onEditCancelled() {
                     :tag="tag"
                 />
             </div>
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 justify-between sm:justify-normal">
                 <span class="text-lg whitespace-nowrap" :class="isIncome ? 'text-primary' : 'text-red-500'">
                     <UIcon
                         :name="isIncome ? 'i-lucide-arrow-up' : 'i-lucide-arrow-down'"

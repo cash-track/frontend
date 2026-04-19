@@ -266,15 +266,11 @@ defineExpose({ onChargeCreated })
                 v-if="selectedCharges.length && moveTargetWallets.length"
                 class="flex items-center gap-2 px-4 py-2 -mx-4 sm:mx-0 bg-elevated flex-wrap"
             >
-                <span class="text-sm text-muted">
-                    {{ t('charges.selectedCount', { count: selectedCharges.length }) }}
-                </span>
-
                 <UDropdownMenu :items="moveDropdownItems">
                     <UButton
-                        variant="outline"
+                        variant="solid"
                         color="primary"
-                        size="sm"
+                        size="md"
                         icon="i-lucide-move"
                         :loading="moveLoading"
                     >
@@ -283,15 +279,28 @@ defineExpose({ onChargeCreated })
                 </UDropdownMenu>
 
                 <UButton
-                    variant="ghost"
+                    variant="soft"
                     color="neutral"
-                    size="sm"
+                    size="md"
                     @click="selectedCharges = []"
                 >
                     {{ t('charges.clearSelection') }}
                 </UButton>
 
-                <UAlert v-if="moveError" color="warning" :description="moveError" class="flex-1" />
+                <span class="text-sm text-muted ml-auto">
+                    {{ t('charges.selectedCount', { count: selectedCharges.length }) }}
+                </span>
+
+                <UAlert
+                    v-if="moveError"
+                    color="error"
+                    variant="soft"
+                    icon="i-lucide-circle-alert"
+                    :description="moveError"
+                    close
+                    class="basis-full"
+                    @close="moveError = null"
+                />
             </div>
 
             <template v-for="[group, groupCharges] in chargesGrouped" :key="group">

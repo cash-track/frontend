@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, shallowRef, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { CalendarDateTime } from '@internationalized/date'
+import { CalendarDate, CalendarDateTime } from '@internationalized/date'
 import { createCharge } from '@/api/charges'
 import type { Charge } from '@/api/models/charge'
 import type { Wallet } from '@/api/models/wallet'
@@ -11,7 +11,6 @@ import { useAuthStore } from '@/stores/auth'
 import ChargeTitleFormInput from './ChargeTitleFormInput.vue'
 import TagFormInput from '@/components/tags/TagFormInput.vue'
 import TagChip from '@/components/tags/Tag.vue'
-import DateTimePicker from '@/components/DateTimePicker.vue'
 
 const props = defineProps<{
     wallet: Wallet
@@ -39,6 +38,16 @@ const description = ref('')
 const showDescription = ref(false)
 const showDateTime = ref(false)
 const formDateTime = shallowRef<CalendarDateTime | null>(null)
+
+function nowDateTime(): CalendarDateTime {
+    const d = new Date()
+    return new CalendarDateTime(d.getFullYear(), d.getMonth() + 1, d.getDate(), d.getHours(), d.getMinutes())
+}
+
+function enableDateTime() {
+    if (!formDateTime.value) formDateTime.value = nowDateTime()
+    showDateTime.value = true
+}
 
 const isIncome = computed(() => operation.value === '+')
 const isExpense = computed(() => operation.value === '-')
@@ -105,10 +114,23 @@ function resetForm() {
     tagInputRef.value?.reset()
 }
 
-const maxDateTime = computed(() => {
+const maxDate = computed(() => {
     const d = new Date()
-    return new CalendarDateTime(d.getFullYear(), d.getMonth() + 1, d.getDate(), d.getHours(), d.getMinutes())
+    return new CalendarDate(d.getFullYear(), d.getMonth() + 1, d.getDate())
 })
+
+const formDate = computed<CalendarDate | null>({
+    get: () => {
+        const dt = formDateTime.value
+        return dt ? new CalendarDate(dt.year, dt.month, dt.day) : null
+    },
+    set: (val) => {
+        if (!val) { formDateTime.value = null; return }
+        const dt = formDateTime.value
+        formDateTime.value = new CalendarDateTime(val.year, val.month, val.day, dt?.hour ?? 0, dt?.minute ?? 0)
+    },
+})
+
 </script>
 
 <template>
@@ -202,33 +224,47 @@ const maxDateTime = computed(() => {
 
         <!-- Optional: dateTime -->
         <div v-if="!showDateTime && !fieldErrors.dateTime">
-            <button type="button" class="text-sm text-primary hover:underline cursor-pointer" @click="showDateTime = true">
+            <button type="button" class="text-sm text-primary hover:underline cursor-pointer" @click="enableDateTime">
                 {{ t('charges.changeDate') }}
             </button>
         </div>
-        <UFormField v-if="showDateTime || fieldErrors.dateTime" :error="fieldErrors.dateTime?.[0]">
-            <UInputDate
-                v-model="formDateTime"
-                granularity="minute"
-                :max-value="maxDateTime"
-                :disabled="loading"
-            >
-                <template #trailing>
-                    <UPopover>
-                        <UButton
-                            color="neutral"
-                            variant="link"
-                            size="sm"
-                            icon="i-lucide-calendar"
-                            class="px-0"
-                        />
-                        <template #content>
-                            <DateTimePicker v-model="formDateTime" :max-value="maxDateTime" />
-                        </template>
-                    </UPopover>
-                </template>
-            </UInputDate>
-        </UFormField>
+        <div v-if="showDateTime || fieldErrors.dateTime" class="flex flex-col sm:flex-row gap-3">
+            <UFormField class="w-full sm:w-3/5" :error="fieldErrors.dateTime?.[0]">
+                <UInputDate
+                    v-model="formDate"
+                    granularity="day"
+                    :max-value="maxDate"
+                    :disabled="loading"
+                    size="lg"
+                    class="w-full"
+                >
+                    <template #leading>
+                        <UPopover>
+                            <UButton
+                                color="neutral"
+                                variant="link"
+                                size="sm"
+                                icon="i-lucide-calendar"
+                                class="px-0"
+                            />
+                            <template #content>
+                                <UCalendar v-model="formDate" :max-value="maxDate" class="p-2" />
+                            </template>
+                        </UPopover>
+                    </template>
+                </UInputDate>
+            </UFormField>
+            <UFormField class="w-full sm:w-2/5">
+                <UInputTime
+                    v-model="formDateTime"
+                    :hour-cycle="24"
+                    :disabled="loading"
+                    size="lg"
+                    class="w-full"
+                    icon="i-lucide-clock"
+                />
+            </UFormField>
+        </div>
 
         <!-- Error message -->
         <UAlert

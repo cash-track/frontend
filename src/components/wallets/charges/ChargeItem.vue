@@ -146,7 +146,7 @@ const actionItems = computed(() => [
             <div v-if="!isEdit">
                 <!-- First row: amount + title + actions -->
                 <div class="flex items-start justify-between gap-2">
-                    <div class="flex items-center gap-2 min-w-0">
+                    <div class="flex items-start gap-2 min-w-0">
                         <MoneyAmount
                             class="font-bold whitespace-nowrap text-neutral"
                             :amount="charge.amount"
@@ -180,7 +180,7 @@ const actionItems = computed(() => [
                 </div>
 
                 <!-- Second row: time + user + tags -->
-                <div class="flex items-center gap-2 mt-1 flex-wrap">
+                <div class="flex items-center gap-2 mt-1" :class="{ 'flex-wrap': isExpanded }">
                     <UTooltip :text="fullDateTime" :arrow="true">
                         <span class="text-xs text-muted cursor-default">{{ chargeTime }}</span>
                     </UTooltip>
@@ -190,7 +190,7 @@ const actionItems = computed(() => [
                         :alt="charge.user.displayName"
                         size="xs"
                     />
-                    <template v-if="charge.tags.length > 0">
+                    <template v-if="isExpanded">
                         <Tag
                             v-for="tag in charge.tags"
                             :key="tag.id"
@@ -198,6 +198,18 @@ const actionItems = computed(() => [
                             @click.stop="emit('tag-selected', tag.id)"
                         />
                     </template>
+                    <div
+                        v-else-if="charge.tags.length > 0"
+                        class="flex gap-2 min-w-0 flex-1 flex-nowrap overflow-hidden"
+                        :style="{ maskImage: 'linear-gradient(to right, black calc(100% - 24px), transparent)', WebkitMaskImage: 'linear-gradient(to right, black calc(100% - 24px), transparent)' }"
+                    >
+                        <Tag
+                            v-for="tag in charge.tags"
+                            :key="tag.id"
+                            :tag="tag"
+                            @click.stop="emit('tag-selected', tag.id)"
+                        />
+                    </div>
                 </div>
 
                 <!-- Description (expanded) -->
