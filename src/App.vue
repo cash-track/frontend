@@ -8,13 +8,11 @@ import * as locales from '@nuxt/ui/locale'
 
 import AppHeader from '@/components/AppHeader.vue'
 import AppFooter from '@/components/AppFooter.vue'
+import EmailIsNotConfirmedAlert from '@/components/profile/EmailIsNotConfirmedAlert.vue'
 import { useProfileStore } from '@/stores/profile'
 import { useAuthStore } from '@/stores/auth'
 import { useLocaleStore, syncLocaleWithI18n } from '@/stores/locale'
-import { resendEmailConfirmation } from '@/api/profile/email'
-import { useNotifications } from '@/composables/useNotifications'
 
-const { t } = useI18n()
 const { locale } = useI18n()
 
 const lang = computed(() => locales[locale.value as keyof typeof locales].code)
@@ -32,20 +30,9 @@ syncLocaleWithI18n()
 const profileStore = useProfileStore()
 const authStore = useAuthStore()
 const { loading } = storeToRefs(profileStore)
-const { isLogged, isEmailConfirmed } = storeToRefs(authStore)
-
-const { notifySuccess, notifyError } = useNotifications()
+const { isLogged } = storeToRefs(authStore)
 
 onMounted(() => profileStore.loadProfile())
-
-async function onResendConfirmation() {
-    try {
-        await resendEmailConfirmation()
-        notifySuccess(t('emailFormInput.confirmationMessage'))
-    } catch {
-        notifyError(t('unknownError'))
-    }
-}
 </script>
 
 <template>
@@ -61,21 +48,7 @@ async function onResendConfirmation() {
             <AppHeader />
 
             <UContainer class="pb-1">
-                <UAlert
-                    v-if="!isEmailConfirmed"
-                    color="warning"
-                    variant="soft"
-                    icon="i-lucide-triangle-alert"
-                    :title="t('profile.emailNotConfirmed')"
-                    :description="t('profile.emailNotConfirmedMainMessage')"
-                    :actions="[{
-                        label: t('emailFormInput.resend'),
-                        color: 'warning',
-                        variant: 'subtle',
-                        onClick: onResendConfirmation,
-                    }]"
-                    class="mb-4"
-                />
+                <EmailIsNotConfirmedAlert />
 
                 <RouterView />
             </UContainer>

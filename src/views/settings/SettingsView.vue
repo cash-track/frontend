@@ -20,7 +20,7 @@ const navItems = computed<NavigationMenuItem[]>(() => [
 </script>
 
 <template>
-    <UContainer class="py-6">
+    <UContainer class="pb-6">
         <h1 class="text-2xl font-semibold mb-6">{{ t('personalSettings.header') }}</h1>
         <div class="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-6">
             <aside>

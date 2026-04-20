@@ -38,10 +38,6 @@ async function onUpload() {
 
 <template>
     <UCard>
-        <template #header>
-            <h2 class="font-semibold text-lg">{{ t('profilePhoto.photo') }}</h2>
-        </template>
-
         <div class="space-y-4">
             <div v-if="profile" class="flex items-center gap-4">
                 <ProfileAvatar :user="profile" />

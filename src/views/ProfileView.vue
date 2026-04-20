@@ -3,7 +3,6 @@ import { storeToRefs } from 'pinia'
 import { useProfileStore } from '@/stores/profile'
 import ProfileAvatarBadge from '@/components/profile/ProfileAvatarBadge.vue'
 import ProfileTitle from '@/components/profile/ProfileTitle.vue'
-import EmailIsNotConfirmedAlert from '@/components/profile/EmailIsNotConfirmedAlert.vue'
 import CountersStatistics from '@/components/profile/CountersStatistics.vue'
 import ChargesFlowStatistics from '@/components/profile/ChargesFlowStatistics.vue'
 import LatestWallets from '@/components/profile/LatestWallets.vue'
@@ -35,9 +34,8 @@ const { profile } = storeToRefs(useProfileStore())
                 <CountersStatistics />
             </div>
 
-            <!-- Right: email alert + charges flow stats -->
+            <!-- Right: charges flow stats -->
             <div class="md:col-span-2 space-y-4">
-                <EmailIsNotConfirmedAlert />
                 <ChargesFlowStatistics />
             </div>
         </div>

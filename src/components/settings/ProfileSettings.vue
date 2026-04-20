@@ -10,6 +10,8 @@ import { useNotifications } from '@/composables/useNotifications'
 import { locales } from '@/lang'
 import type { Currency } from '@/api/models/currency'
 
+import EmailFormInput from '@/components/settings/EmailFormInput.vue'
+
 const { t } = useI18n()
 const profileStore = useProfileStore()
 const { profile } = storeToRefs(profileStore)
@@ -120,6 +122,8 @@ async function onSubmit() {
                     @blur="onNickNameBlur"
                 />
             </UFormField>
+
+            <EmailFormInput />
 
             <UFormField
                 :label="t('profileSettings.defaultCurrency')"
