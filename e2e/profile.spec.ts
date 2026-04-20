@@ -25,13 +25,13 @@ test.describe('Settings — profile', () => {
         await expect(page).toHaveURL(/\/settings\/profile/, { timeout: 10000 })
 
         // Name input is visible
-        await expect(page.getByRole('textbox', { name: /name/i }).first()).toBeVisible({ timeout: 10000 })
+        await expect(page.getByLabel(/^(name|ім.я)\*?$/i).first()).toBeVisible({ timeout: 10000 })
     })
 
     test('changes display name and saves', async ({ page }) => {
         await page.goto('/settings/profile')
 
-        const nameInput = page.getByRole('textbox', { name: /^name/i })
+        const nameInput = page.getByLabel(/^(name|ім.я)\*?$/i)
         await nameInput.waitFor({ state: 'visible' })
 
         const originalName = await nameInput.inputValue()
@@ -41,7 +41,7 @@ test.describe('Settings — profile', () => {
         await nameInput.press('Tab') // blur triggers reactive update
 
         // Save button must not be disabled (name + nickName both filled)
-        const saveBtn = page.getByRole('button', { name: /^save$/i }).first()
+        const saveBtn = page.getByRole('button', { name: /^(save|зберегти)$/i }).first()
         await expect(saveBtn).toBeEnabled({ timeout: 5000 })
 
         // Click save and verify API call succeeds
@@ -56,7 +56,7 @@ test.describe('Settings — profile', () => {
         // Restore original name
         await nameInput.fill(originalName)
         await nameInput.press('Tab')
-        await page.getByRole('button', { name: /^save$/i }).first().click()
+        await page.getByRole('button', { name: /^(save|зберегти)$/i }).first().click()
     })
 
     test('locale combobox is present in settings', async ({ page }) => {
@@ -71,7 +71,7 @@ test.describe('Settings — security', () => {
     test('security page renders password form and passkeys section', async ({ page }) => {
         await page.goto('/settings/security')
 
-        await expect(page.getByRole('textbox', { name: /current password/i })).toBeVisible({ timeout: 10000 })
+        await expect(page.getByLabel(/current password|поточний пароль/i)).toBeVisible({ timeout: 10000 })
         await expect(page.locator('body')).toContainText(/passkey|ключ доступу/i)
     })
 })

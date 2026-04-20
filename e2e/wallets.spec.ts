@@ -7,18 +7,19 @@ test.describe('Wallets flow', () => {
     test('navigates to wallets page', async ({ page }) => {
         await page.goto('/wallets')
         await expect(page).toHaveURL(/\/wallets/)
-        await expect(page.getByRole('heading', { name: /wallets/i })).toBeVisible({ timeout: 10000 })
+        await expect(page.getByRole('heading', { name: /wallets|гаманці/i }).first()).toBeVisible({ timeout: 10000 })
     })
 
     test('creates a wallet', async ({ page }) => {
         await page.goto('/wallets/create')
 
         // Fill wallet name — UForm uses textbox role
-        await page.getByRole('textbox', { name: /name/i }).fill(WALLET_NAME)
+        await page.getByRole('textbox', { name: /^(name|назва)\*?$/i }).fill(WALLET_NAME)
 
         // "Create" button becomes enabled after filling required fields
-        await expect(page.getByRole('button', { name: /create/i })).toBeEnabled({ timeout: 5000 })
-        await page.getByRole('button', { name: /create/i }).click()
+        const createWalletBtn = page.getByRole('button', { name: /^(create|створити)$/i })
+        await expect(createWalletBtn).toBeEnabled({ timeout: 5000 })
+        await createWalletBtn.click()
 
         // Should redirect to wallet detail page
         await expect(page).toHaveURL(/\/wallets\/\d+/, { timeout: 15000 })
@@ -44,11 +45,11 @@ test.describe('Wallets flow', () => {
         await amountInput.waitFor({ state: 'visible', timeout: 5000 })
         await amountInput.fill('10.00')
 
-        // Fill title
-        await page.getByRole('textbox', { name: /title/i }).fill(CHARGE_TITLE)
+        // Fill title (bare UInput with no label — match by placeholder)
+        await page.getByPlaceholder(/title|назва/i).first().fill(CHARGE_TITLE)
 
         // Submit — look for "Create" button in the form
-        await page.getByRole('button', { name: /^create$/i }).click()
+        await page.getByRole('button', { name: /^(create|створити)$/i }).click()
 
         // Charge should appear in the list
         await expect(page.getByText(CHARGE_TITLE)).toBeVisible({ timeout: 15000 })
