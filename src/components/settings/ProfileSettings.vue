@@ -1,12 +1,11 @@
 <script setup lang="ts">
-import { reactive, shallowRef, computed, onMounted, watch } from 'vue'
+import { reactive, shallowRef, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
 import { useProfileStore } from '@/stores/profile'
-import { updateProfile, checkNickName } from '@/api/profile'
+import { updateProfile, checkNickName, getSocial } from '@/api/profile'
 import { getFeaturedCurrencies } from '@/api/currency'
 import { useApiErrors } from '@/composables/useApiErrors'
-import { useNotifications } from '@/composables/useNotifications'
 import { locales } from '@/lang'
 import type { Currency } from '@/api/models/currency'
 
@@ -16,7 +15,6 @@ const { t } = useI18n()
 const profileStore = useProfileStore()
 const { profile } = storeToRefs(profileStore)
 const { fieldErrors, generalError, handleError, reset } = useApiErrors()
-const { notifySuccess } = useNotifications()
 
 const form = reactive({
     name: '',
@@ -28,6 +26,11 @@ const form = reactive({
 
 const currencies = shallowRef<Currency[]>([])
 const loading = shallowRef(false)
+const successMessage = shallowRef('')
+const isNickNameValid = shallowRef<boolean | null>(null)
+const isGoogleEnabled = shallowRef(false)
+
+let nickNameTimer: ReturnType<typeof setTimeout> | null = null
 
 const currencyOptions = computed(() =>
     currencies.value.map(c => ({ label: `${c.code} — ${c.name}`, value: c.code })),
@@ -46,27 +49,66 @@ watch(profile, (p) => {
     form.locale = p.locale
 }, { immediate: true })
 
-onMounted(async () => {
+watch(() => form.nickName, (nickName) => {
+    isNickNameValid.value = null
+    if (nickNameTimer !== null) clearTimeout(nickNameTimer)
+
+    const trimmed = nickName.trim()
+    if (!trimmed || trimmed === profile.value?.nickName) {
+        clearNickNameError()
+        return
+    }
+
+    nickNameTimer = setTimeout(() => validateNickName(trimmed), 1000)
+})
+
+function clearNickNameError() {
+    if (!fieldErrors.value.nickName) return
+    const next = { ...fieldErrors.value }
+    delete next.nickName
+    fieldErrors.value = next
+}
+
+onMounted(() => {
+    loadCurrencies()
+    loadSocial()
+})
+
+onBeforeUnmount(() => {
+    if (nickNameTimer !== null) clearTimeout(nickNameTimer)
+})
+
+async function loadCurrencies() {
     try {
         currencies.value = await getFeaturedCurrencies()
     } catch {
         // non-fatal
     }
-})
+}
 
-async function onNickNameBlur() {
-    const nickName = form.nickName.trim()
-    if (!nickName || nickName === profile.value?.nickName) return
+async function loadSocial() {
+    try {
+        const social = await getSocial()
+        isGoogleEnabled.value = social.google
+    } catch {
+        // non-fatal
+    }
+}
+
+async function validateNickName(nickName: string) {
     reset()
     try {
         await checkNickName(nickName)
+        isNickNameValid.value = true
     } catch (error) {
+        isNickNameValid.value = false
         handleError(error)
     }
 }
 
 async function onSubmit() {
     reset()
+    successMessage.value = ''
     loading.value = true
     try {
         const updated = await updateProfile({
@@ -77,7 +119,7 @@ async function onSubmit() {
             locale: form.locale,
         })
         profileStore.setProfile(updated)
-        notifySuccess(t('profileSettings.success'))
+        successMessage.value = t('profileSettings.success')
     } catch (error) {
         handleError(error)
     } finally {
@@ -115,12 +157,13 @@ async function onSubmit() {
                 :error="fieldErrors.nickName?.[0]"
                 required
             >
-                <UInput
-                    v-model="form.nickName"
-                    :disabled="loading"
-                    class="w-full"
-                    @blur="onNickNameBlur"
-                />
+                <UInput v-model="form.nickName" :disabled="loading" class="w-full">
+                    <template v-if="isNickNameValid" #trailing>
+                        <UTooltip :text="t('profileSettings.nickNameAvailable')" :arrow="true">
+                            <UIcon name="i-lucide-check" class="text-success size-5" />
+                        </UTooltip>
+                    </template>
+                </UInput>
             </UFormField>
 
             <EmailFormInput />
@@ -156,6 +199,22 @@ async function onSubmit() {
                 :description="generalError"
                 icon="i-lucide-alert-circle"
             />
+
+            <UAlert
+                v-if="successMessage"
+                color="success"
+                :description="successMessage"
+                icon="i-lucide-check-circle"
+                close
+                @update:open="successMessage = ''"
+            />
+
+            <USeparator />
+
+            <div class="space-y-3">
+                <h3 class="font-medium">{{ t('profileSettings.social') }}</h3>
+                <USwitch :model-value="isGoogleEnabled" label="Google" size="lg" disabled />
+            </div>
         </div>
 
         <template #footer>

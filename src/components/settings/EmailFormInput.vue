@@ -97,10 +97,17 @@ function resolveErrorMessage(error: unknown): string {
     <UFormField
         :label="t('emailFormInput.label')"
         :error="showError ? ' ' : undefined"
+        :ui="{ trailing: 'pe-1' }"
     >
-        <UInput :model-value="profile?.email" disabled class="w-full" />
+        <UInput :model-value="profile?.email" disabled class="w-full">
+            <template v-if="isConfirmed" #trailing>
+                <UTooltip :text="t('emailFormInput.confirmed')" :arrow="true">
+                    <UIcon name="i-lucide-check" class="text-success size-5" />
+                </UTooltip>
+            </template>
+        </UInput>
 
-        <template #error>
+        <template #error v-if="!isConfirmed">
             <div class="space-y-1">
                 <div>{{ t('emailFormInput.labelDescription') }}</div>
                 <div v-if="serverErrorMessage">{{ serverErrorMessage }}</div>

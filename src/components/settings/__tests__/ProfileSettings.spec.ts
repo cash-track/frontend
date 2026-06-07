@@ -1,14 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { ref } from 'vue'
-import { mount } from '@vue/test-utils'
+import { nextTick, ref } from 'vue'
+import { mount, flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { AxiosError } from 'axios'
 import type { User } from '@/api/models/user'
 import ProfileSettings from '../ProfileSettings.vue'
 
-const { mockUpdateProfile, mockCheckNickName, mockGetFeaturedCurrencies, mockSetProfile } = vi.hoisted(() => ({
+const { mockUpdateProfile, mockCheckNickName, mockGetSocial, mockGetFeaturedCurrencies, mockSetProfile } = vi.hoisted(() => ({
     mockUpdateProfile: vi.fn(),
     mockCheckNickName: vi.fn(),
+    mockGetSocial: vi.fn(),
     mockGetFeaturedCurrencies: vi.fn(),
     mockSetProfile: vi.fn(),
 }))
@@ -23,14 +24,11 @@ vi.mock('vue-i18n', () => ({
 vi.mock('@/api/profile', () => ({
     updateProfile: mockUpdateProfile,
     checkNickName: mockCheckNickName,
+    getSocial: mockGetSocial,
 }))
 
 vi.mock('@/api/currency', () => ({
     getFeaturedCurrencies: mockGetFeaturedCurrencies,
-}))
-
-vi.mock('@/composables/useNotifications', () => ({
-    useNotifications: () => ({ notifySuccess: vi.fn(), notifyError: vi.fn() }),
 }))
 
 const mockUser: User = {
@@ -86,12 +84,24 @@ const globalStubs = {
                 props: ['modelValue', 'items', 'disabled', 'class'],
                 emits: ['update:modelValue'],
             },
+            USwitch: { template: '<button role="switch" />', props: ['modelValue', 'label', 'size', 'disabled'] },
+            Switch: { template: '<button role="switch" />', props: ['modelValue', 'label', 'size', 'disabled'] },
+            USeparator: { template: '<hr />' },
+            Separator: { template: '<hr />' },
+            UTooltip: { template: '<span><slot /></span>', props: ['text', 'arrow'] },
+            Tooltip: { template: '<span><slot /></span>', props: ['text', 'arrow'] },
+            UIcon: { template: '<span />', props: ['name', 'class'] },
+            Icon: { template: '<span />', props: ['name', 'class'] },
             UButton: {
                 template: '<button :disabled="disabled || loading" @click="$emit(\'click\')">{{ label }}</button>',
                 props: ['label', 'loading', 'disabled', 'variant', 'color', 'icon'],
                 emits: ['click'],
             },
-            UAlert: { template: '<div>{{ description }}</div>', props: ['color', 'description', 'icon'] },
+            UAlert: {
+                template: '<div>{{ description }}</div>',
+                props: ['color', 'description', 'icon', 'close'],
+                emits: ['update:open'],
+            },
         },
     },
 }
@@ -101,6 +111,7 @@ describe('ProfileSettings', () => {
         setActivePinia(createPinia())
         vi.clearAllMocks()
         mockGetFeaturedCurrencies.mockResolvedValue([])
+        mockGetSocial.mockResolvedValue({ google: false })
     })
 
     it('initializes form from profile store', () => {
@@ -111,38 +122,66 @@ describe('ProfileSettings', () => {
         expect(vm.form.locale).toBe('en')
     })
 
-    it('calls checkNickName on blur when nickName has changed', async () => {
+    it('loads Google social connection state on mount', async () => {
+        mockGetSocial.mockResolvedValue({ google: true })
+        const wrapper = mount(ProfileSettings, globalStubs)
+        await flushPromises()
+        const vm = wrapper.vm as unknown as { isGoogleEnabled: boolean }
+        expect(mockGetSocial).toHaveBeenCalled()
+        expect(vm.isGoogleEnabled).toBe(true)
+    })
+
+    it('debounced nickName check fires checkNickName after the delay when changed', async () => {
+        vi.useFakeTimers()
         mockCheckNickName.mockResolvedValue(undefined)
-        const wrapper = mount(ProfileSettings, globalStubs)
-        const vm = wrapper.vm as unknown as { form: { nickName: string }; onNickNameBlur: () => Promise<void> }
+        try {
+            const wrapper = mount(ProfileSettings, globalStubs)
+            const vm = wrapper.vm as unknown as { form: { nickName: string }; isNickNameValid: boolean | null }
 
-        vm.form.nickName = 'new-nick'
-        await vm.onNickNameBlur()
+            vm.form.nickName = 'new-nick'
+            await nextTick()
+            await vi.advanceTimersByTimeAsync(1000)
 
-        expect(mockCheckNickName).toHaveBeenCalledWith('new-nick')
+            expect(mockCheckNickName).toHaveBeenCalledWith('new-nick')
+            expect(vm.isNickNameValid).toBe(true)
+        } finally {
+            vi.useRealTimers()
+        }
     })
 
-    it('does not call checkNickName when nickName is unchanged', async () => {
-        const wrapper = mount(ProfileSettings, globalStubs)
-        const vm = wrapper.vm as unknown as { form: { nickName: string }; onNickNameBlur: () => Promise<void> }
+    it('does not check nickName when unchanged from profile', async () => {
+        vi.useFakeTimers()
+        try {
+            const wrapper = mount(ProfileSettings, globalStubs)
+            const vm = wrapper.vm as unknown as { form: { nickName: string } }
 
-        vm.form.nickName = 'alice' // same as mockUser.nickName
-        await vm.onNickNameBlur()
+            vm.form.nickName = 'alice' // same as mockUser.nickName
+            await nextTick()
+            await vi.advanceTimersByTimeAsync(1000)
 
-        expect(mockCheckNickName).not.toHaveBeenCalled()
+            expect(mockCheckNickName).not.toHaveBeenCalled()
+        } finally {
+            vi.useRealTimers()
+        }
     })
 
-    it('does not call checkNickName when nickName is empty', async () => {
-        const wrapper = mount(ProfileSettings, globalStubs)
-        const vm = wrapper.vm as unknown as { form: { nickName: string }; onNickNameBlur: () => Promise<void> }
+    it('does not check nickName when empty', async () => {
+        vi.useFakeTimers()
+        try {
+            const wrapper = mount(ProfileSettings, globalStubs)
+            const vm = wrapper.vm as unknown as { form: { nickName: string } }
 
-        vm.form.nickName = ''
-        await vm.onNickNameBlur()
+            vm.form.nickName = ''
+            await nextTick()
+            await vi.advanceTimersByTimeAsync(1000)
 
-        expect(mockCheckNickName).not.toHaveBeenCalled()
+            expect(mockCheckNickName).not.toHaveBeenCalled()
+        } finally {
+            vi.useRealTimers()
+        }
     })
 
-    it('shows field error when checkNickName returns 422', async () => {
+    it('marks nickName invalid and sets field error when checkNickName returns 422', async () => {
         const axiosError = new AxiosError('Validation failed')
         axiosError.response = {
             status: 422,
@@ -155,15 +194,31 @@ describe('ProfileSettings', () => {
 
         const wrapper = mount(ProfileSettings, globalStubs)
         const vm = wrapper.vm as unknown as {
-            form: { nickName: string }
-            onNickNameBlur: () => Promise<void>
+            validateNickName: (n: string) => Promise<void>
+            isNickNameValid: boolean | null
             fieldErrors: Record<string, string[]>
         }
 
-        vm.form.nickName = 'taken-nick'
-        await vm.onNickNameBlur()
+        await vm.validateNickName('taken-nick')
 
+        expect(vm.isNickNameValid).toBe(false)
         expect(vm.fieldErrors.nickName?.[0]).toBe('Nick name is already taken')
+    })
+
+    it('clears the nickName field error when the value returns to its original', async () => {
+        const wrapper = mount(ProfileSettings, globalStubs)
+        const vm = wrapper.vm as unknown as {
+            form: { nickName: string }
+            fieldErrors: Record<string, string[]>
+        }
+
+        vm.form.nickName = 'temp' // change away first so the watcher fires on the way back
+        await nextTick()
+        vm.fieldErrors = { nickName: ['Nick name is already taken'] }
+        vm.form.nickName = 'alice' // back to mockUser.nickName
+        await nextTick()
+
+        expect(vm.fieldErrors.nickName).toBeUndefined()
     })
 
     it('calls updateProfile with form data on submit', async () => {
@@ -183,14 +238,15 @@ describe('ProfileSettings', () => {
         )
     })
 
-    it('calls profileStore.setProfile after successful save', async () => {
+    it('calls profileStore.setProfile and shows success message after successful save', async () => {
         mockUpdateProfile.mockResolvedValue(mockUser)
 
         const wrapper = mount(ProfileSettings, globalStubs)
-        const vm = wrapper.vm as unknown as { onSubmit: () => Promise<void> }
+        const vm = wrapper.vm as unknown as { onSubmit: () => Promise<void>; successMessage: string }
         await vm.onSubmit()
 
         expect(mockSetProfile).toHaveBeenCalledWith(mockUser)
+        expect(vm.successMessage).toBe('profileSettings.success')
     })
 
     it('converts empty lastName to null on submit', async () => {

@@ -48,6 +48,7 @@ export default {
         labelDropPlaceholder: 'Перетягніть файл сюди...',
         selectedFile: 'Обрано файл:',
         save: 'Зберегти',
+        success: 'Ваше фото успішно оновлено.',
     },
 
     securitySettings: {
@@ -95,6 +96,7 @@ export default {
         lastNameDescription: 'Необов\'язково, проте з ним виглядає краще.',
         nickName: 'Нік',
         nickNameDescription: 'Ваша унікальна ідентифікація. Буде використовуватись для URL адрес, тегів та інше.',
+        nickNameAvailable: 'Доступний',
         defaultCurrency: 'Валюта',
         defaultCurrencyDescription: 'Ваша локальна валюта, яку Ви використовуєте зазвичай. Валюта за замовчуванням для нових гаманців.',
         language: 'Мова',

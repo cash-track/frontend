@@ -11,7 +11,7 @@ vi.mock('../client', async (importOriginal) => {
 const mockAxios = { get: vi.fn(), post: vi.fn(), put: vi.fn(), delete: vi.fn() } as unknown as AxiosInstance
 
 import {
-    getProfile, updateProfile, checkNickName, uploadPhoto, updateLocale,
+    getProfile, updateProfile, checkNickName, getSocial, uploadPhoto, updateLocale,
     getChargesFlowStats, getCounterStats, getLatestWallets,
 } from '../profile'
 import { User } from '../models/user'
@@ -71,6 +71,27 @@ describe('checkNickName', () => {
         await checkNickName('jane_doe')
 
         expect(mockAxios.post).toHaveBeenCalledWith('/api/profile/check/nick-name', { nickName: 'jane_doe' })
+    })
+})
+
+describe('getSocial', () => {
+    beforeEach(() => vi.clearAllMocks())
+
+    it('calls GET /api/profile/social and returns connected providers', async () => {
+        mockAxios.get = vi.fn().mockResolvedValue({ data: { data: { google: true } } })
+
+        const result = await getSocial()
+
+        expect(mockAxios.get).toHaveBeenCalledWith('/api/profile/social')
+        expect(result.google).toBe(true)
+    })
+
+    it('defaults google to false when the flag is absent', async () => {
+        mockAxios.get = vi.fn().mockResolvedValue({ data: { data: {} } })
+
+        const result = await getSocial()
+
+        expect(result.google).toBe(false)
     })
 })
 

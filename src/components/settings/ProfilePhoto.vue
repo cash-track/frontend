@@ -4,32 +4,29 @@ import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
 import { useProfileStore } from '@/stores/profile'
 import { uploadPhoto } from '@/api/profile'
-import { useNotifications } from '@/composables/useNotifications'
 import ProfileAvatar from '@/components/profile/ProfileAvatar.vue'
 
 const { t } = useI18n()
 const profileStore = useProfileStore()
 const { profile } = storeToRefs(profileStore)
-const { notifySuccess, notifyError } = useNotifications()
 
 const selectedFile = shallowRef<File | null>(null)
 const loading = shallowRef(false)
-
-function onFileChange(event: Event) {
-    const input = event.target as HTMLInputElement
-    selectedFile.value = input.files?.[0] ?? null
-}
+const successMessage = shallowRef('')
+const errorMessage = shallowRef('')
 
 async function onUpload() {
     if (!selectedFile.value) return
     loading.value = true
+    successMessage.value = ''
+    errorMessage.value = ''
     try {
         const res = await uploadPhoto(selectedFile.value)
         profileStore.updatePhotoUrl(res.url)
         selectedFile.value = null
-        notifySuccess(t('profilePhoto.save'))
+        successMessage.value = t('profilePhoto.success')
     } catch {
-        notifyError(t('unknownError'))
+        errorMessage.value = t('unknownError')
     } finally {
         loading.value = false
     }
@@ -38,31 +35,42 @@ async function onUpload() {
 
 <template>
     <UCard>
+        <template #header>
+            <h2 class="font-semibold text-lg">{{ t('profilePhoto.photo') }}</h2>
+        </template>
+
         <div class="space-y-4">
             <div v-if="profile" class="flex items-center gap-4">
                 <ProfileAvatar :user="profile" />
-                <div>
-                    <p class="text-sm font-medium">{{ t('profilePhoto.currentPhoto') }}</p>
-                    <p class="text-sm text-muted">{{ t('profilePhoto.currentPhotoDescription') }}</p>
-                </div>
+                <p class="text-sm font-medium">{{ t('profilePhoto.currentPhoto') }}</p>
             </div>
 
-            <UFormField
-                :label="t('profilePhoto.label')"
+            <UFileUpload
+                v-model="selectedFile"
+                accept="image/*"
+                variant="area"
+                layout="list"
+                :label="t('profilePhoto.labelPlaceholder')"
                 :description="t('profilePhoto.labelDescription')"
-            >
-                <input
-                    type="file"
-                    accept="image/*"
-                    :disabled="loading"
-                    class="block w-full text-sm"
-                    @change="onFileChange"
-                />
-            </UFormField>
+                :disabled="loading"
+                class="w-full"
+            />
 
-            <p v-if="selectedFile" class="text-sm text-muted">
-                {{ t('profilePhoto.selectedFile') }} {{ selectedFile.name }}
-            </p>
+            <UAlert
+                v-if="errorMessage"
+                color="error"
+                :description="errorMessage"
+                icon="i-lucide-alert-circle"
+            />
+
+            <UAlert
+                v-if="successMessage"
+                color="success"
+                :description="successMessage"
+                icon="i-lucide-check-circle"
+                close
+                @update:open="successMessage = ''"
+            />
         </div>
 
         <template #footer>

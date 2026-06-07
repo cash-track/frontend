@@ -48,6 +48,7 @@ export default {
         labelDropPlaceholder: 'Drop file here...',
         selectedFile: 'Selected file:',
         save: 'Save',
+        success: 'Your photo has been updated',
     },
 
     securitySettings: {
@@ -95,6 +96,7 @@ export default {
         lastNameDescription: '',
         nickName: 'Nick Name',
         nickNameDescription: 'Your unique identification. Will be used in some URLs, mentions, etc.',
+        nickNameAvailable: 'Available',
         defaultCurrency: 'Default Currency',
         defaultCurrencyDescription: 'Your local currency that you\'re using most of time. Will be used for new wallets as default currency.',
         language: 'Language',

@@ -21,10 +21,6 @@ vi.mock('@/api/profile', () => ({
     uploadPhoto: mockUploadPhoto,
 }))
 
-vi.mock('@/composables/useNotifications', () => ({
-    useNotifications: () => ({ notifySuccess: vi.fn(), notifyError: vi.fn() }),
-}))
-
 const mockUser: User = {
     id: 1,
     name: 'Alice',
@@ -56,14 +52,33 @@ const globalStubs = {
                 template: '<div><slot /></div>',
                 props: ['label', 'description'],
             },
+            UFileUpload: {
+                template: '<input type="file" />',
+                props: ['modelValue', 'accept', 'variant', 'label', 'description', 'disabled', 'class'],
+                emits: ['update:modelValue'],
+            },
+            FileUpload: {
+                template: '<input type="file" />',
+                props: ['modelValue', 'accept', 'variant', 'label', 'description', 'disabled', 'class'],
+                emits: ['update:modelValue'],
+            },
             UButton: {
                 template: '<button :disabled="disabled || loading" @click="$emit(\'click\')">{{ label }}</button>',
                 props: ['label', 'loading', 'disabled', 'variant', 'color'],
                 emits: ['click'],
             },
+            UAlert: {
+                template: '<div>{{ description }}</div>',
+                props: ['color', 'description', 'icon', 'close'],
+                emits: ['update:open'],
+            },
             ProfileAvatar: { template: '<div class="avatar-stub" />', props: ['user'] },
         },
     },
+}
+
+function makeFile() {
+    return new File(['photo-content'], 'photo.jpg', { type: 'image/jpeg' })
 }
 
 describe('ProfilePhoto', () => {
@@ -77,7 +92,7 @@ describe('ProfilePhoto', () => {
         expect(wrapper.find('.avatar-stub').exists()).toBe(true)
     })
 
-    it('renders file input', () => {
+    it('renders file upload input', () => {
         const wrapper = mount(ProfilePhoto, globalStubs)
         expect(wrapper.find('input[type="file"]').exists()).toBe(true)
     })
@@ -92,62 +107,61 @@ describe('ProfilePhoto', () => {
         mockUploadPhoto.mockResolvedValue({ message: 'OK', fileName: 'photo.jpg', url: 'https://example.com/photo.jpg' })
 
         const wrapper = mount(ProfilePhoto, globalStubs)
-        const file = new File(['photo-content'], 'photo.jpg', { type: 'image/jpeg' })
+        const vm = wrapper.vm as unknown as { selectedFile: File | null; onUpload: () => Promise<void> }
 
-        const input = document.createElement('input')
-        Object.defineProperty(input, 'files', { value: [file] })
-
-        const vm = wrapper.vm as unknown as {
-            onFileChange: (e: Event) => void
-            onUpload: () => Promise<void>
-        }
-
-        vm.onFileChange({ target: input } as unknown as Event)
+        vm.selectedFile = makeFile()
         await vm.onUpload()
 
-        expect(mockUploadPhoto).toHaveBeenCalledWith(file)
+        expect(mockUploadPhoto).toHaveBeenCalledWith(expect.any(File))
     })
 
-    it('calls updatePhotoUrl with the returned URL after upload', async () => {
+    it('calls updatePhotoUrl and shows success message after upload', async () => {
         const photoUrl = 'https://example.com/photo.jpg'
         mockUploadPhoto.mockResolvedValue({ message: 'OK', fileName: 'photo.jpg', url: photoUrl })
 
         const wrapper = mount(ProfilePhoto, globalStubs)
-        const file = new File(['photo-content'], 'photo.jpg', { type: 'image/jpeg' })
-
-        const input = document.createElement('input')
-        Object.defineProperty(input, 'files', { value: [file] })
-
         const vm = wrapper.vm as unknown as {
-            onFileChange: (e: Event) => void
+            selectedFile: File | null
             onUpload: () => Promise<void>
+            successMessage: string
         }
 
-        vm.onFileChange({ target: input } as unknown as Event)
+        vm.selectedFile = makeFile()
         await vm.onUpload()
 
         expect(mockUpdatePhotoUrl).toHaveBeenCalledWith(photoUrl)
+        expect(vm.successMessage).toBe('profilePhoto.success')
     })
 
     it('clears selected file after successful upload', async () => {
         mockUploadPhoto.mockResolvedValue({ message: 'OK', fileName: 'photo.jpg', url: 'https://example.com/photo.jpg' })
 
         const wrapper = mount(ProfilePhoto, globalStubs)
-        const file = new File(['photo-content'], 'photo.jpg', { type: 'image/jpeg' })
-
-        const input = document.createElement('input')
-        Object.defineProperty(input, 'files', { value: [file] })
-
         const vm = wrapper.vm as unknown as {
-            onFileChange: (e: Event) => void
-            onUpload: () => Promise<void>
             selectedFile: File | null
+            onUpload: () => Promise<void>
         }
 
-        vm.onFileChange({ target: input } as unknown as Event)
+        vm.selectedFile = makeFile()
         await vm.onUpload()
 
         expect(vm.selectedFile).toBeNull()
+    })
+
+    it('shows an inline error message when upload fails', async () => {
+        mockUploadPhoto.mockRejectedValue(new Error('boom'))
+
+        const wrapper = mount(ProfilePhoto, globalStubs)
+        const vm = wrapper.vm as unknown as {
+            selectedFile: File | null
+            onUpload: () => Promise<void>
+            errorMessage: string
+        }
+
+        vm.selectedFile = makeFile()
+        await vm.onUpload()
+
+        expect(vm.errorMessage).toBe('unknownError')
     })
 
     it('does not call uploadPhoto when no file selected', async () => {

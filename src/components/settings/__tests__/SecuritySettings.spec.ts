@@ -5,9 +5,8 @@ import { createPinia, setActivePinia } from 'pinia'
 import { AxiosError } from 'axios'
 import SecuritySettings from '../SecuritySettings.vue'
 
-const { mockUpdatePassword, mockNotifySuccess } = vi.hoisted(() => ({
+const { mockUpdatePassword } = vi.hoisted(() => ({
     mockUpdatePassword: vi.fn(),
-    mockNotifySuccess: vi.fn(),
 }))
 
 vi.mock('vue-i18n', () => ({
@@ -19,10 +18,6 @@ vi.mock('vue-i18n', () => ({
 
 vi.mock('@/api/profile/password', () => ({
     updatePassword: mockUpdatePassword,
-}))
-
-vi.mock('@/composables/useNotifications', () => ({
-    useNotifications: () => ({ notifySuccess: mockNotifySuccess, notifyError: vi.fn() }),
 }))
 
 const globalStubs = {
@@ -43,7 +38,11 @@ const globalStubs = {
                 props: ['label', 'loading', 'disabled'],
                 emits: ['click'],
             },
-            UAlert: { template: '<div>{{ description }}</div>', props: ['color', 'description', 'icon'] },
+            UAlert: {
+                template: '<div>{{ description }}</div>',
+                props: ['color', 'description', 'icon', 'close'],
+                emits: ['update:open'],
+            },
         },
     },
 }
@@ -54,12 +53,12 @@ describe('SecuritySettings', () => {
         vi.clearAllMocks()
     })
 
-    it('shows field error and does not submit when newPassword is shorter than 6 characters', async () => {
+    it('submits a short newPassword to the API (length is validated server-side)', async () => {
+        mockUpdatePassword.mockResolvedValue(undefined)
         const wrapper = mount(SecuritySettings, globalStubs)
         const vm = wrapper.vm as unknown as {
             form: { currentPassword: string; newPassword: string; newPasswordConfirmation: string }
             onSubmit: () => Promise<void>
-            fieldErrors: Record<string, string[]>
         }
 
         vm.form.currentPassword = 'oldpass'
@@ -67,8 +66,7 @@ describe('SecuritySettings', () => {
         vm.form.newPasswordConfirmation = 'abc'
         await vm.onSubmit()
 
-        expect(mockUpdatePassword).not.toHaveBeenCalled()
-        expect(vm.fieldErrors.newPassword?.[0]).toBeTruthy()
+        expect(mockUpdatePassword).toHaveBeenCalled()
     })
 
     it('shows field error and does not submit when passwords do not match', async () => {
@@ -109,13 +107,14 @@ describe('SecuritySettings', () => {
         })
     })
 
-    it('shows success notification and resets form after successful submit', async () => {
+    it('shows success message and resets form after successful submit', async () => {
         mockUpdatePassword.mockResolvedValue(undefined)
 
         const wrapper = mount(SecuritySettings, globalStubs)
         const vm = wrapper.vm as unknown as {
             form: { currentPassword: string; newPassword: string; newPasswordConfirmation: string }
             onSubmit: () => Promise<void>
+            successMessage: string
         }
 
         vm.form.currentPassword = 'oldpass'
@@ -123,13 +122,13 @@ describe('SecuritySettings', () => {
         vm.form.newPasswordConfirmation = 'newpass123'
         await vm.onSubmit()
 
-        expect(mockNotifySuccess).toHaveBeenCalledWith('securitySettings.success')
+        expect(vm.successMessage).toBe('securitySettings.success')
         expect(vm.form.currentPassword).toBe('')
         expect(vm.form.newPassword).toBe('')
         expect(vm.form.newPasswordConfirmation).toBe('')
     })
 
-    it('shows general error when API call fails', async () => {
+    it('shows field error when API call fails', async () => {
         const axiosError = new AxiosError('Unauthorized')
         axiosError.response = {
             status: 422,

@@ -3,7 +3,6 @@ import { computed, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { Passkey } from '@/api/models/passkey'
 import { deletePasskey } from '@/api/profile/passkeys'
-import { useNotifications } from '@/composables/useNotifications'
 import ConfirmModal from '@/components/Shared/ConfirmModal.vue'
 
 const props = defineProps<{
@@ -15,10 +14,10 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const { notifyError } = useNotifications()
 
 const loading = shallowRef(false)
 const confirmOpen = shallowRef(false)
+const deleteError = shallowRef<string | null>(null)
 
 const createdAt = computed(() =>
     props.passkey.createdAt.toLocaleDateString(undefined, {
@@ -45,12 +44,13 @@ const deleteConfirmDescription = computed(() =>
 
 async function onDeleteConfirmed() {
     loading.value = true
+    deleteError.value = null
     try {
         await deletePasskey(props.passkey.id)
         confirmOpen.value = false
         emit('deleted')
-    } catch {
-        notifyError(t('passkeySettings.delete') + ' failed')
+    } catch (error) {
+        deleteError.value = error instanceof Error ? error.message : t('unknownError')
     } finally {
         loading.value = false
     }
@@ -67,15 +67,19 @@ async function onDeleteConfirmed() {
                 <span>{{ t('passkeySettings.used') }}: {{ usedAt }}</span>
             </p>
         </div>
-        <UButton
-            :label="t('passkeySettings.delete')"
-            color="error"
-            variant="ghost"
-            size="sm"
-            :loading="loading"
-            class="ml-4 shrink-0"
-            @click="confirmOpen = true"
-        />
+        <div class="ml-4 flex shrink-0 items-center gap-2">
+            <UTooltip v-if="deleteError" :text="deleteError" :arrow="true">
+                <UIcon name="i-lucide-triangle-alert" class="text-error size-5" />
+            </UTooltip>
+            <UButton
+                :label="t('passkeySettings.delete')"
+                color="error"
+                variant="ghost"
+                size="sm"
+                :loading="loading"
+                @click="confirmOpen = true"
+            />
+        </div>
 
         <ConfirmModal
             v-model:open="confirmOpen"

@@ -3,11 +3,9 @@ import { reactive, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { updatePassword } from '@/api/profile/password'
 import { useApiErrors } from '@/composables/useApiErrors'
-import { useNotifications } from '@/composables/useNotifications'
 
 const { t } = useI18n()
 const { fieldErrors, generalError, handleError, reset } = useApiErrors()
-const { notifySuccess } = useNotifications()
 
 const form = reactive({
     currentPassword: '',
@@ -16,6 +14,7 @@ const form = reactive({
 })
 
 const loading = shallowRef(false)
+const successMessage = shallowRef('')
 
 function resetForm() {
     form.currentPassword = ''
@@ -25,11 +24,7 @@ function resetForm() {
 
 async function onSubmit() {
     reset()
-
-    if (form.newPassword.length < 6) {
-        fieldErrors.value = { newPassword: [t('securitySettings.newPasswordDescription')] }
-        return
-    }
+    successMessage.value = ''
 
     if (form.newPassword !== form.newPasswordConfirmation) {
         fieldErrors.value = { newPasswordConfirmation: [t('securitySettings.newPasswordConfirmationDescription')] }
@@ -43,7 +38,7 @@ async function onSubmit() {
             newPassword: form.newPassword,
             newPasswordConfirmation: form.newPasswordConfirmation,
         })
-        notifySuccess(t('securitySettings.success'))
+        successMessage.value = t('securitySettings.success')
         resetForm()
     } catch (error) {
         handleError(error)
@@ -109,6 +104,15 @@ async function onSubmit() {
                 color="error"
                 :description="generalError"
                 icon="i-lucide-alert-circle"
+            />
+
+            <UAlert
+                v-if="successMessage"
+                color="success"
+                :description="successMessage"
+                icon="i-lucide-check-circle"
+                close
+                @update:open="successMessage = ''"
             />
         </div>
 

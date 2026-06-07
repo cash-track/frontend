@@ -37,6 +37,10 @@ export interface UploadPhotoResponse {
     url: string
 }
 
+export interface SocialAccounts {
+    google: boolean
+}
+
 export async function getProfile(): Promise<User> {
     return apiCall(async client => {
         const res = await client.get('/api/profile')
@@ -54,6 +58,14 @@ export async function updateProfile(request: UpdateProfileRequest): Promise<User
 export async function checkNickName(nickName: string): Promise<void> {
     return apiCall(async client => {
         await client.post('/api/profile/check/nick-name', { nickName })
+    })
+}
+
+export async function getSocial(): Promise<SocialAccounts> {
+    return apiCall(async client => {
+        const res = await client.get('/api/profile/social')
+        const d = res.data.data as Record<string, unknown>
+        return { google: d.google === true }
     })
 }
 

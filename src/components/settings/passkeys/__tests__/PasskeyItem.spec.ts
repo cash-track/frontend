@@ -5,9 +5,8 @@ import { createPinia, setActivePinia } from 'pinia'
 import PasskeyItem from '../PasskeyItem.vue'
 import { Passkey } from '@/api/models/passkey'
 
-const { mockDeletePasskey, mockNotifyError } = vi.hoisted(() => ({
+const { mockDeletePasskey } = vi.hoisted(() => ({
     mockDeletePasskey: vi.fn(),
-    mockNotifyError: vi.fn(),
 }))
 
 vi.mock('vue-i18n', () => ({
@@ -21,10 +20,6 @@ vi.mock('@/api/profile/passkeys', () => ({
     deletePasskey: mockDeletePasskey,
 }))
 
-vi.mock('@/composables/useNotifications', () => ({
-    useNotifications: () => ({ notifySuccess: vi.fn(), notifyError: mockNotifyError }),
-}))
-
 const globalStubs = {
     global: {
         stubs: {
@@ -34,6 +29,9 @@ const globalStubs = {
                 emits: ['click'],
             },
             UIcon: { template: '<span />', props: ['name', 'class'] },
+            Icon: { template: '<span />', props: ['name', 'class'] },
+            UTooltip: { template: '<span><slot /></span>', props: ['text', 'arrow'] },
+            Tooltip: { template: '<span><slot /></span>', props: ['text', 'arrow'] },
             ConfirmModal: {
                 template: '<div><slot /><button class="confirm-btn" @click="$emit(\'confirm\')">confirm</button></div>',
                 props: ['open', 'title', 'description', 'confirmLabel', 'cancelLabel', 'loading'],
@@ -95,14 +93,14 @@ describe('PasskeyItem', () => {
         expect(wrapper.emitted('deleted')).toBeTruthy()
     })
 
-    it('shows error notification when delete fails', async () => {
+    it('shows inline delete error and does not emit deleted when delete fails', async () => {
         mockDeletePasskey.mockRejectedValue(new Error('Network error'))
 
         const wrapper = mount(PasskeyItem, { ...globalStubs, props: { passkey: makePasskey() } })
-        const vm = wrapper.vm as unknown as { onDeleteConfirmed: () => Promise<void> }
+        const vm = wrapper.vm as unknown as { onDeleteConfirmed: () => Promise<void>; deleteError: string | null }
         await vm.onDeleteConfirmed()
 
-        expect(mockNotifyError).toHaveBeenCalled()
+        expect(vm.deleteError).toBe('Network error')
         expect(wrapper.emitted('deleted')).toBeFalsy()
     })
 })
