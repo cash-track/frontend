@@ -134,7 +134,12 @@ async function onMoveTo(targetWallet: Wallet) {
     }
 }
 
+// Guards against stale responses: when wallets are switched quickly, an earlier
+// request must never overwrite a newer one or clear the loading overlay early.
+let loadToken = 0
+
 async function loadCharges(page = 1, append = false) {
+    const token = ++loadToken
     if (append) {
         loadingMore.value = true
     } else {
@@ -149,6 +154,7 @@ async function loadCharges(page = 1, append = false) {
 
     try {
         const result = await getCharges(props.wallet.id, params)
+        if (token !== loadToken) return
         if (append) {
             charges.value = [...charges.value, ...result.data]
         } else {
@@ -157,11 +163,14 @@ async function loadCharges(page = 1, append = false) {
         pagination.value = result.pagination
         currentPage.value = page
     } catch {
+        if (token !== loadToken) return
         error.value = append ? t('charges.loadingMoreError') : t('charges.loadingError')
         if (!append) charges.value = []
     } finally {
-        loading.value = false
-        loadingMore.value = false
+        if (token === loadToken) {
+            loading.value = false
+            loadingMore.value = false
+        }
     }
 }
 
@@ -213,14 +222,13 @@ function observeSentinel() {
     })
 }
 
-watch(() => props.filter, () => {
+// Combined into one watcher: on a wallet switch the parent resets the filter and
+// sets the new wallet in the same tick, so two separate watchers would each fire a
+// load. An array watch fires once when both change together → a single fetch.
+watch([() => props.wallet.id, () => props.filter], () => {
     selectedCharges.value = []
     loadCharges(1)
 }, { deep: true })
-watch(() => props.wallet.id, () => {
-    selectedCharges.value = []
-    loadCharges(1)
-})
 
 // Re-observe sentinel whenever loading finishes (sentinel enters DOM)
 watch(loading, (val) => {

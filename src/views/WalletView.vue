@@ -91,9 +91,8 @@ function onChargeCreated(charge: Charge) {
         flowChartRef.value?.reload()
         totalChartRef.value?.reload()
     }
-    if (showLimits.value) {
-        limitsRef.value?.reload()
-    }
+    // Limits stays mounted (unmount-on-hide=false), so keep its totals fresh even when collapsed
+    limitsRef.value?.reload()
 }
 
 function onChargeUpdated() {
@@ -102,9 +101,7 @@ function onChargeUpdated() {
         flowChartRef.value?.reload()
         totalChartRef.value?.reload()
     }
-    if (showLimits.value) {
-        limitsRef.value?.reload()
-    }
+    limitsRef.value?.reload()
 }
 
 function onChargeDeleted() {
@@ -113,9 +110,7 @@ function onChargeDeleted() {
         flowChartRef.value?.reload()
         totalChartRef.value?.reload()
     }
-    if (showLimits.value) {
-        limitsRef.value?.reload()
-    }
+    limitsRef.value?.reload()
 }
 
 function onWalletChanged() {
@@ -207,186 +202,241 @@ watch(() => props.walletID, () => {
 
 <template>
     <div>
-        <!-- Loading -->
-        <div v-if="loading" class="flex justify-center py-12">
-            <UIcon name="i-lucide-loader-circle" class="size-8 animate-spin text-muted" />
+        <!-- Wallet switcher: always visible and interactive, even while a wallet loads -->
+        <WalletsActiveShortList />
+
+        <!-- Initial load skeleton (no wallet to show yet) -->
+        <div v-if="loading && !wallet" class="space-y-6">
+            <div class="space-y-3">
+                <USkeleton class="h-8 w-64 rounded-md" />
+                <USkeleton class="h-5 w-40 rounded-md" />
+                <div class="flex gap-6 pt-2">
+                    <USkeleton class="h-10 w-32 rounded-md" />
+                    <USkeleton class="h-10 w-32 rounded-md" />
+                </div>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                <USkeleton v-for="n in 5" :key="n" class="h-9 w-24 rounded-md" />
+            </div>
+            <div class="space-y-3">
+                <USkeleton v-for="n in 6" :key="n" class="h-14 w-full rounded-md" />
+            </div>
         </div>
 
-        <!-- Error -->
+        <!-- Error with no previous content to fall back to -->
         <UAlert
-            v-else-if="error"
+            v-else-if="error && !wallet"
             color="error"
             :description="error"
             icon="i-lucide-alert-circle"
         />
 
-        <!-- Content -->
-        <div v-else-if="wallet">
-            <WalletsActiveShortList />
-            <!-- Header -->
-            <WalletHeader
-                :wallet="wallet"
-                :totals="totals"
-                :users="users"
-                @wallet-changed="onWalletChanged"
+        <!-- Content: kept mounted while switching wallets so it never collapses -->
+        <div v-else-if="wallet" class="relative">
+            <!-- Non-blocking switch indicator -->
+            <div
+                v-if="loading"
+                class="absolute top-0 right-0 z-20 flex items-center gap-2 text-sm text-muted"
+            >
+                <UIcon name="i-lucide-loader-circle" class="size-4 animate-spin" />
+                {{ t('loadingData') }}
+            </div>
+
+            <!-- Switch failed: keep the previous wallet visible, surface the error -->
+            <UAlert
+                v-if="error"
+                color="error"
+                :description="error"
+                icon="i-lucide-alert-circle"
+                class="mb-4"
             />
 
-            <!-- Tool buttons -->
-            <div class="flex flex-wrap gap-2 mt-6 mb-4">
-                <UButton
-                    variant="outline"
-                    color="neutral"
-                    size="md"
-                    icon="i-lucide-tags"
-                    :disabled="!walletTags.length"
-                    :class="{ '!bg-elevated': showTags }"
-                    @click="showTags = !showTags"
-                >
-                    {{ t('wallets.tags') }}
-                </UButton>
-                <UButton
-                    variant="outline"
-                    color="neutral"
-                    size="md"
-                    icon="i-lucide-sliders-horizontal"
-                    :class="{ '!bg-elevated': showLimits }"
-                    @click="showLimits = !showLimits"
-                >
-                    {{ t('wallets.limits') }}
-                </UButton>
-                <UButton
-                    variant="outline"
-                    color="neutral"
-                    size="md"
-                    icon="i-lucide-bar-chart-3"
-                    :class="{ '!bg-elevated': showGraph }"
-                    @click="showGraph = !showGraph"
-                >
-                    {{ t('wallets.graph') }}
-                </UButton>
-                <UButton
-                    variant="outline"
-                    color="neutral"
-                    size="md"
-                    icon="i-lucide-filter"
-                    :class="{ '!bg-elevated': showFilters }"
-                    @click="showFilters = !showFilters"
-                >
-                    {{ t('wallets.filters') }}
-                </UButton>
-                <UButton
-                    v-if="wallet.isActive"
-                    variant="solid"
-                    color="primary"
-                    size="md"
-                    icon="i-lucide-plus"
-                    @click="showCreateForm = !showCreateForm"
-                >
-                    {{ t('charges.new') }}
-                </UButton>
-            </div>
-
-            <!-- Create form -->
-            <div v-if="showCreateForm && wallet.isActive" class="border border-default rounded-lg p-4 mb-4">
-                <ChargeCreate
+            <div :class="{ 'opacity-60 pointer-events-none transition-opacity': loading }">
+                <!-- Header -->
+                <WalletHeader
                     :wallet="wallet"
-                    :wallet-tags="walletTags"
-                    @charge-created="onChargeCreated"
-                    @cancelled="showCreateForm = false"
+                    :totals="totals"
+                    :users="users"
+                    @wallet-changed="onWalletChanged"
                 />
-            </div>
 
-            <!-- Limits -->
-            <div v-show="showLimits" class="border border-default rounded-lg p-4 mb-4">
-                <WalletLimitsTotal
-                    ref="limitsRef"
-                    :wallet="wallet"
-                />
-            </div>
-
-            <!-- Tags section -->
-            <div v-if="showTags" class="border border-default rounded-lg p-4 mb-4">
-                <div class="flex flex-wrap gap-2 mb-6">
-                    <TagChip
-                        v-for="tag in unselectedTags"
-                        :key="tag.id"
-                        :tag="tag"
-                        @click="onTagToggle(tag)"
-                    />
-                </div>
-                <div
-                    v-for="item in totalPerTags"
-                    :key="item.tag.id"
-                    class="flex items-center justify-between py-3 border-t border-default"
-                >
-                    <TagChip :tag="item.tag" :highlighted="true" :removable="true" @click="onTagToggle(item.tag)" />
-                    <div class="flex gap-4 text-lg">
-                        <span v-if="item.hasIncome" class="font-medium">
-                            <UIcon name="i-lucide-arrow-up" class="size-5 hidden sm:inline text-success mr-2 -mt-1" />
-                            <MoneyAmount class="text-success" :amount="item.totalIncomeAmount" :currency="wallet!.defaultCurrency" />
-                            <span class="text-muted font-normal text-xs"> / {{ item.incomePercent }}%</span>
-                        </span>
-                        <span v-if="item.hasExpense" class="font-medium">
-                            <UIcon name="i-lucide-arrow-down" class="size-5 hidden sm:inline text-error mr-2 -mt-1" />
-                            <MoneyAmount class="text-error" :amount="item.totalExpenseAmount" :currency="wallet!.defaultCurrency" />
-                            <span class="text-muted font-normal text-xs"> / {{ item.expensePercent }}%</span>
-                        </span>
-                    </div>
-                </div>
-                <div v-if="selectedTags.length" class="pt-3 border-t border-default">
+                <!-- Tool buttons -->
+                <div class="flex flex-wrap gap-2 mt-6 mb-4">
                     <UButton
-                        variant="soft"
+                        variant="outline"
                         color="neutral"
                         size="md"
-                        icon="i-lucide-x"
-                        @click="selectedTags = []"
+                        icon="i-lucide-tags"
+                        :disabled="!walletTags.length"
+                        :class="{ '!bg-elevated': showTags }"
+                        @click="showTags = !showTags"
                     >
-                        {{ t('wallets.clear') }}
+                        {{ t('wallets.tags') }}
+                    </UButton>
+                    <UButton
+                        variant="outline"
+                        color="neutral"
+                        size="md"
+                        icon="i-lucide-sliders-horizontal"
+                        :class="{ '!bg-elevated': showLimits }"
+                        @click="showLimits = !showLimits"
+                    >
+                        {{ t('wallets.limits') }}
+                    </UButton>
+                    <UButton
+                        variant="outline"
+                        color="neutral"
+                        size="md"
+                        icon="i-lucide-bar-chart-3"
+                        :class="{ '!bg-elevated': showGraph }"
+                        @click="showGraph = !showGraph"
+                    >
+                        {{ t('wallets.graph') }}
+                    </UButton>
+                    <UButton
+                        variant="outline"
+                        color="neutral"
+                        size="md"
+                        icon="i-lucide-filter"
+                        :class="{ '!bg-elevated': showFilters }"
+                        @click="showFilters = !showFilters"
+                    >
+                        {{ t('wallets.filters') }}
+                    </UButton>
+                    <UButton
+                        v-if="wallet.isActive"
+                        variant="solid"
+                        color="primary"
+                        size="md"
+                        icon="i-lucide-plus"
+                        @click="showCreateForm = !showCreateForm"
+                    >
+                        {{ t('charges.new') }}
                     </UButton>
                 </div>
-            </div>
 
-            <!-- Charts -->
-            <div v-if="showGraph" class="space-y-6 mb-4">
-                <div class="border border-default rounded-lg p-4">
-                    <ChargesFlowChart
-                        ref="flowChartRef"
-                        :wallet-id="wallet.id"
-                        :currency="wallet.defaultCurrency"
-                        :tags="selectedTags"
-                        :date-from="filter.dateFrom || undefined"
-                        :date-to="filter.dateTo || undefined"
-                    />
-                </div>
-                <div class="border border-default rounded-lg p-4">
-                    <ChargesTotalChart
-                        ref="totalChartRef"
-                        :wallet-id="wallet.id"
-                        :currency="wallet.defaultCurrency"
+                <!-- Create form -->
+                <UCollapsible v-if="wallet.isActive" v-model:open="showCreateForm">
+                    <template #content>
+                        <div class="border border-default rounded-lg p-4 mb-4">
+                            <ChargeCreate
+                                :wallet="wallet"
+                                :wallet-tags="walletTags"
+                                @charge-created="onChargeCreated"
+                                @cancelled="showCreateForm = false"
+                            />
+                        </div>
+                    </template>
+                </UCollapsible>
+
+                <!-- Limits -->
+                <UCollapsible v-model:open="showLimits" :unmount-on-hide="false">
+                    <template #content>
+                        <div class="border border-default rounded-lg p-4 mb-4">
+                            <WalletLimitsTotal
+                                ref="limitsRef"
+                                :wallet="wallet"
+                            />
+                        </div>
+                    </template>
+                </UCollapsible>
+
+                <!-- Tags section -->
+                <UCollapsible v-model:open="showTags">
+                    <template #content>
+                        <div class="border border-default rounded-lg p-4 mb-4">
+                            <div class="flex flex-wrap gap-2 mb-6">
+                                <TagChip
+                                    v-for="tag in unselectedTags"
+                                    :key="tag.id"
+                                    :tag="tag"
+                                    @click="onTagToggle(tag)"
+                                />
+                            </div>
+                            <div
+                                v-for="item in totalPerTags"
+                                :key="item.tag.id"
+                                class="flex items-center justify-between py-3 border-t border-default"
+                            >
+                                <TagChip :tag="item.tag" :highlighted="true" :removable="true" @click="onTagToggle(item.tag)" />
+                                <div class="flex gap-4 text-lg">
+                                    <span v-if="item.hasIncome" class="font-medium">
+                                        <UIcon name="i-lucide-arrow-up" class="size-5 hidden sm:inline text-success mr-2 -mt-1" />
+                                        <MoneyAmount class="text-success" :amount="item.totalIncomeAmount" :currency="wallet!.defaultCurrency" />
+                                        <span class="text-muted font-normal text-xs"> / {{ item.incomePercent }}%</span>
+                                    </span>
+                                    <span v-if="item.hasExpense" class="font-medium">
+                                        <UIcon name="i-lucide-arrow-down" class="size-5 hidden sm:inline text-error mr-2 -mt-1" />
+                                        <MoneyAmount class="text-error" :amount="item.totalExpenseAmount" :currency="wallet!.defaultCurrency" />
+                                        <span class="text-muted font-normal text-xs"> / {{ item.expensePercent }}%</span>
+                                    </span>
+                                </div>
+                            </div>
+                            <div v-if="selectedTags.length" class="pt-3 border-t border-default">
+                                <UButton
+                                    variant="soft"
+                                    color="neutral"
+                                    size="md"
+                                    icon="i-lucide-x"
+                                    @click="selectedTags = []"
+                                >
+                                    {{ t('wallets.clear') }}
+                                </UButton>
+                            </div>
+                        </div>
+                    </template>
+                </UCollapsible>
+
+                <!-- Charts -->
+                <UCollapsible v-model:open="showGraph">
+                    <template #content>
+                        <div class="space-y-6 mb-4">
+                            <div class="border border-default rounded-lg p-4">
+                                <ChargesFlowChart
+                                    ref="flowChartRef"
+                                    :wallet-id="wallet.id"
+                                    :currency="wallet.defaultCurrency"
+                                    :tags="selectedTags"
+                                    :date-from="filter.dateFrom || undefined"
+                                    :date-to="filter.dateTo || undefined"
+                                />
+                            </div>
+                            <div class="border border-default rounded-lg p-4">
+                                <ChargesTotalChart
+                                    ref="totalChartRef"
+                                    :wallet-id="wallet.id"
+                                    :currency="wallet.defaultCurrency"
+                                    :wallet-tags="walletTags"
+                                    :tags="selectedTags"
+                                    :date-from="filter.dateFrom || undefined"
+                                    :date-to="filter.dateTo || undefined"
+                                />
+                            </div>
+                        </div>
+                    </template>
+                </UCollapsible>
+
+                <!-- Filter -->
+                <UCollapsible v-model:open="showFilters">
+                    <template #content>
+                        <div class="border border-default rounded-lg p-4 mb-4">
+                            <ChargesFilter @filter-change="onFilterChange" />
+                        </div>
+                    </template>
+                </UCollapsible>
+
+                <!-- Charges list -->
+                <div class="rounded-lg">
+                    <ChargesList
+                        ref="chargesListRef"
+                        :wallet="wallet"
                         :wallet-tags="walletTags"
-                        :tags="selectedTags"
-                        :date-from="filter.dateFrom || undefined"
-                        :date-to="filter.dateTo || undefined"
+                        :filter="chargesFilter"
+                        @charge-updated="onChargeUpdated"
+                        @charge-deleted="onChargeDeleted"
+                        @tag-selected="onTagFromCharge"
                     />
                 </div>
-            </div>
-
-            <!-- Filter -->
-            <div v-if="showFilters" class="border border-default rounded-lg p-4 mb-4">
-                <ChargesFilter @filter-change="onFilterChange" />
-            </div>
-
-            <!-- Charges list -->
-            <div class="rounded-lg">
-                <ChargesList
-                    ref="chargesListRef"
-                    :wallet="wallet"
-                    :wallet-tags="walletTags"
-                    :filter="chargesFilter"
-                    @charge-updated="onChargeUpdated"
-                    @charge-deleted="onChargeDeleted"
-                    @tag-selected="onTagFromCharge"
-                />
             </div>
         </div>
     </div>
