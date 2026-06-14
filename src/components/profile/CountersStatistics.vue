@@ -43,15 +43,21 @@ onMounted(async () => {
             <!-- Wallets row -->
             <div class="flex justify-around py-3">
                 <UTooltip :text="t('profile.totalWalletsAmount')" :arrow="true">
-                    <div class="flex items-center gap-1.5 text-muted cursor-default">
-                        <UIcon name="i-lucide-wallet" class="size-4" />
-                        <span class="font-semibold">{{ counters.wallets }}</span>
+                    <div class="flex flex-col items-center gap-0.5 text-muted cursor-default">
+                        <div class="flex items-center gap-1.5">
+                            <UIcon name="i-lucide-wallet" class="size-4" />
+                            <span class="font-semibold">{{ counters.wallets }}</span>
+                        </div>
+                        <span class="text-xs text-muted">{{ t('profile.totalWalletsAmount') }}</span>
                     </div>
                 </UTooltip>
                 <UTooltip :text="t('profile.archivedWalletsAmount')" :arrow="true">
-                    <div class="flex items-center gap-1.5 text-muted cursor-default">
-                        <UIcon name="i-lucide-archive" class="size-4" />
-                        <span class="font-semibold">{{ counters.walletsArchived }}</span>
+                    <div class="flex flex-col items-center gap-0.5 text-muted cursor-default">
+                        <div class="flex items-center gap-1.5">
+                            <UIcon name="i-lucide-archive" class="size-4" />
+                            <span class="font-semibold">{{ counters.walletsArchived }}</span>
+                        </div>
+                        <span class="text-xs text-muted">{{ t('profile.archivedWalletsAmount') }}</span>
                     </div>
                 </UTooltip>
             </div>
@@ -59,21 +65,30 @@ onMounted(async () => {
             <!-- Charges row -->
             <div class="flex justify-around py-3">
                 <UTooltip :text="t('profile.totalChargesAmount')" :arrow="true">
-                    <div class="flex items-center gap-1.5 text-muted cursor-default">
-                        <UIcon name="i-lucide-banknote" class="size-4" />
-                        <span class="font-semibold">{{ counters.charges }}</span>
+                    <div class="flex flex-col items-center gap-0.5 text-muted cursor-default">
+                        <div class="flex items-center gap-1.5">
+                            <UIcon name="i-lucide-banknote" class="size-4" />
+                            <span class="font-semibold">{{ counters.charges }}</span>
+                        </div>
+                        <span class="text-xs text-muted">{{ t('profile.totalChargesAmount') }}</span>
                     </div>
                 </UTooltip>
                 <UTooltip :text="t('profile.incomeChargesAmount')" :arrow="true">
-                    <div class="flex items-center gap-1.5 text-success cursor-default">
-                        <UIcon name="i-lucide-arrow-up" class="size-4" />
-                        <span class="font-semibold">{{ counters.chargesIncome }}</span>
+                    <div class="flex flex-col items-center gap-0.5 text-success cursor-default">
+                        <div class="flex items-center gap-1.5">
+                            <UIcon name="i-lucide-arrow-up" class="size-4" />
+                            <span class="font-semibold">{{ counters.chargesIncome }}</span>
+                        </div>
+                        <span class="text-xs text-muted">{{ t('profile.incomeChargesAmount') }}</span>
                     </div>
                 </UTooltip>
                 <UTooltip :text="t('profile.expenseChargesAmount')" :arrow="true">
-                    <div class="flex items-center gap-1.5 text-error cursor-default">
-                        <UIcon name="i-lucide-arrow-down" class="size-4" />
-                        <span class="font-semibold">{{ chargesExpense }}</span>
+                    <div class="flex flex-col items-center gap-0.5 text-error cursor-default">
+                        <div class="flex items-center gap-1.5">
+                            <UIcon name="i-lucide-arrow-down" class="size-4" />
+                            <span class="font-semibold">{{ chargesExpense }}</span>
+                        </div>
+                        <span class="text-xs text-muted">{{ t('profile.expenseChargesAmount') }}</span>
                     </div>
                 </UTooltip>
             </div>

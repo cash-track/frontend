@@ -86,6 +86,9 @@ async function onSubmit() {
     }
 }
 
+const isExpense = computed(() => operation.value === '-')
+const isIncome = computed(() => operation.value === '+')
+
 const maxDate = computed(() => {
     const d = new Date()
     return new CalendarDate(d.getFullYear(), d.getMonth() + 1, d.getDate())
@@ -112,20 +115,24 @@ const formDate = computed<CalendarDate | null>({
             <div class="flex items-start gap-0 sm:w-2/5">
                 <UButton
                     icon="i-lucide-arrow-down"
-                    :variant="operation === '-' ? 'solid' : 'outline'"
+                    :variant="isExpense ? 'solid' : 'outline'"
                     color="error"
                     size="lg"
                     :disabled="loading"
                     class="rounded-r-none"
+                    :aria-label="t('charges.expense')"
+                    :aria-pressed="isExpense"
                     @click="operation = '-'"
                 />
                 <UButton
                     icon="i-lucide-arrow-up"
-                    :variant="operation === '+' ? 'solid' : 'outline'"
+                    :variant="isIncome ? 'solid' : 'outline'"
                     color="success"
                     size="lg"
                     :disabled="loading"
                     class="rounded-none border-l-0"
+                    :aria-label="t('charges.income')"
+                    :aria-pressed="isIncome"
                     @click="operation = '+'"
                 />
                 <UFormField class="flex-1" :error="fieldErrors.amount?.[0] || fieldErrors.type?.[0]">
@@ -245,14 +252,18 @@ const formDate = computed<CalendarDate | null>({
 
         <!-- Actions -->
         <div class="flex gap-2">
-            <UButton
-                type="submit"
-                color="primary"
-                :loading="loading"
-                :disabled="!authStore.isEmailConfirmed || loading"
-            >
-                {{ t('charges.update') }}
-            </UButton>
+            <UTooltip :text="t('emailConfirmRequired')" :arrow="true" :disabled="authStore.isEmailConfirmed">
+                <span class="inline-flex">
+                    <UButton
+                        type="submit"
+                        color="primary"
+                        :loading="loading"
+                        :disabled="!authStore.isEmailConfirmed || loading"
+                    >
+                        {{ t('charges.update') }}
+                    </UButton>
+                </span>
+            </UTooltip>
             <UButton
                 variant="outline"
                 color="neutral"

@@ -20,10 +20,11 @@ const props = defineProps<{
 const emit = defineEmits<{
     'charge-updated': [charge: Charge]
     'charge-deleted': [chargeId: string]
+    'charges-moved': []
     'tag-selected': [tagId: number]
 }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const walletsStore = useWalletsStore()
 const { format } = useMoneyFormatter()
 
@@ -52,9 +53,9 @@ const chargesGrouped = computed(() => {
 
         let group: string
         if (diff === 0) {
-            group = ''
+            group = t('charges.today')
         } else {
-            group = chargeDate.toLocaleDateString(undefined, {
+            group = chargeDate.toLocaleDateString(locale.value, {
                 weekday: 'long',
                 day: 'numeric',
                 month: 'long',
@@ -127,6 +128,7 @@ async function onMoveTo(targetWallet: Wallet) {
         const movedIds = new Set(selectedCharges.value.map(c => c.id))
         charges.value = charges.value.filter(c => !movedIds.has(c.id))
         selectedCharges.value = []
+        emit('charges-moved')
     } catch {
         moveError.value = t('charges.moveError')
     } finally {
@@ -266,6 +268,16 @@ defineExpose({ onChargeCreated })
             icon="i-lucide-alert-circle"
             class="my-3"
         />
+        <div v-if="error && !loading" class="flex justify-center mb-3">
+            <UButton
+                variant="outline"
+                color="neutral"
+                size="md"
+                @click="loadCharges(1)"
+            >
+                {{ t('retry') }}
+            </UButton>
+        </div>
 
         <!-- Charges list -->
         <div v-if="!error">
@@ -314,16 +326,30 @@ defineExpose({ onChargeCreated })
             <template v-for="[group, groupCharges] in chargesGrouped" :key="group">
                 <!-- Group header -->
                 <div
-                    v-if="group"
-                    class="px-0 sm:px-4 py-2 -mx-4 sm:mx-0 transition-colors"
-                    :class="[
-                        isGroupSelected(groupCharges) ? 'bg-elevated' : (wallet.isActive ? 'hover:bg-muted' : ''),
-                        wallet.isActive ? 'cursor-pointer' : '',
-                    ]"
-                    @click="wallet.isActive ? onToggleGroup(groupCharges) : undefined"
+                    class="group px-0 sm:px-4 py-2 -mx-4 sm:mx-0 transition-colors"
+                    :class="isGroupSelected(groupCharges) ? 'bg-elevated' : (wallet.isActive ? 'hover:bg-muted' : '')"
                 >
                     <div class="flex items-center gap-2">
-                        <div class="w-6 shrink-0 h-px transition-colors" :class="isGroupSelected(groupCharges) ? '' : 'bg-black/10 dark:bg-white/10'" />
+                        <!-- Explicit select control (active wallets only) -->
+                        <UTooltip v-if="wallet.isActive" :text="t('charges.selectGroup')" :arrow="true">
+                            <button
+                                type="button"
+                                class="size-6 rounded-full border transition-colors shrink-0 cursor-pointer flex items-center justify-center"
+                                :class="[
+                                    isGroupSelected(groupCharges)
+                                        ? 'bg-primary border-primary text-white'
+                                        : 'border-default text-muted hover:border-primary hover:text-primary',
+                                    isGroupSelected(groupCharges) ? '' : 'invisible group-hover:visible active:visible pointer-coarse:visible',
+                                ]"
+                                :aria-label="t('charges.selectGroup')"
+                                :aria-pressed="isGroupSelected(groupCharges)"
+                                @click="onToggleGroup(groupCharges)"
+                            >
+                                <UIcon name="i-lucide-check" class="size-4" />
+                            </button>
+                        </UTooltip>
+                        <!-- Decorative divider for inactive wallets -->
+                        <div v-else class="w-6 shrink-0 h-px transition-colors bg-black/10 dark:bg-white/10" />
                         <span class="text-sm text-muted">{{ group }}</span>
                         <div class="flex-1 h-px transition-colors" :class="isGroupSelected(groupCharges) ? '' : 'bg-black/10 dark:bg-white/10'" />
                     </div>

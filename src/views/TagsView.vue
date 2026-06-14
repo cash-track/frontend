@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 import { getTags, deleteTag } from '@/api/tags'
 import type { Tag } from '@/api/models/tag'
 import TagComponent from '@/components/tags/Tag.vue'
@@ -9,6 +10,7 @@ import TagForm from '@/components/tags/TagForm.vue'
 import ConfirmModal from '@/components/Shared/ConfirmModal.vue'
 
 const { t } = useI18n()
+const router = useRouter()
 
 const tags = ref<Tag[]>([])
 const loading = ref(false)
@@ -20,6 +22,7 @@ const editModalOpen = ref(false)
 const deletingTag = ref<Tag | null>(null)
 const deleteModalOpen = ref(false)
 const deleteLoading = ref(false)
+const deleteError = ref<string | null>(null)
 
 async function loadTags() {
     loading.value = true
@@ -37,6 +40,10 @@ function onTagCreated(tag: Tag) {
     tags.value = [tag, ...tags.value]
 }
 
+function viewTag(tag: Tag) {
+    router.push({ name: 'tags.show', params: { tagID: tag.id.toString() } })
+}
+
 function openEdit(tag: Tag) {
     editingTag.value = tag
     editModalOpen.value = true
@@ -50,11 +57,13 @@ function onTagUpdated(updated: Tag) {
 
 function openDelete(tag: Tag) {
     deletingTag.value = tag
+    deleteError.value = null
     deleteModalOpen.value = true
 }
 
 async function confirmDelete() {
     if (!deletingTag.value) return
+    deleteError.value = null
     deleteLoading.value = true
     try {
         await deleteTag(deletingTag.value.id)
@@ -62,7 +71,7 @@ async function confirmDelete() {
         deleteModalOpen.value = false
         deletingTag.value = null
     } catch {
-        // Keep modal open — user can retry
+        deleteError.value = t('tags.deleteError')
     } finally {
         deleteLoading.value = false
     }
@@ -84,12 +93,23 @@ onMounted(loadTags)
         </div>
 
         <!-- Error -->
-        <UAlert
-            v-else-if="error"
-            color="error"
-            :description="error"
-            icon="i-lucide-alert-circle"
-        />
+        <template v-else-if="error">
+            <UAlert
+                color="error"
+                :description="error"
+                icon="i-lucide-alert-circle"
+            />
+            <div class="flex justify-center mt-2">
+                <UButton
+                    variant="outline"
+                    color="neutral"
+                    size="md"
+                    @click="loadTags()"
+                >
+                    {{ t('retry') }}
+                </UButton>
+            </div>
+        </template>
 
         <template v-else>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -100,13 +120,18 @@ onMounted(loadTags)
                         <UPopover
                             v-for="tag in tags"
                             :key="tag.id"
-                            mode="hover"
-                            :open-delay="200"
-                            :close-delay="100"
                         >
-                            <TagComponent :tag="tag" navigable />
+                            <TagComponent :tag="tag" />
                             <template #content>
                                 <div class="flex gap-1 p-1">
+                                    <UButton
+                                        variant="ghost"
+                                        color="neutral"
+                                        size="xs"
+                                        icon="i-lucide-eye"
+                                        :label="t('tags.view')"
+                                        @click="viewTag(tag)"
+                                    />
                                     <UButton
                                         variant="ghost"
                                         color="neutral"
@@ -120,7 +145,7 @@ onMounted(loadTags)
                                         color="error"
                                         size="xs"
                                         icon="i-lucide-trash-2"
-                                        :label="t('charges.delete')"
+                                        :label="t('common.delete')"
                                         @click="openDelete(tag)"
                                     />
                                 </div>
@@ -167,9 +192,11 @@ onMounted(loadTags)
         <ConfirmModal
             v-model:open="deleteModalOpen"
             :title="t('common.delete')"
-            :description="t('tags.deletingConfirm')"
+            :description="t('tags.deletingConfirm', { name: deletingTag?.name ?? '' })"
             :loading="deleteLoading"
+            :error="deleteError"
             @confirm="confirmDelete"
+            @update:open="val => { if (!val) deleteError = null }"
         >
             <TagComponent v-if="deletingTag" :tag="deletingTag" />
         </ConfirmModal>

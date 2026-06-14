@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import { AxiosError } from 'axios'
 import { ApiError, ValidationError } from '@/api/models/error'
+import i18n from '@/lang'
 
 export function useApiErrors() {
     const fieldErrors = ref<Record<string, string[]>>({})
@@ -15,7 +16,8 @@ export function useApiErrors() {
         reset()
 
         if (!(error instanceof AxiosError) || !error.response) {
-            generalError.value = error instanceof Error ? error.message : 'Unknown error'
+            console.error('[useApiErrors] non-HTTP error:', error)
+            generalError.value = i18n.global.t('unknownError')
             return
         }
 
@@ -26,20 +28,22 @@ export function useApiErrors() {
                 const ve = ValidationError.from(data)
                 fieldErrors.value = ve.errors
                 if (Object.keys(ve.errors).length === 0) {
-                    generalError.value = 'One or more fields is not valid'
+                    generalError.value = i18n.global.t('validationError')
                 }
-            } catch {
-                generalError.value = 'Validation failed'
+            } catch (parseError) {
+                console.error('[useApiErrors] HTTP error', 422, parseError)
+                generalError.value = i18n.global.t('validationError')
             }
             return
         }
 
         try {
             const ae = ApiError.from(data)
-            generalError.value = ae.error ?? ae.message
-        } catch {
-            generalError.value = 'Something went wrong. Please try again later.'
+            console.error('[useApiErrors] HTTP error', status, ae.error ?? ae.message)
+        } catch (parseError) {
+            console.error('[useApiErrors] HTTP error', status, parseError)
         }
+        generalError.value = i18n.global.t('unknownError')
     }
 
     return { fieldErrors, generalError, reset, handleError }

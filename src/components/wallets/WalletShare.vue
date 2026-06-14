@@ -65,7 +65,7 @@ async function onInvite(user: User) {
         searchEmail.value = ''
     } catch (error) {
         handleError(error)
-        notifyError(t('wallets.shareMembersLoadingError'))
+        notifyError(t('wallets.shareInviteError'))
     } finally {
         inviting.value = false
     }

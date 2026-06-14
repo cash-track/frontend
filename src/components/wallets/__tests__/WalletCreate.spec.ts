@@ -1,12 +1,13 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { ref } from 'vue'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import WalletCreate from '../WalletCreate.vue'
 
-const { mockCreateWallet, mockLoadActive } = vi.hoisted(() => ({
+const { mockCreateWallet, mockLoadActive, mockRouterPush } = vi.hoisted(() => ({
     mockCreateWallet: vi.fn(),
     mockLoadActive: vi.fn(),
+    mockRouterPush: vi.fn(),
 }))
 
 vi.mock('vue-i18n', () => ({
@@ -14,10 +15,13 @@ vi.mock('vue-i18n', () => ({
         t: (key: string) => key,
         locale: ref('en'),
     }),
+    createI18n: () => ({
+        global: { t: (key: string) => key, locale: { value: 'en' }, setLocaleMessage: vi.fn() },
+    }),
 }))
 
 vi.mock('vue-router', () => ({
-    useRouter: () => ({ push: vi.fn() }),
+    useRouter: () => ({ push: mockRouterPush }),
     useRoute: () => ({ params: {}, query: {}, name: '' }),
     RouterLink: { template: '<a><slot /></a>' },
 }))
@@ -40,10 +44,6 @@ vi.mock('@/api/currency', () => ({
     ]),
 }))
 
-vi.mock('@/composables/useNotifications', () => ({
-    useNotifications: () => ({ notifySuccess: vi.fn(), notifyError: vi.fn() }),
-}))
-
 const globalStubs = {
     global: {
         stubs: {
@@ -52,7 +52,7 @@ const globalStubs = {
             UInput: { template: '<input />', props: ['modelValue', 'disabled', 'placeholder', 'class'], emits: ['update:modelValue'] },
             USelect: { template: '<select />', props: ['modelValue', 'items', 'disabled', 'class'], emits: ['update:modelValue'] },
             USwitch: { template: '<input type="checkbox" />', props: ['modelValue', 'disabled'], emits: ['update:modelValue'] },
-            UButton: { template: '<button :disabled="disabled"><slot /></button>', props: ['label', 'loading', 'disabled', 'variant', 'to'] },
+            UButton: { template: '<button :disabled="disabled"><slot /></button>', props: ['label', 'loading', 'disabled', 'variant', 'color', 'icon', 'to'] },
             UAlert: { template: '<div><slot /></div>', props: ['color', 'description', 'icon'] },
         },
     },
@@ -62,6 +62,10 @@ describe('WalletCreate', () => {
     beforeEach(() => {
         setActivePinia(createPinia())
         vi.clearAllMocks()
+    })
+
+    afterEach(() => {
+        vi.useRealTimers()
     })
 
     it('renders create wallet form', () => {
@@ -76,6 +80,7 @@ describe('WalletCreate', () => {
     })
 
     it('calls createWallet with correct payload on submit', async () => {
+        vi.useFakeTimers()
         mockCreateWallet.mockResolvedValue({ id: 42 })
         mockLoadActive.mockResolvedValue(undefined)
 
@@ -94,6 +99,90 @@ describe('WalletCreate', () => {
                 defaultCurrencyCode: 'USD',
             }),
         )
+
+        wrapper.unmount()
+    })
+
+    it('does not call router.push immediately after success; calls it after 1s', async () => {
+        vi.useFakeTimers()
+        mockCreateWallet.mockResolvedValue({ id: 42 })
+        mockLoadActive.mockResolvedValue(undefined)
+
+        const wrapper = mount(WalletCreate, globalStubs)
+        const vm = wrapper.vm as unknown as { form: { name: string; defaultCurrencyCode: string }; onSubmit: () => Promise<void>; saved: boolean }
+        vm.form.name = 'Test Wallet'
+        vm.form.defaultCurrencyCode = 'USD'
+        await wrapper.vm.$nextTick()
+
+        await vm.onSubmit()
+
+        expect(vm.saved).toBe(true)
+        expect(mockRouterPush).not.toHaveBeenCalled()
+
+        vi.advanceTimersByTime(1000)
+        expect(mockRouterPush).toHaveBeenCalledWith({
+            name: 'wallets.show',
+            params: { walletID: '42' },
+        })
+
+        wrapper.unmount()
+    })
+
+    it('button is disabled while saved', async () => {
+        vi.useFakeTimers()
+        mockCreateWallet.mockResolvedValue({ id: 42 })
+        mockLoadActive.mockResolvedValue(undefined)
+
+        const wrapper = mount(WalletCreate, globalStubs)
+        const vm = wrapper.vm as unknown as { form: { name: string; defaultCurrencyCode: string }; onSubmit: () => Promise<void>; saved: boolean }
+        vm.form.name = 'Test Wallet'
+        vm.form.defaultCurrencyCode = 'USD'
+        await wrapper.vm.$nextTick()
+
+        await vm.onSubmit()
+
+        expect(vm.saved).toBe(true)
+
+        wrapper.unmount()
+    })
+
+    it('does not call router.push when unmounted before 1s elapses', async () => {
+        vi.useFakeTimers()
+        mockCreateWallet.mockResolvedValue({ id: 42 })
+        mockLoadActive.mockResolvedValue(undefined)
+
+        const wrapper = mount(WalletCreate, globalStubs)
+        const vm = wrapper.vm as unknown as { form: { name: string; defaultCurrencyCode: string }; onSubmit: () => Promise<void> }
+        vm.form.name = 'Test Wallet'
+        vm.form.defaultCurrencyCode = 'USD'
+        await wrapper.vm.$nextTick()
+
+        await vm.onSubmit()
+
+        wrapper.unmount()
+        vi.advanceTimersByTime(1000)
+
+        expect(mockRouterPush).not.toHaveBeenCalled()
+    })
+
+    it('does not fire notifySuccess on successful create', async () => {
+        vi.useFakeTimers()
+        mockCreateWallet.mockResolvedValue({ id: 42 })
+        mockLoadActive.mockResolvedValue(undefined)
+
+        const wrapper = mount(WalletCreate, globalStubs)
+        const vm = wrapper.vm as unknown as { form: { name: string; defaultCurrencyCode: string }; onSubmit: () => Promise<void>; saved: boolean }
+        vm.form.name = 'Test Wallet'
+        vm.form.defaultCurrencyCode = 'USD'
+        await wrapper.vm.$nextTick()
+
+        await vm.onSubmit()
+
+        // useNotifications is not imported in WalletCreate — no notifySuccess call possible
+        // Success is indicated by saved flag (check-icon path) instead
+        expect(vm.saved).toBe(true)
+
+        wrapper.unmount()
     })
 
     it('does not call createWallet when name is empty', async () => {

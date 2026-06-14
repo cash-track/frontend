@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, shallowRef, onMounted, useTemplateRef } from 'vue'
+import { ref, shallowRef, watch, onMounted, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 import { getTagById, getTagCharges, getTagTotals, getCommonTags } from '@/api/tags'
 import type { Tag } from '@/api/models/tag'
 import type { Charge, ChargeTotal } from '@/api/models/charge'
@@ -16,6 +17,7 @@ import WalletsActiveShortList from '@/components/wallets/WalletsActiveShortList.
 const props = defineProps<{ tagID: string }>()
 
 const { t } = useI18n()
+const router = useRouter()
 
 const chartRef = useTemplateRef<InstanceType<typeof TagChargesFlowChart>>('chartRef')
 
@@ -32,6 +34,7 @@ const loadingCharges = ref(true)
 const loadingCommonTags = ref(true)
 const loadingMore = ref(false)
 const errorTag = ref<string | null>(null)
+const errorCharges = ref<string | null>(null)
 const currentPage = ref(1)
 const filter = ref<FilterState>({ dateFrom: '', dateTo: '' })
 const showFilters = ref(false)
@@ -69,6 +72,7 @@ async function loadTotals() {
 
 async function loadCharges(page: number) {
     if (page === 1) loadingCharges.value = true
+    errorCharges.value = null
     try {
         const res = await getTagCharges(selectedTagId.value, {
             page,
@@ -82,6 +86,13 @@ async function loadCharges(page: number) {
         }
         pagination.value = res.pagination
         currentPage.value = page
+    } catch {
+        if (page === 1) {
+            errorCharges.value = t('charges.loadingError')
+            charges.value = []
+        } else {
+            errorCharges.value = t('charges.loadingMoreError')
+        }
     } finally {
         if (page === 1) loadingCharges.value = false
     }
@@ -107,13 +118,21 @@ async function selectTag(id: number) {
     currentPage.value = 1
     loadingTotals.value = true
     loadingCharges.value = true
+    router.replace({ name: 'tags.show', params: { tagID: id.toString() } })
     await loadTag()
 }
+
+// Handle external navigation (browser back/forward between tag URLs).
+// selectTag's own guard (`if (id === selectedTagId.value) return`) is the
+// single source of truth — no duplicate check needed here.
+watch(() => props.tagID, async newTagID => {
+    await selectTag(parseInt(newTagID, 10))
+})
 
 function onFilterChange(f: FilterState) {
     filter.value = f
     loadTotals()
-    loadCharges(1).catch(() => {})
+    loadCharges(1)
     // Chart reloads via its own watch(() => props.filter) after parent re-renders and propagates the new prop.
     // Calling chartRef.reload() here would run before the prop update and use the stale filter.
 }
@@ -234,31 +253,50 @@ onMounted(() => {
                 </div>
             </template>
             <template v-else>
-                <ChargeItem
-                    v-for="charge in charges"
-                    :key="charge.id"
-                    :charge="charge"
-                    :wallet="charge.wallet!"
-                    @updated="onChargeUpdated"
-                    @deleted="onChargeDeleted"
-                    @tag-selected="selectTag"
+                <UAlert
+                    v-if="errorCharges"
+                    color="error"
+                    icon="i-lucide-alert-circle"
+                    :description="errorCharges"
+                    class="mb-3"
                 />
-                <div v-if="charges.length === 0" class="flex flex-col items-center justify-center py-12 text-muted">
-                    <UIcon name="i-lucide-receipt" class="size-10 mb-2 opacity-30" />
-                    <p class="text-sm">{{ t('charges.empty') }}</p>
+                <div v-if="errorCharges" class="flex justify-center mt-2">
+                    <UButton
+                        variant="outline"
+                        color="neutral"
+                        size="md"
+                        @click="loadCharges(1)"
+                    >
+                        {{ t('retry') }}
+                    </UButton>
                 </div>
+                <template v-if="!errorCharges">
+                    <ChargeItem
+                        v-for="charge in charges"
+                        :key="charge.id"
+                        :charge="charge"
+                        :wallet="charge.wallet!"
+                        @updated="onChargeUpdated"
+                        @deleted="onChargeDeleted"
+                        @tag-selected="selectTag"
+                    />
+                    <div v-if="charges.length === 0" class="flex flex-col items-center justify-center py-12 text-muted">
+                        <UIcon name="i-lucide-receipt" class="size-10 mb-2 opacity-30" />
+                        <p class="text-sm">{{ t('charges.empty') }}</p>
+                    </div>
+                </template>
             </template>
         </div>
 
         <!-- Load more -->
-        <div v-if="pagination && currentPage < pagination.totalPages" class="flex justify-center">
+        <div v-if="!errorCharges && pagination && currentPage < pagination.totalPages" class="flex justify-center">
             <UButton
                 variant="outline"
                 color="neutral"
                 :loading="loadingMore"
                 @click="loadMore"
             >
-                {{ t('charges.loadingMore') }}
+                {{ t('charges.loadMore') }}
             </UButton>
         </div>
     </div>

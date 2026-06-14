@@ -30,8 +30,8 @@ const isIncome = computed(() => props.walletLimit.limit.operation === '+')
 const isExpense = computed(() => props.walletLimit.limit.operation === '-')
 const isExceeded = computed(() => props.walletLimit.isExceeded)
 const barPercent = computed(() => Math.min(props.walletLimit.percentage, 100))
-const displayPercent = computed(() => props.walletLimit.percentage.toFixed(0))
-const showBarLabel = computed(() => props.walletLimit.percentage > 10)
+const displayPercent = computed(() => Math.floor(props.walletLimit.percentage))
+const labelInside = computed(() => props.walletLimit.percentage > 15)
 
 const menuItems = computed(() => [
     [
@@ -101,6 +101,7 @@ function onEditCancelled() {
                         variant="ghost"
                         color="neutral"
                         size="md"
+                        :aria-label="t('actions')"
                     />
                 </UDropdownMenu>
             </div>
@@ -113,10 +114,17 @@ function onEditCancelled() {
                 :class="isExpense && isExceeded ? 'bg-red-500' : 'bg-gray-400'"
                 :style="{ width: `${barPercent}%` }"
             >
-                <span v-if="showBarLabel" class="text-xs font-bold text-white">
+                <span v-if="labelInside" class="text-xs font-bold text-white">
                     {{ displayPercent }}%
                 </span>
             </div>
+            <span
+                v-if="!labelInside"
+                class="absolute top-1/2 -translate-y-1/2 ml-1 text-xs font-bold text-default"
+                :style="{ left: `${barPercent}%` }"
+            >
+                {{ displayPercent }}%
+            </span>
         </div>
 
         <!-- Edit form (collapsible) -->

@@ -84,8 +84,10 @@ const globalStubs = {
                 props: ['modelValue', 'items', 'disabled', 'class'],
                 emits: ['update:modelValue'],
             },
-            USwitch: { template: '<button role="switch" />', props: ['modelValue', 'label', 'size', 'disabled'] },
-            Switch: { template: '<button role="switch" />', props: ['modelValue', 'label', 'size', 'disabled'] },
+            UBadge: { template: '<span><slot /></span>', props: ['color', 'variant'] },
+            Badge: { template: '<span><slot /></span>', props: ['color', 'variant'] },
+            USkeleton: { template: '<div class="skeleton" />', props: ['class'] },
+            Skeleton: { template: '<div class="skeleton" />', props: ['class'] },
             USeparator: { template: '<hr />' },
             Separator: { template: '<hr />' },
             UTooltip: { template: '<span><slot /></span>', props: ['text', 'arrow'] },
@@ -129,6 +131,46 @@ describe('ProfileSettings', () => {
         const vm = wrapper.vm as unknown as { isGoogleEnabled: boolean }
         expect(mockGetSocial).toHaveBeenCalled()
         expect(vm.isGoogleEnabled).toBe(true)
+    })
+
+    it('shows skeleton while social is loading', () => {
+        let resolve: (v: { google: boolean }) => void
+        mockGetSocial.mockImplementation(() => new Promise(r => { resolve = r }))
+        const wrapper = mount(ProfileSettings, globalStubs)
+        expect(wrapper.find('.skeleton').exists()).toBe(true)
+        expect(wrapper.text()).not.toContain('profileSettings.googleConnected')
+        expect(wrapper.text()).not.toContain('profileSettings.googleNotConnected')
+        // keep ts happy; resolve is assigned synchronously inside the mock
+        resolve!({ google: false })
+    })
+
+    it('shows connected badge when google is true', async () => {
+        mockGetSocial.mockResolvedValue({ google: true })
+        const wrapper = mount(ProfileSettings, globalStubs)
+        await flushPromises()
+        expect(wrapper.find('.skeleton').exists()).toBe(false)
+        expect(wrapper.text()).toContain('profileSettings.googleConnected')
+        expect(wrapper.text()).not.toContain('profileSettings.googleNotConnected')
+    })
+
+    it('shows not-connected badge when google is false', async () => {
+        mockGetSocial.mockResolvedValue({ google: false })
+        const wrapper = mount(ProfileSettings, globalStubs)
+        await flushPromises()
+        expect(wrapper.find('.skeleton').exists()).toBe(false)
+        expect(wrapper.text()).toContain('profileSettings.googleNotConnected')
+        expect(wrapper.text()).not.toContain('profileSettings.googleConnected')
+    })
+
+    it('shows socialLoadError when getSocial rejects', async () => {
+        mockGetSocial.mockRejectedValue(new Error('network'))
+        const wrapper = mount(ProfileSettings, globalStubs)
+        await flushPromises()
+        expect(wrapper.find('.skeleton').exists()).toBe(false)
+        expect(wrapper.text()).toContain('profileSettings.socialLoadError')
+        expect(wrapper.text()).not.toContain('profileSettings.googleConnected')
+        expect(wrapper.text()).not.toContain('profileSettings.googleNotConnected')
+        expect(wrapper.findComponent({ name: 'UBadge' }).exists()).toBe(false)
     })
 
     it('debounced nickName check fires checkNickName after the delay when changed', async () => {

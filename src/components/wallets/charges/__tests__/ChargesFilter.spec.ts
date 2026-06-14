@@ -17,6 +17,7 @@ const globalStubs = {
             UInputDate: true,
             UBadge: true,
             UIcon: true,
+            UFormField: { template: '<div><label>{{ label }}</label><slot /></div>', props: ['label'] },
         },
     },
 }
@@ -70,5 +71,12 @@ describe('ChargesFilter', () => {
         const lastEvent = events![events!.length - 1][0] as { dateFrom: string; dateTo: string }
         expect(lastEvent.dateFrom).toBe('2025-01-01')
         expect(lastEvent.dateTo).toBe('2025-12-31')
+    })
+
+    it('renders visible labels for the from and to date inputs', () => {
+        const wrapper = mount(ChargesFilter, globalStubs)
+
+        expect(wrapper.text()).toContain('charges.filterFrom')
+        expect(wrapper.text()).toContain('charges.filterTo')
     })
 })

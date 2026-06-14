@@ -100,6 +100,10 @@ const chartData = computed<ChartData<'bar'>>(() => {
     }
 })
 
+const hasData = computed(() =>
+    chartData.value.datasets.some(ds => (ds.data as number[]).some(v => v !== 0))
+)
+
 const chartOptions = computed<ChartOptions<'bar'>>(() => ({
     responsive: true,
     maintainAspectRatio: false,
@@ -108,9 +112,11 @@ const chartOptions = computed<ChartOptions<'bar'>>(() => ({
         y: {
             stacked: isTagMode.value,
             ticks: {
+                precision: 0,
                 callback: (value) => {
-                    if (typeof value !== 'number' || !props.currency) return value
-                    return format(value, props.currency)
+                    if (typeof value !== 'number') return value
+                    if (!props.currency) return Math.round(value)
+                    return format(value, props.currency, false)
                 },
             },
         },
@@ -155,7 +161,7 @@ watch(() => props.tags, () => loadData(), { deep: true })
 watch(() => [props.dateFrom, props.dateTo], () => loadData())
 onMounted(() => loadData())
 
-defineExpose({ reload: loadData })
+defineExpose({ reload: loadData, chartOptions })
 </script>
 
 <template>
@@ -186,7 +192,13 @@ defineExpose({ reload: loadData })
             >
                 <UIcon name="i-lucide-loader-circle" class="size-6 animate-spin text-muted" />
             </div>
-            <Bar :data="chartData" :options="chartOptions" />
+            <div v-if="hasData">
+                <Bar :data="chartData" :options="chartOptions" />
+            </div>
+            <div v-else-if="!loading" class="absolute inset-0 flex flex-col items-center justify-center text-muted">
+                <UIcon name="i-lucide-chart-no-axes-column" class="size-10 mb-2 opacity-30" />
+                <p class="text-sm">{{ t('wallets.chartNoData') }}</p>
+            </div>
         </div>
     </div>
 </template>

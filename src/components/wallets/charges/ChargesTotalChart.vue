@@ -71,6 +71,12 @@ function getLabel(tagIds: number[]): string {
     return names.length > 0 ? names.join(', ') : t('tags.withoutTags')
 }
 
+function sliceColor(d: ChargesTotalDataPoint): string {
+    if (d.tags.length === 0) return '#9ca3af'
+    if (d.tags.length === 1 && d.tags[0] === -1) return '#4b5563'
+    return hashColor(getLabel(d.tags))
+}
+
 function filterDataset(dataset: ChargesTotalDataPoint[]): ChargesTotalDataPoint[] {
     const items = dataset.filter(d => d.amount > 0)
     if (items.length <= hideThresholdAmount) return items
@@ -114,7 +120,7 @@ function buildChartData(dataset: ChargesTotalDataPoint[]): ChartData<'doughnut'>
     return {
         labels: filtered.map(d => getLabelWithPercent(d.tags, d.amount, totalSum)),
         datasets: [{
-            backgroundColor: filtered.map(d => hashColor(getLabel(d.tags))),
+            backgroundColor: filtered.map(d => sliceColor(d)),
             data: filtered.map(d => d.amount),
         }],
     }
@@ -186,7 +192,7 @@ watch(() => [props.dateFrom, props.dateTo], () => loadData())
 
 onMounted(() => loadData())
 
-defineExpose({ reload: loadData })
+defineExpose({ reload: loadData, sliceColor, expenseChartData, incomeChartData })
 </script>
 
 <template>

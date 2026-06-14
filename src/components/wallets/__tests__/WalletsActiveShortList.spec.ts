@@ -6,7 +6,6 @@ import { Currency } from '@/api/models/currency'
 import { Wallet } from '@/api/models/wallet'
 import WalletsActiveShortList from '../WalletsActiveShortList.vue'
 
-const mockPush = vi.fn()
 const mockActiveWallets = ref<Wallet[]>([])
 
 vi.mock('vue-i18n', () => ({
@@ -14,10 +13,6 @@ vi.mock('vue-i18n', () => ({
         t: (key: string) => key,
         locale: ref('en'),
     }),
-}))
-
-vi.mock('vue-router', () => ({
-    useRouter: () => ({ push: mockPush }),
 }))
 
 vi.mock('@/stores/wallets', () => ({
@@ -56,9 +51,19 @@ function makeWallet(id: number, name: string, isActive = true, totalAmount = 100
     })
 }
 
-function mountComponent() {
+function mountComponent(props: Record<string, unknown> = {}) {
     return mount(WalletsActiveShortList, {
-        global: { plugins: [createPinia()] },
+        props,
+        global: {
+            plugins: [createPinia()],
+            stubs: {
+                RouterLink: {
+                    name: 'RouterLink',
+                    props: ['to'],
+                    template: '<a class="router-link-stub"><slot /></a>',
+                },
+            },
+        },
     })
 }
 
@@ -89,7 +94,7 @@ describe('WalletsActiveShortList', () => {
         mockActiveWallets.value = [makeWallet(1, 'Test Wallet', true, 1234.56)]
         const wrapper = mountComponent()
         // 1234.56 rounds to 1 235 $ (NBSP as thousands sep and before char)
-        expect(wrapper.text()).toContain('1\u00A0235\u00A0$')
+        expect(wrapper.text()).toContain('1 235 $')
     })
 
     it('filters out inactive wallets', () => {
@@ -102,16 +107,58 @@ describe('WalletsActiveShortList', () => {
         expect(wrapper.text()).not.toContain('Inactive Wallet')
     })
 
-    it('navigates to wallets.show on click', async () => {
-        mockActiveWallets.value = [makeWallet(42, 'My Wallet')]
+    it('renders chips as RouterLinks with correct to prop', () => {
+        mockActiveWallets.value = [
+            makeWallet(1, 'Savings'),
+            makeWallet(2, 'Checking'),
+        ]
         const wrapper = mountComponent()
-        const buttons = wrapper.findAll('button')
-        expect(buttons).toHaveLength(1)
-        await buttons[0].trigger('click')
-        expect(mockPush).toHaveBeenCalledWith({
-            name: 'wallets.show',
-            params: { walletID: '42' },
-        })
+        const links = wrapper.findAllComponents({ name: 'RouterLink' })
+        expect(links).toHaveLength(2)
+        expect(links[0].props('to')).toEqual({ name: 'wallets.show', params: { walletID: '1' } })
+        expect(links[1].props('to')).toEqual({ name: 'wallets.show', params: { walletID: '2' } })
+    })
+
+    it('does not render plain buttons', () => {
+        mockActiveWallets.value = [makeWallet(1, 'My Wallet')]
+        const wrapper = mountComponent()
+        expect(wrapper.findAll('button')).toHaveLength(0)
+    })
+
+    it('applies active-chip classes and aria-current when currentWalletId matches', () => {
+        mockActiveWallets.value = [
+            makeWallet(1, 'Savings'),
+            makeWallet(2, 'Checking'),
+        ]
+        const wrapper = mountComponent({ currentWalletId: 2 })
+        const links = wrapper.findAllComponents({ name: 'RouterLink' })
+        expect(links).toHaveLength(2)
+
+        // active chip: wallet id 2
+        const activeLink = links[1]
+        expect(activeLink.attributes('aria-current')).toBe('page')
+        expect(activeLink.classes()).toContain('bg-elevated')
+        expect(activeLink.classes()).toContain('font-semibold')
+
+        // inactive chip: wallet id 1
+        const inactiveLink = links[0]
+        expect(inactiveLink.attributes('aria-current')).toBeUndefined()
+        expect(inactiveLink.classes()).not.toContain('bg-elevated')
+        expect(inactiveLink.classes()).not.toContain('font-semibold')
+    })
+
+    it('no chip has active classes when currentWalletId prop is absent', () => {
+        mockActiveWallets.value = [
+            makeWallet(1, 'Savings'),
+            makeWallet(2, 'Checking'),
+        ]
+        const wrapper = mountComponent()
+        const links = wrapper.findAllComponents({ name: 'RouterLink' })
+        for (const link of links) {
+            expect(link.attributes('aria-current')).toBeUndefined()
+            expect(link.classes()).not.toContain('bg-elevated')
+            expect(link.classes()).not.toContain('font-semibold')
+        }
     })
 
     it('renders gradient fade element at the right edge', () => {

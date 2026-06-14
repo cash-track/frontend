@@ -29,6 +29,8 @@ const loading = shallowRef(false)
 const successMessage = shallowRef('')
 const isNickNameValid = shallowRef<boolean | null>(null)
 const isGoogleEnabled = shallowRef(false)
+const socialLoading = shallowRef(true)
+const socialFailed = shallowRef(false)
 
 let nickNameTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -87,11 +89,15 @@ async function loadCurrencies() {
 }
 
 async function loadSocial() {
+    socialLoading.value = true
+    socialFailed.value = false
     try {
         const social = await getSocial()
         isGoogleEnabled.value = social.google
     } catch {
-        // non-fatal
+        socialFailed.value = true
+    } finally {
+        socialLoading.value = false
     }
 }
 
@@ -213,7 +219,20 @@ async function onSubmit() {
 
             <div class="space-y-3">
                 <h3 class="font-medium">{{ t('profileSettings.social') }}</h3>
-                <USwitch :model-value="isGoogleEnabled" label="Google" size="lg" disabled />
+                <div class="flex items-center gap-3">
+                    <span class="text-sm">Google</span>
+                    <template v-if="socialLoading">
+                        <USkeleton class="h-5 w-24 rounded-md" />
+                    </template>
+                    <template v-else-if="socialFailed">
+                        <span class="text-sm text-muted">{{ t('profileSettings.socialLoadError') }}</span>
+                    </template>
+                    <template v-else>
+                        <UBadge :color="isGoogleEnabled ? 'success' : 'neutral'" variant="subtle">
+                            {{ isGoogleEnabled ? t('profileSettings.googleConnected') : t('profileSettings.googleNotConnected') }}
+                        </UBadge>
+                    </template>
+                </div>
             </div>
         </div>
 

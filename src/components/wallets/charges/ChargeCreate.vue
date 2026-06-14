@@ -145,6 +145,8 @@ const formDate = computed<CalendarDate | null>({
                     :disabled="loading"
                     class="rounded-r-none"
                     size="lg"
+                    :aria-label="t('charges.expense')"
+                    :aria-pressed="isExpense"
                     @click="setExpense"
                 />
                 <UButton
@@ -154,6 +156,8 @@ const formDate = computed<CalendarDate | null>({
                     :disabled="loading"
                     class="rounded-none border-l-0"
                     size="lg"
+                    :aria-label="t('charges.income')"
+                    :aria-pressed="isIncome"
                     @click="setIncome"
                 />
                 <UFormField class="flex-1" :error="fieldErrors.amount?.[0] || fieldErrors.type?.[0]">
@@ -210,7 +214,7 @@ const formDate = computed<CalendarDate | null>({
         <!-- Optional: description -->
         <div v-if="!showDescription && !fieldErrors.description">
             <button type="button" class="text-sm text-primary hover:underline cursor-pointer" @click="showDescription = true">
-                {{ t('charges.changeDescription') }}
+                {{ t('charges.addDescription') }}
             </button>
         </div>
         <UFormField v-if="showDescription || fieldErrors.description" :error="fieldErrors.description?.[0]">
@@ -225,7 +229,7 @@ const formDate = computed<CalendarDate | null>({
         <!-- Optional: dateTime -->
         <div v-if="!showDateTime && !fieldErrors.dateTime">
             <button type="button" class="text-sm text-primary hover:underline cursor-pointer" @click="enableDateTime">
-                {{ t('charges.changeDate') }}
+                {{ t('charges.setDate') }}
             </button>
         </div>
         <div v-if="showDateTime || fieldErrors.dateTime" class="flex flex-col sm:flex-row gap-3">
@@ -276,14 +280,18 @@ const formDate = computed<CalendarDate | null>({
 
         <!-- Submit -->
         <div class="flex gap-2">
-            <UButton
-                type="submit"
-                color="primary"
-                :loading="loading"
-                :disabled="!authStore.isEmailConfirmed || loading"
-            >
-                {{ t('charges.create') }}
-            </UButton>
+            <UTooltip :text="t('emailConfirmRequired')" :arrow="true" :disabled="authStore.isEmailConfirmed">
+                <span class="inline-flex">
+                    <UButton
+                        type="submit"
+                        color="primary"
+                        :loading="loading"
+                        :disabled="!authStore.isEmailConfirmed || loading"
+                    >
+                        {{ t('charges.create') }}
+                    </UButton>
+                </span>
+            </UTooltip>
             <UButton
                 variant="outline"
                 color="neutral"

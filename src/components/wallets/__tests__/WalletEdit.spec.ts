@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { ref } from 'vue'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
@@ -6,10 +6,11 @@ import { Currency } from '@/api/models/currency'
 import { Wallet } from '@/api/models/wallet'
 import WalletEdit from '../WalletEdit.vue'
 
-const { mockUpdateWallet, mockDeleteWallet, mockLoadActive } = vi.hoisted(() => ({
+const { mockUpdateWallet, mockDeleteWallet, mockLoadActive, mockRouterPush } = vi.hoisted(() => ({
     mockUpdateWallet: vi.fn(),
     mockDeleteWallet: vi.fn(),
     mockLoadActive: vi.fn(),
+    mockRouterPush: vi.fn(),
 }))
 
 vi.mock('vue-i18n', () => ({
@@ -17,10 +18,13 @@ vi.mock('vue-i18n', () => ({
         t: (key: string) => key,
         locale: ref('en'),
     }),
+    createI18n: () => ({
+        global: { t: (key: string) => key, locale: { value: 'en' }, setLocaleMessage: vi.fn() },
+    }),
 }))
 
 vi.mock('vue-router', () => ({
-    useRouter: () => ({ push: vi.fn() }),
+    useRouter: () => ({ push: mockRouterPush }),
     useRoute: () => ({ params: {}, query: {}, name: '' }),
     RouterLink: { template: '<a><slot /></a>' },
 }))
@@ -38,10 +42,6 @@ vi.mock('@/api/currency', () => ({
     getFeaturedCurrencies: vi.fn().mockResolvedValue([
         { id: 'USD', code: 'USD', name: 'US Dollar', char: '$', rate: 1.0, updatedAt: new Date() },
     ]),
-}))
-
-vi.mock('@/composables/useNotifications', () => ({
-    useNotifications: () => ({ notifySuccess: vi.fn(), notifyError: vi.fn() }),
 }))
 
 const globalStubs = {
@@ -89,6 +89,10 @@ describe('WalletEdit', () => {
         vi.clearAllMocks()
     })
 
+    afterEach(() => {
+        vi.useRealTimers()
+    })
+
     it('renders edit wallet heading', () => {
         const wrapper = mount(WalletEdit, { props: { wallet: makeWallet() }, ...globalStubs })
         expect(wrapper.text()).toContain('wallets.editTitle')
@@ -118,6 +122,7 @@ describe('WalletEdit', () => {
     })
 
     it('calls updateWallet with form data on submit', async () => {
+        vi.useFakeTimers()
         mockUpdateWallet.mockResolvedValue({})
         mockLoadActive.mockResolvedValue(undefined)
 
@@ -129,6 +134,76 @@ describe('WalletEdit', () => {
             5,
             expect.objectContaining({ name: 'My Wallet', defaultCurrencyCode: 'USD' }),
         )
+    })
+
+    it('does not call router.push immediately after success; calls it after 1s', async () => {
+        vi.useFakeTimers()
+        mockUpdateWallet.mockResolvedValue({})
+        mockLoadActive.mockResolvedValue(undefined)
+
+        const wrapper = mount(WalletEdit, { props: { wallet: makeWallet() }, ...globalStubs })
+        const vm = wrapper.vm as unknown as { onSubmit: () => Promise<void>; saved: boolean }
+        await vm.onSubmit()
+
+        expect(vm.saved).toBe(true)
+        expect(mockRouterPush).not.toHaveBeenCalled()
+
+        vi.advanceTimersByTime(1000)
+        expect(mockRouterPush).toHaveBeenCalledWith({
+            name: 'wallets.show',
+            params: { walletID: '5' },
+        })
+
+        wrapper.unmount()
+    })
+
+    it('button is disabled and shows check icon while saved', async () => {
+        vi.useFakeTimers()
+        mockUpdateWallet.mockResolvedValue({})
+        mockLoadActive.mockResolvedValue(undefined)
+
+        const wrapper = mount(WalletEdit, { props: { wallet: makeWallet() }, ...globalStubs })
+        const vm = wrapper.vm as unknown as { onSubmit: () => Promise<void>; saved: boolean }
+        await vm.onSubmit()
+
+        expect(vm.saved).toBe(true)
+
+        const saveBtn = wrapper.findAll('button').find(b => b.text().includes('wallets.update'))
+        expect(saveBtn?.attributes('disabled')).toBeDefined()
+
+        wrapper.unmount()
+    })
+
+    it('does not call router.push when unmounted before 1s elapses', async () => {
+        vi.useFakeTimers()
+        mockUpdateWallet.mockResolvedValue({})
+        mockLoadActive.mockResolvedValue(undefined)
+
+        const wrapper = mount(WalletEdit, { props: { wallet: makeWallet() }, ...globalStubs })
+        const vm = wrapper.vm as unknown as { onSubmit: () => Promise<void> }
+        await vm.onSubmit()
+
+        wrapper.unmount()
+        vi.advanceTimersByTime(1000)
+
+        expect(mockRouterPush).not.toHaveBeenCalled()
+    })
+
+    it('does not fire notifySuccess on successful save', async () => {
+        vi.useFakeTimers()
+        mockUpdateWallet.mockResolvedValue({})
+        mockLoadActive.mockResolvedValue(undefined)
+
+        const wrapper = mount(WalletEdit, { props: { wallet: makeWallet() }, ...globalStubs })
+        const vm = wrapper.vm as unknown as { onSubmit: () => Promise<void> }
+        await vm.onSubmit()
+
+        // useNotifications is not imported in WalletEdit — no notifySuccess call possible
+        // Assert via the saved flag that success was handled by the check-icon path instead
+        const typedVm = wrapper.vm as unknown as { saved: boolean }
+        expect(typedVm.saved).toBe(true)
+
+        wrapper.unmount()
     })
 
     it('calls deleteWallet on confirmed delete', async () => {

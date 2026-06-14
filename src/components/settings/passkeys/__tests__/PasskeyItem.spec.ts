@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { ref } from 'vue'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import PasskeyItem from '../PasskeyItem.vue'
@@ -9,10 +8,12 @@ const { mockDeletePasskey } = vi.hoisted(() => ({
     mockDeletePasskey: vi.fn(),
 }))
 
+const mockLocale = { value: 'en' }
+
 vi.mock('vue-i18n', () => ({
     useI18n: () => ({
         t: (key: string) => key,
-        locale: ref('en'),
+        locale: mockLocale,
     }),
 }))
 
@@ -54,6 +55,7 @@ describe('PasskeyItem', () => {
     beforeEach(() => {
         setActivePinia(createPinia())
         vi.clearAllMocks()
+        mockLocale.value = 'en'
     })
 
     it('renders passkey name', () => {
@@ -102,5 +104,22 @@ describe('PasskeyItem', () => {
 
         expect(vm.deleteError).toBe('Network error')
         expect(wrapper.emitted('deleted')).toBeFalsy()
+    })
+
+    it('formats createdAt with the app locale (uk → Ukrainian short month abbreviation)', () => {
+        mockLocale.value = 'uk'
+        // 2024-06-01 in Ukrainian with month:'short': June abbreviation is 'черв.'
+        const wrapper = mount(PasskeyItem, { ...globalStubs, props: { passkey: makePasskey() } })
+        expect(wrapper.text()).toContain('черв.')
+        expect(wrapper.text()).not.toContain('Jun')
+    })
+
+    it('formats usedAt with the app locale (uk → Ukrainian short month abbreviation)', () => {
+        mockLocale.value = 'uk'
+        // 2024-09-15 in Ukrainian with month:'short': September abbreviation is 'вер.'
+        const usedAt = new Date('2024-09-15T12:00:00Z')
+        const wrapper = mount(PasskeyItem, { ...globalStubs, props: { passkey: makePasskey(usedAt) } })
+        expect(wrapper.text()).toContain('вер.')
+        expect(wrapper.text()).not.toContain('Sep')
     })
 })

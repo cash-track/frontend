@@ -51,13 +51,13 @@ watch(dateTo, emitChange)
         <div class="flex flex-wrap gap-2 items-center sm:w-1/3">
             <UBadge v-if="dateFrom" color="secondary" variant="soft" class="gap-1 overflow-hidden" size="lg">
                 {{ t('charges.filterFrom') }}: {{ toDateString(dateFrom) }}
-                <button type="button" class="hover:bg-secondary/20 dark:hover:bg-secondary/20 inline-block h-fit w-fit -my-1.5 p-1.5 -mr-2 cursor-pointer" @click="resetDateFrom">
+                <button type="button" class="hover:bg-secondary/20 dark:hover:bg-secondary/20 inline-block h-fit w-fit -my-1.5 p-1.5 -mr-2 cursor-pointer" :aria-label="t('wallets.clear')" @click="resetDateFrom">
                     <UIcon name="i-lucide-x" class="size-4" />
                 </button>
             </UBadge>
             <UBadge v-if="dateTo" color="secondary" variant="soft" class="gap-1 overflow-hidden" size="lg">
                 {{ t('charges.filterTo') }}: {{ toDateString(dateTo) }}
-                <button type="button" class="hover:bg-secondary/20 dark:hover:bg-secondary/20 inline-block h-fit w-fit -my-1.5 p-1.5 -mr-2 cursor-pointer" @click="resetDateTo">
+                <button type="button" class="hover:bg-secondary/20 dark:hover:bg-secondary/20 inline-block h-fit w-fit -my-1.5 p-1.5 -mr-2 cursor-pointer" :aria-label="t('wallets.clear')" @click="resetDateTo">
                     <UIcon name="i-lucide-x" class="size-4" />
                 </button>
             </UBadge>
@@ -65,46 +65,52 @@ watch(dateTo, emitChange)
 
         <!-- Date inputs with calendar popups -->
         <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-2/3">
-            <UInputDate
-                ref="dateFromRef"
-                v-model="dateFrom"
-                class="w-full sm:flex-1"
-            >
-                <template #trailing>
-                    <UPopover>
-                        <UButton
-                            color="neutral"
-                            variant="link"
-                            size="sm"
-                            icon="i-lucide-calendar"
-                            class="px-0"
-                        />
-                        <template #content>
-                            <UCalendar v-model="dateFrom" class="p-2" />
-                        </template>
-                    </UPopover>
-                </template>
-            </UInputDate>
-            <UInputDate
-                ref="dateToRef"
-                v-model="dateTo"
-                class="w-full sm:flex-1"
-            >
-                <template #trailing>
-                    <UPopover>
-                        <UButton
-                            color="neutral"
-                            variant="link"
-                            size="sm"
-                            icon="i-lucide-calendar"
-                            class="px-0"
-                        />
-                        <template #content>
-                            <UCalendar v-model="dateTo" class="p-2" />
-                        </template>
-                    </UPopover>
-                </template>
-            </UInputDate>
+            <UFormField :label="t('charges.filterFrom')" class="w-full sm:flex-1">
+                <UInputDate
+                    ref="dateFromRef"
+                    v-model="dateFrom"
+                    class="w-full"
+                >
+                    <template #trailing>
+                        <UPopover>
+                            <UButton
+                                color="neutral"
+                                variant="link"
+                                size="sm"
+                                icon="i-lucide-calendar"
+                                class="px-0"
+                                :aria-label="t('charges.filterInputFrom')"
+                            />
+                            <template #content>
+                                <UCalendar v-model="dateFrom" class="p-2" />
+                            </template>
+                        </UPopover>
+                    </template>
+                </UInputDate>
+            </UFormField>
+            <UFormField :label="t('charges.filterTo')" class="w-full sm:flex-1">
+                <UInputDate
+                    ref="dateToRef"
+                    v-model="dateTo"
+                    class="w-full"
+                >
+                    <template #trailing>
+                        <UPopover>
+                            <UButton
+                                color="neutral"
+                                variant="link"
+                                size="sm"
+                                icon="i-lucide-calendar"
+                                class="px-0"
+                                :aria-label="t('charges.filterInputTo')"
+                            />
+                            <template #content>
+                                <UCalendar v-model="dateTo" class="p-2" />
+                            </template>
+                        </UPopover>
+                    </template>
+                </UInputDate>
+            </UFormField>
         </div>
     </div>
 </template>

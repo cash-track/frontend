@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import type { Wallet } from '@/api/models/wallet'
 import type { User } from '@/api/models/user'
@@ -13,7 +13,6 @@ const USERS_LIMIT = 4
 const props = defineProps<{ wallet: Wallet }>()
 
 const { t } = useI18n()
-const router = useRouter()
 const { timeAgo } = useTimeAgo()
 const profileStore = useProfileStore()
 
@@ -38,20 +37,14 @@ const hasOneMember = computed(() => props.wallet.users.length === 1)
 const hasMoreMembers = computed(() => props.wallet.users.length > USERS_LIMIT)
 
 const lastUpdated = computed(() => timeAgo(props.wallet.updatedAt))
-
-function navigate() {
-    router.push({
-        name: 'wallets.show',
-        params: { walletID: props.wallet.id.toString() },
-    })
-}
 </script>
 
 <template>
-    <div
-        class="cursor-pointer rounded-lg border border-default hover:border-primary transition-colors"
+    <RouterLink
+        :to="{ name: 'wallets.show', params: { walletID: wallet.id.toString() } }"
+        draggable="false"
+        class="block rounded-lg border border-default hover:border-primary transition-colors no-underline"
         :class="wallet.isActive ? 'bg-default' : 'bg-elevated'"
-        @click="navigate"
     >
         <!-- Header: name + status badge -->
         <div class="p-4">
@@ -62,6 +55,9 @@ function navigate() {
                 </UBadge>
                 <UBadge v-else-if="wallet.isArchived" color="neutral" variant="subtle" class="shrink-0">
                     {{ t('wallets.archived') }}
+                </UBadge>
+                <UBadge v-else color="warning" variant="subtle" class="shrink-0">
+                    {{ t('wallets.disabled') }}
                 </UBadge>
             </div>
         </div>
@@ -131,5 +127,5 @@ function navigate() {
                 />
             </div>
         </div>
-    </div>
+    </RouterLink>
 </template>

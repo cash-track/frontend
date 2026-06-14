@@ -54,7 +54,7 @@ async function onAddPasskey() {
                 addError.value = t('passkeySettings.addClientError')
             }
         } else {
-            addError.value = error instanceof Error ? error.message : t('passkeySettings.addClientError')
+            addError.value = t('passkeySettings.addClientError')
         }
     } finally {
         addLoading.value = false
@@ -110,6 +110,7 @@ function onPasskeyDeleted(id: number) {
         <UAlert
             v-if="passkeysSupported"
             color="info"
+            variant="subtle"
             icon="i-lucide-info"
         >
             <template #description>

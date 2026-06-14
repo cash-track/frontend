@@ -49,6 +49,15 @@ function populateFromTag(tag: Tag | null | undefined) {
 
 watch(() => props.tag, populateFromTag, { immediate: true })
 
+const validationError = computed(() => {
+    if (!nameInput.value.trim()) return null
+    const { name } = parsed.value
+    if (!name) return t('tags.nameRequired')
+    if (name.length < 3) return t('tags.nameTooShort')
+    if (/\s/.test(name)) return t('tags.nameNoSpaces')
+    return null
+})
+
 function validate(): boolean {
     const { name } = parsed.value
     if (!name) return false
@@ -85,6 +94,8 @@ async function onSubmit() {
         loading.value = false
     }
 }
+
+defineExpose({ validationError })
 </script>
 
 <template>
@@ -100,7 +111,7 @@ async function onSubmit() {
                 <!-- Name + emoji field with inline color picker -->
                 <UFormField
                     class="flex-1 min-w-0"
-                    :error="fieldErrors.name?.[0] ?? fieldErrors.icon?.[0]"
+                    :error="validationError ?? fieldErrors.name?.[0] ?? fieldErrors.icon?.[0]"
                 >
                     <UInput
                         v-model="nameInput"
@@ -109,7 +120,7 @@ async function onSubmit() {
                         :placeholder="t('tags.inputLabel')"
                         autocomplete="off"
                         :disabled="loading"
-                        :status="(fieldErrors.name || fieldErrors.icon) ? 'error' : undefined"
+                        :status="(validationError || fieldErrors.name || fieldErrors.icon) ? 'error' : undefined"
                         class="w-full"
                         :ui="{ base: 'rounded-e-none' }"
                     >
@@ -117,6 +128,7 @@ async function onSubmit() {
                             <label
                                 :for="`tag-color-${tag?.id ?? 'new'}`"
                                 class="relative cursor-pointer"
+                                :aria-label="t('tags.pickColor')"
                             >
                                 <span
                                     class="block size-5 rounded-sm border border-default"
@@ -146,6 +158,7 @@ async function onSubmit() {
 
             <!-- Help text -->
             <p class="mt-2 text-xs text-muted">
+                {{ t('tags.nameRules') }}<br>
                 {{ t('tags.inputHelpLine1') }}<br>
                 {{ t('tags.inputHelpLine2') }}<br>
                 {{ t('tags.inputHelpLine3') }}

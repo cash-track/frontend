@@ -26,7 +26,7 @@ async function onRemove() {
         await unshareWallet(props.walletId, props.user.id)
         emit('deleted', props.user.id)
     } catch {
-        notifyError(t('wallets.shareMembersLoadingError'))
+        notifyError(t('wallets.shareRevokeError'))
     } finally {
         removing.value = false
     }
@@ -53,6 +53,7 @@ async function onRemove() {
                 variant="ghost"
                 icon="i-lucide-x"
                 size="xs"
+                :aria-label="t('wallets.shareCancelInvite', [walletName])"
                 :loading="removing"
                 @click="onRemove"
             />

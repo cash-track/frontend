@@ -13,14 +13,14 @@ const emit = defineEmits<{
     deleted: []
 }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const loading = shallowRef(false)
 const confirmOpen = shallowRef(false)
 const deleteError = shallowRef<string | null>(null)
 
 const createdAt = computed(() =>
-    props.passkey.createdAt.toLocaleDateString(undefined, {
+    props.passkey.createdAt.toLocaleDateString(locale.value, {
         year: 'numeric',
         month: 'short',
         day: 'numeric',
@@ -31,7 +31,7 @@ const usedAt = computed(() => {
     if (!props.passkey.usedAt) {
         return t('passkeySettings.usedAtNever')
     }
-    return props.passkey.usedAt.toLocaleDateString(undefined, {
+    return props.passkey.usedAt.toLocaleDateString(locale.value, {
         year: 'numeric',
         month: 'short',
         day: 'numeric',

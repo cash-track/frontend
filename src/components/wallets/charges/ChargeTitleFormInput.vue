@@ -28,6 +28,9 @@ const debounceHandle = ref<ReturnType<typeof setTimeout> | null>(null)
 const lastQuery = ref('')
 const highlightedIndex = ref(-1)
 
+// Guards against stale responses: an earlier request must never overwrite a newer one.
+let loadToken = 0
+
 // Sync local → parent + trigger autocomplete
 watch(localValue, (val) => {
     emit('update:modelValue', val)
@@ -62,6 +65,16 @@ const allItems = computed(() => {
     return items
 })
 
+const listboxId = 'charge-title-listbox'
+
+const activeDescendantId = computed(() => {
+    if (highlightedIndex.value < 0 || !dropdownOpen.value) return undefined
+    const item = allItems.value[highlightedIndex.value]
+    if (!item) return undefined
+    if (item.type === 'tag') return `charge-title-option-tag-${item.tag.id}`
+    return `charge-title-option-title-${highlightedIndex.value}`
+})
+
 const hasResults = computed(() =>
     filteredTagSuggestions.value.length > 0 || filteredTitleSuggestions.value.length > 0,
 )
@@ -84,17 +97,21 @@ function doAutocomplete(value: string) {
     loading.value = true
     debounceHandle.value = setTimeout(() => {
         debounceHandle.value = null
+        const token = ++loadToken
         Promise.all([
             searchWalletTags(props.walletId, q),
             getChargeTitles(q),
         ])
             .then(([tags, titles]) => {
+                if (token !== loadToken) return
                 tagSuggestions.value = tags
                 titleSuggestions.value = titles
                 dropdownOpen.value = hasResults.value
             })
             .catch(() => {})
-            .finally(() => { loading.value = false })
+            .finally(() => {
+                if (token === loadToken) loading.value = false
+            })
     }, 300)
 }
 
@@ -142,6 +159,12 @@ function onBlur() {
 }
 
 function reset() {
+    ++loadToken
+    if (debounceHandle.value !== null) {
+        clearTimeout(debounceHandle.value)
+        debounceHandle.value = null
+    }
+    loading.value = false
     tagSuggestions.value = []
     titleSuggestions.value = []
     dropdownOpen.value = false
@@ -166,6 +189,11 @@ defineExpose({ reset })
             autocomplete="off"
             class="w-full"
             size="lg"
+            role="combobox"
+            aria-autocomplete="list"
+            :aria-expanded="dropdownOpen"
+            :aria-controls="listboxId"
+            :aria-activedescendant="activeDescendantId"
             @focus="onFocus"
             @blur="onBlur"
             @keydown="onKeyDown"
@@ -176,6 +204,8 @@ defineExpose({ reset })
         </UInput>
         <div
             v-if="dropdownOpen"
+            :id="listboxId"
+            role="listbox"
             class="absolute z-10 -mt-1 border-t-0 rounded-t-none w-full rounded-md border border-default bg-default shadow-lg max-h-60 overflow-y-auto"
         >
             <!-- Tag suggestions -->
@@ -183,6 +213,9 @@ defineExpose({ reset })
                 <TagChip
                     v-for="(tag, index) in filteredTagSuggestions"
                     :key="tag.id"
+                    :id="`charge-title-option-tag-${tag.id}`"
+                    role="option"
+                    :aria-selected="index === highlightedIndex"
                     :tag="tag"
                     :highlighted="index === highlightedIndex"
                     @mousedown.prevent="onTagSelect(tag)"
@@ -193,7 +226,10 @@ defineExpose({ reset })
                 <button
                     v-for="(item, i) in filteredTitleSuggestions"
                     :key="item.title"
+                    :id="`charge-title-option-title-${filteredTagSuggestions.length + i}`"
                     type="button"
+                    role="option"
+                    :aria-selected="(filteredTagSuggestions.length + i) === highlightedIndex"
                     class="w-full text-left px-3 py-2 text-sm flex justify-between items-center transition-colors"
                     :class="[
                         item.selected ? 'bg-elevated' : '',

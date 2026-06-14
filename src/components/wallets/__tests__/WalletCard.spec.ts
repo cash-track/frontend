@@ -14,7 +14,11 @@ vi.mock('vue-i18n', () => ({
 }))
 
 vi.mock('vue-router', () => ({
-    useRouter: () => ({ push: vi.fn() }),
+    RouterLink: {
+        name: 'RouterLink',
+        props: ['to'],
+        template: '<a class="router-link-stub" v-bind="$attrs"><slot /></a>',
+    },
 }))
 
 vi.mock('@/stores/profile', () => ({
@@ -56,6 +60,11 @@ function makeWallet(overrides: Partial<{
 const globalStubs = {
     global: {
         stubs: {
+            RouterLink: {
+                name: 'RouterLink',
+                props: ['to'],
+                template: '<a class="router-link-stub" v-bind="$attrs"><slot /></a>',
+            },
             UBadge: { template: '<span><slot /></span>', props: ['color', 'variant'] },
             UAvatar: { template: '<div />', props: ['src', 'alt', 'size'] },
             UAvatarGroup: { template: '<div><slot /></div>', props: ['size'] },
@@ -98,5 +107,28 @@ describe('WalletCard', () => {
         const wallet = makeWallet({ isArchived: true })
         const wrapper = mount(WalletCard, { props: { wallet }, ...globalStubs })
         expect(wrapper.text()).toContain('wallets.archived')
+    })
+
+    it('shows disabled badge when isActive is false and isArchived is false', () => {
+        const wallet = makeWallet({ isActive: false, isArchived: false })
+        const wrapper = mount(WalletCard, { props: { wallet }, ...globalStubs })
+        expect(wrapper.text()).toContain('wallets.disabled')
+        expect(wrapper.text()).not.toContain('wallets.active')
+        expect(wrapper.text()).not.toContain('wallets.archived')
+    })
+
+    it('card root is a RouterLink with correct to prop', () => {
+        const wallet = makeWallet({ isActive: true })
+        const wrapper = mount(WalletCard, { props: { wallet }, ...globalStubs })
+        const link = wrapper.findComponent({ name: 'RouterLink' })
+        expect(link.exists()).toBe(true)
+        expect(link.props('to')).toEqual({ name: 'wallets.show', params: { walletID: '1' } })
+    })
+
+    it('root element has draggable="false"', () => {
+        const wallet = makeWallet({ isActive: true })
+        const wrapper = mount(WalletCard, { props: { wallet }, ...globalStubs })
+        const link = wrapper.findComponent({ name: 'RouterLink' })
+        expect(link.attributes('draggable')).toBe('false')
     })
 })

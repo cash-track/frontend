@@ -1,12 +1,11 @@
 <script setup lang="ts">
-import { reactive, shallowRef, computed, onMounted } from 'vue'
+import { reactive, shallowRef, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { createWallet } from '@/api/wallets'
 import { getFeaturedCurrencies } from '@/api/currency'
 import type { Currency } from '@/api/models/currency'
 import { useApiErrors } from '@/composables/useApiErrors'
-import { useNotifications } from '@/composables/useNotifications'
 import { useProfileStore } from '@/stores/profile'
 import { useWalletsStore } from '@/stores/wallets'
 
@@ -15,7 +14,6 @@ const router = useRouter()
 const profileStore = useProfileStore()
 const walletsStore = useWalletsStore()
 const { fieldErrors, generalError, handleError, reset } = useApiErrors()
-const { notifySuccess } = useNotifications()
 
 const form = reactive({
     name: '',
@@ -24,6 +22,13 @@ const form = reactive({
 
 const currencies = shallowRef<Currency[]>([])
 const loading = shallowRef(false)
+const saved = shallowRef(false)
+
+let redirectTimeout: ReturnType<typeof setTimeout> | null = null
+
+onUnmounted(() => {
+    if (redirectTimeout !== null) clearTimeout(redirectTimeout)
+})
 
 const currencyOptions = computed(() =>
     currencies.value.map(c => ({ label: `${c.code} — ${c.name}`, value: c.code })),
@@ -54,8 +59,10 @@ async function onSubmit() {
             defaultCurrencyCode: form.defaultCurrencyCode,
         })
         await walletsStore.loadActive()
-        notifySuccess(t('wallets.createTitle'))
-        router.push({ name: 'wallets.show', params: { walletID: wallet.id.toString() } })
+        saved.value = true
+        redirectTimeout = setTimeout(() => {
+            router.push({ name: 'wallets.show', params: { walletID: wallet.id.toString() } })
+        }, 1000)
     } catch (error) {
         handleError(error)
     } finally {
@@ -115,7 +122,9 @@ async function onSubmit() {
                 <UButton
                     :label="t('wallets.create')"
                     :loading="loading"
-                    :disabled="!form.name || !form.defaultCurrencyCode"
+                    :icon="saved ? 'i-lucide-check' : undefined"
+                    :color="saved ? 'success' : undefined"
+                    :disabled="loading || saved || !form.name || !form.defaultCurrencyCode"
                     @click="onSubmit"
                 />
             </div>

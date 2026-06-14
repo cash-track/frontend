@@ -10,6 +10,7 @@ import type { WalletTotal } from '@/api/models/wallet'
 import type { User } from '@/api/models/user'
 import type { Tag } from '@/api/models/tag'
 import type { FilterState } from '@/components/wallets/charges/ChargesFilter.vue'
+import { useWalletsStore } from '@/stores/wallets'
 import TagChip from '@/components/tags/Tag.vue'
 import WalletHeader from '@/components/wallets/WalletHeader.vue'
 import ChargeCreate from '@/components/wallets/charges/ChargeCreate.vue'
@@ -25,6 +26,7 @@ const props = defineProps<{ walletID: string }>()
 
 const { t } = useI18n()
 const router = useRouter()
+const walletsStore = useWalletsStore()
 
 const wallet = shallowRef<Wallet | null>(null)
 const totals = shallowRef<WalletTotal | null>(null)
@@ -64,6 +66,10 @@ async function loadWallet() {
         walletTags.value = tags
     } catch {
         error.value = t('wallets.loadingError')
+        wallet.value = null
+        totals.value = null
+        users.value = []
+        walletTags.value = []
     } finally {
         loading.value = false
     }
@@ -93,6 +99,7 @@ function onChargeCreated(charge: Charge) {
     }
     // Limits stays mounted (unmount-on-hide=false), so keep its totals fresh even when collapsed
     limitsRef.value?.reload()
+    walletsStore.loadActive()
 }
 
 function onChargeUpdated() {
@@ -102,6 +109,7 @@ function onChargeUpdated() {
         totalChartRef.value?.reload()
     }
     limitsRef.value?.reload()
+    walletsStore.loadActive()
 }
 
 function onChargeDeleted() {
@@ -111,6 +119,17 @@ function onChargeDeleted() {
         totalChartRef.value?.reload()
     }
     limitsRef.value?.reload()
+    walletsStore.loadActive()
+}
+
+function onChargesMoved() {
+    refreshTotals()
+    if (showGraph.value) {
+        flowChartRef.value?.reload()
+        totalChartRef.value?.reload()
+    }
+    limitsRef.value?.reload()
+    walletsStore.loadActive()
 }
 
 function onWalletChanged() {
@@ -193,17 +212,20 @@ watch(() => props.walletID, () => {
     showCreateForm.value = false
     showFilters.value = false
     showGraph.value = false
+    showLimits.value = false
     showTags.value = false
     filter.value = { dateFrom: '', dateTo: '' }
     selectedTags.value = []
     loadWallet()
 })
+
+defineExpose({ wallet, error, showCreateForm, showFilters, showGraph, showLimits, showTags })
 </script>
 
 <template>
     <div>
         <!-- Wallet switcher: always visible and interactive, even while a wallet loads -->
-        <WalletsActiveShortList />
+        <WalletsActiveShortList :current-wallet-id="Number(props.walletID)" />
 
         <!-- Initial load skeleton (no wallet to show yet) -->
         <div v-if="loading && !wallet" class="space-y-6">
@@ -241,15 +263,6 @@ watch(() => props.walletID, () => {
                 <UIcon name="i-lucide-loader-circle" class="size-4 animate-spin" />
                 {{ t('loadingData') }}
             </div>
-
-            <!-- Switch failed: keep the previous wallet visible, surface the error -->
-            <UAlert
-                v-if="error"
-                color="error"
-                :description="error"
-                icon="i-lucide-alert-circle"
-                class="mb-4"
-            />
 
             <div :class="{ 'opacity-60 pointer-events-none transition-opacity': loading }">
                 <!-- Header -->
@@ -434,6 +447,7 @@ watch(() => props.walletID, () => {
                         :filter="chargesFilter"
                         @charge-updated="onChargeUpdated"
                         @charge-deleted="onChargeDeleted"
+                        @charges-moved="onChargesMoved"
                         @tag-selected="onTagFromCharge"
                     />
                 </div>

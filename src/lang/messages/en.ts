@@ -1,6 +1,7 @@
 export default {
     name: 'English',
     flag: '🇺🇸',
+    menu: 'Menu',
     help: 'Help',
     about: 'About',
     common: {
@@ -12,10 +13,11 @@ export default {
     signOut: 'Sign Out',
     madeBy: 'Made with ❤️ &nbsp;in 🇺🇦',
     error: 'Error',
-    loadingData: 'Loading Data..',
+    loadingData: 'Loading Data...',
     cookiePolicy: 'Cookie Policy',
     privacyPolicy: 'Privacy Policy',
     unknownError: 'Unknown error, please try again later.',
+    validationError: 'Some fields are not valid. Please check the form and try again.',
 
     currency: {
         USD: 'United States dollar',
@@ -42,7 +44,7 @@ export default {
         photo: 'Photo',
         currentPhoto: 'Current Photo',
         currentPhotoDescription: 'Your current profile photo',
-        labelDescription: 'Your personal profile photo. The best choice is a square photo (for ex: 500pxx500px). Do not use too big picture as it is useless.',
+        labelDescription: 'Your personal profile photo. A square photo works best (e.g. 500x500px). Large images will be scaled down.',
         label: 'File',
         labelPlaceholder: 'Choose a file or drop it here...',
         labelDropPlaceholder: 'Drop file here...',
@@ -57,7 +59,7 @@ export default {
         newPassword: 'New Password',
         newPasswordDescription: 'Password must contain at least 6 symbols',
         newPasswordConfirmation: 'Confirm New Password',
-        newPasswordConfirmationDescription: 'Repeat new password here just for sure',
+        newPasswordConfirmationDescription: 'Repeat the new password to confirm.',
         updatePassword: 'Update Password',
         success: 'Password has been updated successfully',
     },
@@ -69,7 +71,7 @@ export default {
         featureSupports: 'Cash Track supports',
         featureSupportsPasskeys: 'Passkeys',
         featureSupportsIdentity: 'as a second option to confirm your identity. Also known as "Passwordless" login.',
-        featureSupportsInfo: 'As soon as you add passkey to your account - you will be able to log in with just a single click. Usually passkeys are using identity verification (such as FaceID, TouchID, Windows Hello etc..) or physical USB keys.',
+        featureSupportsInfo: 'As soon as you add a passkey to your account, you will be able to log in with just a single click. Passkeys usually use identity verification such as Face ID, Touch ID, or Windows Hello, or a physical USB key.',
 
         keyName: 'Key Name',
         keyNameDescription: 'Name of the passkey or device',
@@ -98,12 +100,15 @@ export default {
         nickNameDescription: 'Your unique identification. Will be used in some URLs, mentions, etc.',
         nickNameAvailable: 'Available',
         defaultCurrency: 'Default Currency',
-        defaultCurrencyDescription: 'Your local currency that you\'re using most of time. Will be used for new wallets as default currency.',
+        defaultCurrencyDescription: 'Your local currency that you\'re using most of the time. Will be used for new wallets as default currency.',
         language: 'Language',
         languageDescription: 'Change interface language from the supported list',
         save: 'Save',
         success: 'Your profile has been updated',
         social: 'Social Networks Login',
+        googleConnected: 'Connected',
+        googleNotConnected: 'Not connected',
+        socialLoadError: 'Unable to load connection status.',
     },
 
     profile: {
@@ -112,7 +117,7 @@ export default {
         commonTags: 'Common Tags',
 
         chargesFlowLoadingError: 'Unable to load charges statistics. Please try again later.',
-        chargesFlowNotice: 'For now this statistics took into account only wallets that matched with your default currency.',
+        chargesFlowNotice: 'For now, these statistics only include wallets that match your default currency.',
 
         income: 'Income',
         expense: 'Expense',
@@ -133,6 +138,10 @@ export default {
         expenseChargesAmount: 'Amount of expense charges',
     },
 
+    actions: 'Actions',
+    darkMode: 'Toggle dark mode',
+    language: 'Select language',
+
     wallets: {
         wallets: 'Wallets',
         newWallet: 'New Wallet',
@@ -140,7 +149,8 @@ export default {
         activeTitle: 'Active',
         archived: 'archived',
         archivedTitle: 'Archived',
-        moreMembers: 'and more members..',
+        disabled: 'disabled',
+        moreMembers: 'and more members...',
         listLoadingError: 'Unable to load your wallets. Please try again later.',
         noWallets: 'No Wallets',
         noWalletsMessage: 'You don\'t have any wallets yet. Good time to create one.',
@@ -169,6 +179,7 @@ export default {
         groupByMonth: 'Month',
         groupByYear: 'Year',
         chartLoadingError: 'Unable to load chart data. Please try again later.',
+        chartNoData: 'No data to display',
 
         createTitle: 'Create Wallet',
         editTitle: 'Edit Wallet',
@@ -190,13 +201,27 @@ export default {
         shareSearchError: 'User not found',
         shareCancelInvite: 'Stop sharing wallet {0} for this user',
 
-        deletingConfirm: 'Related charges will be deleted as well. Are you sure you want to delete this wallet? This action cannot be undone.',
+        deletingConfirm: 'Related charges will be deleted as well. Are you sure you want to delete wallet "{name}"? This action cannot be undone.',
+
+        activateError: 'Unable to activate the wallet. Please try again later.',
+        disableError: 'Unable to disable the wallet. Please try again later.',
+        archiveError: 'Unable to archive the wallet. Please try again later.',
+        unArchiveError: 'Unable to unarchive the wallet. Please try again later.',
+        deleteError: 'Unable to delete the wallet. Please try again later.',
+        shareInviteError: 'Unable to invite this user. Please try again later.',
+        shareRevokeError: 'Unable to stop sharing the wallet for this user. Please try again later.',
     },
 
     charges: {
         edit: 'Edit',
         delete: 'Delete',
-        deletingConfirm: 'Are you sure?',
+        deletingConfirm: 'Are you sure you want to delete "{title}"? This action cannot be undone.',
+
+        selectCharge: 'Select charge',
+        selectGroup: 'Select group',
+
+        expense: 'Expense',
+        income: 'Income',
 
         new: 'New Charge',
         amount: 'Amount',
@@ -207,11 +232,15 @@ export default {
         cancel: 'Cancel',
         changeDescription: 'Change description',
         changeDate: 'Change date',
+        addDescription: 'Add description',
+        setDate: 'Set date',
 
-        loading: 'Loading Charges..',
+        today: 'Today',
+        loading: 'Loading Charges...',
         loadingError: 'Unable to load charges. Please try again later.',
         empty: 'No charges yet.',
-        loadingMore: 'Loading more..',
+        loadMore: 'Load more',
+        loadingMore: 'Loading more...',
         loadingMoreError: 'Unable to load more charges. Please try again later.',
 
         filterFrom: 'From',
@@ -221,32 +250,43 @@ export default {
 
         move: 'Move To',
         moveError: 'Unable to move selected charges to target wallet. Please try again later.',
+        deleteError: 'Unable to delete the charge. Please try again.',
         selectedCount: '{count} selected',
         clearSelection: 'Clear',
     },
 
     tags: {
         tags: 'Tags',
+        pickColor: 'Pick a color',
         addNew: 'Add New',
         inputLabel: 'Tag name',
-        inputHelpLine1: 'Try add emoji at the beginning, for example: 🥦 Food',
-        inputHelpLine2: 'Emoji it\'s always a good way to find your tags faster. And that\'s just beautiful.',
-        inputHelpLine3: 'Change a color of your tag to outline it. Tap on a square button before entered tag name.',
+        nameRules: 'Use at least 3 characters and no spaces.',
+        nameRequired: 'Enter a tag name.',
+        nameTooShort: 'Tag name must be at least 3 characters.',
+        nameNoSpaces: 'Tag name cannot contain spaces.',
+        inputHelpLine1: 'Try adding an emoji at the beginning of the tag name, for example: 🥦 Food',
+        inputHelpLine2: 'An emoji is a great way to make your tags easier to find — and they look great too.',
+        inputHelpLine3: 'Change the color of your tag to make it stand out. Tap the square button next to the tag name input.',
         preview: 'Preview',
-        editInfoLine1: 'Tags which you created are accessible by users, with whom you have at least one common wallet.',
-        editInfoLine2: 'But they cannot edit or delete them.',
+        editInfoLine1: 'Tags you create are visible to users who share at least one wallet with you.',
+        editInfoLine2: 'However, they can\'t edit or delete them.',
         create: 'Create',
         edit: 'Edit',
+        view: 'View',
         update: 'Save',
-        deletingConfirm: 'Are you sure you want to delete this tag?',
-        autocompleteHint: 'Find or create tags by start typing..',
+        deletingConfirm: 'Are you sure you want to delete tag "{name}"? This action cannot be undone.',
+        deleteError: 'Unable to delete the tag. Please try again.',
+        autocompleteHint: 'Start typing to find or create tags.',
 
-        stats: 'Analyse tags usage',
-        statsLoadingError: 'Unable to load tag. Please try again later',
+        stats: 'Analyze tag usage',
+        statsLoadingError: 'Unable to load tags. Please try again later.',
 
         withoutTags: 'Without tags',
         otherTags: 'Other {0} tags'
     },
+
+    retry: 'Retry',
+    emailConfirmRequired: 'Confirm your email to do this',
 
     limits: {
         createLimit: 'Create Limit',
@@ -258,7 +298,7 @@ export default {
 
         edit: 'Edit',
         delete: 'Delete',
-        deletingConfirm: 'Are you sure?',
+        deletingConfirm: 'Are you sure you want to delete this limit? This action cannot be undone.',
 
         total: 'Total',
     },

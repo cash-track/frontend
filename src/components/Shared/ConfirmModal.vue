@@ -8,10 +8,12 @@ const props = withDefaults(defineProps<{
     confirmLabel?: string
     cancelLabel?: string
     loading?: boolean
+    error?: string | null
 }>(), {
     confirmLabel: undefined,
     cancelLabel: undefined,
     loading: false,
+    error: null,
 })
 
 const emit = defineEmits<{
@@ -32,11 +34,19 @@ function cancel() {
             <div class="space-y-3">
                 <slot />
                 <p class="text-sm text-muted">{{ props.description }}</p>
+                <UAlert
+                    v-if="props.error"
+                    color="error"
+                    variant="soft"
+                    icon="i-lucide-circle-alert"
+                    :description="props.error"
+                />
             </div>
         </template>
         <template #footer>
             <div class="flex justify-end gap-2">
                 <UButton
+                    color="neutral"
                     variant="ghost"
                     :label="cancelLabel ?? t('common.cancel')"
                     :disabled="loading"

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive, shallowRef, computed, onMounted, watch } from 'vue'
+import { reactive, shallowRef, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { updateWallet, deleteWallet } from '@/api/wallets'
@@ -7,7 +7,6 @@ import { getFeaturedCurrencies } from '@/api/currency'
 import type { Currency } from '@/api/models/currency'
 import type { Wallet } from '@/api/models/wallet'
 import { useApiErrors } from '@/composables/useApiErrors'
-import { useNotifications } from '@/composables/useNotifications'
 import { useWalletsStore } from '@/stores/wallets'
 import ConfirmModal from '@/components/Shared/ConfirmModal.vue'
 
@@ -17,7 +16,6 @@ const { t } = useI18n()
 const router = useRouter()
 const walletsStore = useWalletsStore()
 const { fieldErrors, generalError, handleError, reset } = useApiErrors()
-const { notifySuccess } = useNotifications()
 
 const form = reactive({
     name: props.wallet.name,
@@ -26,8 +24,15 @@ const form = reactive({
 
 const currencies = shallowRef<Currency[]>([])
 const loading = shallowRef(false)
+const saved = shallowRef(false)
 const deleteConfirmOpen = shallowRef(false)
 const deleting = shallowRef(false)
+
+let redirectTimeout: ReturnType<typeof setTimeout> | null = null
+
+onUnmounted(() => {
+    if (redirectTimeout !== null) clearTimeout(redirectTimeout)
+})
 
 const currencyOptions = computed(() =>
     currencies.value.map(c => ({ label: `${c.code} — ${c.name}`, value: c.code })),
@@ -55,8 +60,10 @@ async function onSubmit() {
             defaultCurrencyCode: form.defaultCurrencyCode,
         })
         await walletsStore.loadActive()
-        notifySuccess(t('wallets.editTitle'))
-        router.push({ name: 'wallets.show', params: { walletID: props.wallet.id.toString() } })
+        saved.value = true
+        redirectTimeout = setTimeout(() => {
+            router.push({ name: 'wallets.show', params: { walletID: props.wallet.id.toString() } })
+        }, 1000)
     } catch (error) {
         handleError(error)
     } finally {
@@ -139,7 +146,9 @@ async function onDelete() {
                 <UButton
                     :label="t('wallets.update')"
                     :loading="loading"
-                    :disabled="!form.name || !form.defaultCurrencyCode"
+                    :icon="saved ? 'i-lucide-check' : undefined"
+                    :color="saved ? 'success' : undefined"
+                    :disabled="loading || saved || !form.name || !form.defaultCurrencyCode"
                     @click="onSubmit"
                 />
             </div>
@@ -149,7 +158,7 @@ async function onDelete() {
     <ConfirmModal
         v-model:open="deleteConfirmOpen"
         :title="t('wallets.delete')"
-        :description="t('wallets.deletingConfirm')"
+        :description="t('wallets.deletingConfirm', { name: wallet.name })"
         :confirm-label="t('wallets.delete')"
         :cancel-label="t('wallets.cancel')"
         :loading="deleting"

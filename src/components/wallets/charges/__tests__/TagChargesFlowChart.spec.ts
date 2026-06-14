@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { ref, nextTick } from 'vue'
 import { shallowMount } from '@vue/test-utils'
-import ChargesFlowChart from '../ChargesFlowChart.vue'
+import TagChargesFlowChart from '../TagChargesFlowChart.vue'
 import { Currency } from '@/api/models/currency'
 
 vi.mock('vue-i18n', () => ({
@@ -32,10 +32,10 @@ vi.mock('chart.js', () => ({
     LinearScale: {},
 }))
 
-const mockGetChargesFlowByDate = vi.fn()
+const mockGetTagChargesFlow = vi.fn()
 
 vi.mock('@/api/graph', () => ({
-    getChargesFlowByDate: (...args: unknown[]) => mockGetChargesFlowByDate(...args),
+    getTagChargesFlow: (...args: unknown[]) => mockGetTagChargesFlow(...args),
 }))
 
 const usd = new Currency({ id: 'USD', code: 'USD', name: 'US Dollar', char: '$', rate: 1, updatedAt: new Date() })
@@ -50,15 +50,15 @@ const zeroData = [
     { date: '2025-01-02', timestamp: 1735776000, income: 0, expense: 0 },
 ]
 
-describe('ChargesFlowChart', () => {
+describe('TagChargesFlowChart', () => {
     beforeEach(() => {
         vi.clearAllMocks()
     })
 
     it('mounts without errors', async () => {
-        mockGetChargesFlowByDate.mockResolvedValue(nonZeroData)
-        const wrapper = shallowMount(ChargesFlowChart, {
-            props: { walletId: 1, currency: usd },
+        mockGetTagChargesFlow.mockResolvedValue(nonZeroData)
+        const wrapper = shallowMount(TagChargesFlowChart, {
+            props: { tagId: 1, currency: usd },
             global: { stubs: { USelect: true, UIcon: true, UAlert: true } },
         })
         await nextTick()
@@ -67,9 +67,9 @@ describe('ChargesFlowChart', () => {
     })
 
     it('renders the Bar chart component after loading with non-zero data', async () => {
-        mockGetChargesFlowByDate.mockResolvedValue(nonZeroData)
-        const wrapper = shallowMount(ChargesFlowChart, {
-            props: { walletId: 1, currency: usd },
+        mockGetTagChargesFlow.mockResolvedValue(nonZeroData)
+        const wrapper = shallowMount(TagChargesFlowChart, {
+            props: { tagId: 1, currency: usd },
             global: { stubs: { USelect: true, UIcon: true, UAlert: true } },
         })
         await new Promise(r => setTimeout(r, 0))
@@ -79,9 +79,9 @@ describe('ChargesFlowChart', () => {
     })
 
     it('does NOT render Bar chart and shows empty state when all data is zero', async () => {
-        mockGetChargesFlowByDate.mockResolvedValue(zeroData)
-        const wrapper = shallowMount(ChargesFlowChart, {
-            props: { walletId: 1, currency: usd },
+        mockGetTagChargesFlow.mockResolvedValue(zeroData)
+        const wrapper = shallowMount(TagChargesFlowChart, {
+            props: { tagId: 1, currency: usd },
             global: { stubs: { USelect: true, UIcon: true, UAlert: true } },
         })
         await new Promise(r => setTimeout(r, 0))
@@ -91,9 +91,9 @@ describe('ChargesFlowChart', () => {
     })
 
     it('does NOT render Bar chart and shows empty state when data is empty', async () => {
-        mockGetChargesFlowByDate.mockResolvedValue([])
-        const wrapper = shallowMount(ChargesFlowChart, {
-            props: { walletId: 1, currency: usd },
+        mockGetTagChargesFlow.mockResolvedValue([])
+        const wrapper = shallowMount(TagChargesFlowChart, {
+            props: { tagId: 1, currency: usd },
             global: { stubs: { USelect: true, UIcon: true, UAlert: true } },
         })
         await new Promise(r => setTimeout(r, 0))
@@ -103,9 +103,9 @@ describe('ChargesFlowChart', () => {
     })
 
     it('y-scale tick callback returns integer (Math.round) when currency is null', async () => {
-        mockGetChargesFlowByDate.mockResolvedValue(nonZeroData)
-        const wrapper = shallowMount(ChargesFlowChart, {
-            props: { walletId: 1, currency: null },
+        mockGetTagChargesFlow.mockResolvedValue(nonZeroData)
+        const wrapper = shallowMount(TagChargesFlowChart, {
+            props: { tagId: 1, currency: null },
             global: { stubs: { USelect: true, UIcon: true, UAlert: true } },
         })
         await new Promise(r => setTimeout(r, 0))
@@ -120,9 +120,9 @@ describe('ChargesFlowChart', () => {
     })
 
     it('y-scale tick callback returns non-number unchanged', async () => {
-        mockGetChargesFlowByDate.mockResolvedValue(nonZeroData)
-        const wrapper = shallowMount(ChargesFlowChart, {
-            props: { walletId: 1, currency: null },
+        mockGetTagChargesFlow.mockResolvedValue(nonZeroData)
+        const wrapper = shallowMount(TagChargesFlowChart, {
+            props: { tagId: 1, currency: null },
             global: { stubs: { USelect: true, UIcon: true, UAlert: true } },
         })
         await new Promise(r => setTimeout(r, 0))
@@ -134,9 +134,9 @@ describe('ChargesFlowChart', () => {
     })
 
     it('y-scale precision is 0', async () => {
-        mockGetChargesFlowByDate.mockResolvedValue(nonZeroData)
-        const wrapper = shallowMount(ChargesFlowChart, {
-            props: { walletId: 1, currency: usd },
+        mockGetTagChargesFlow.mockResolvedValue(nonZeroData)
+        const wrapper = shallowMount(TagChargesFlowChart, {
+            props: { tagId: 1, currency: usd },
             global: { stubs: { USelect: true, UIcon: true, UAlert: true } },
         })
         await new Promise(r => setTimeout(r, 0))
@@ -147,9 +147,9 @@ describe('ChargesFlowChart', () => {
     })
 
     it('y-scale tick callback with currency produces no decimal fraction', async () => {
-        mockGetChargesFlowByDate.mockResolvedValue(nonZeroData)
-        const wrapper = shallowMount(ChargesFlowChart, {
-            props: { walletId: 1, currency: usd },
+        mockGetTagChargesFlow.mockResolvedValue(nonZeroData)
+        const wrapper = shallowMount(TagChargesFlowChart, {
+            props: { tagId: 1, currency: usd },
             global: { stubs: { USelect: true, UIcon: true, UAlert: true } },
         })
         await new Promise(r => setTimeout(r, 0))

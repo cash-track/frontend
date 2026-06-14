@@ -64,4 +64,17 @@ describe('CountersStatistics.vue', () => {
 
         expect(wrapper.find('.text-warning').exists()).toBe(true)
     })
+
+    it('renders visible label text for each counter', async () => {
+        vi.mocked(getCounterStats).mockResolvedValue(mockStats)
+
+        const wrapper = mount(CountersStatistics, globalStubs)
+        await flushPromises()
+
+        expect(wrapper.text()).toContain('profile.totalWalletsAmount')
+        expect(wrapper.text()).toContain('profile.archivedWalletsAmount')
+        expect(wrapper.text()).toContain('profile.totalChargesAmount')
+        expect(wrapper.text()).toContain('profile.incomeChargesAmount')
+        expect(wrapper.text()).toContain('profile.expenseChargesAmount')
+    })
 })

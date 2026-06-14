@@ -27,18 +27,18 @@ const emit = defineEmits<{
     'toggle-selected': [charge: Charge]
 }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const authStore = useAuthStore()
 
 const isExpanded = ref(false)
 const isEdit = ref(false)
 const deleting = ref(false)
 const deleteConfirmOpen = ref(false)
+const deleteError = ref<string | null>(null)
 
-const fullDateTime = computed(() => {
-    const d = props.charge.dateTime
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`
-})
+const fullDateTime = computed(() =>
+    new Intl.DateTimeFormat(locale.value, { dateStyle: 'long', timeStyle: 'short' }).format(props.charge.dateTime),
+)
 
 const chargeTime = computed(() => {
     const d = props.charge.dateTime
@@ -67,13 +67,14 @@ function onUpdated(charge: Charge) {
 }
 
 async function onDeleteConfirmed() {
+    deleteError.value = null
     deleting.value = true
     try {
         await deleteCharge(props.wallet.id, props.charge.id)
         deleteConfirmOpen.value = false
         emit('deleted', props.charge.id)
     } catch {
-        // Silently fail — old code did the same
+        deleteError.value = t('charges.deleteError')
     } finally {
         deleting.value = false
     }
@@ -93,6 +94,7 @@ function openDropdown() {
 }
 
 const actionItems = computed(() => [
+    ...(!authStore.isEmailConfirmed ? [[{ label: t('emailConfirmRequired'), type: 'label' as const, icon: 'i-lucide-info' }]] : []),
     [
         {
             label: t('charges.edit'),
@@ -105,10 +107,12 @@ const actionItems = computed(() => [
             icon: 'i-lucide-trash-2',
             color: 'error' as const,
             disabled: !authStore.isEmailConfirmed || deleting.value,
-            onSelect: () => { confirmMounted.value = true; deleteConfirmOpen.value = true },
+            onSelect: () => { confirmMounted.value = true; deleteError.value = null; deleteConfirmOpen.value = true },
         },
     ],
 ])
+
+defineExpose({ fullDateTime, chargeTime })
 </script>
 
 <template>
@@ -132,6 +136,7 @@ const actionItems = computed(() => [
                         : charge.operation === '+' ? 'border-success text-success' : 'border-error text-error',
                     selectable && !isEdit ? 'cursor-pointer hover:ring-2 ring-primary ring-offset-1' : 'cursor-default',
                 ]"
+                :aria-label="t('charges.selectCharge')"
                 :disabled="!selectable || isEdit"
                 @click.stop="selectable && !isEdit ? emit('toggle-selected', charge) : undefined"
             >
@@ -157,13 +162,14 @@ const actionItems = computed(() => [
                         </span>
                     </div>
 
-                    <div v-if="!readOnly" class="shrink-0" :class="{ 'invisible active:visible group-hover:visible': !selected && !isExpanded && !isDropdownOpen }" @click.stop @pointerenter.once="preloadDropdown">
-                        <UDropdownMenu v-if="dropdownMounted" v-model:open="isDropdownOpen" :items="actionItems" arrow size="md" :content="{align: 'end', side: 'bottom'}" modal>
+                    <div v-if="!readOnly" class="shrink-0" :class="{ 'invisible group-hover:visible active:visible pointer-coarse:visible': !selected && !isExpanded && !isDropdownOpen }" @click.stop @pointerenter.once="preloadDropdown">
+                        <UDropdownMenu v-if="dropdownMounted" v-model:open="isDropdownOpen" :items="actionItems" arrow size="md" :content="{align: 'end', side: 'bottom'}">
                             <UButton
                                 icon="i-lucide-ellipsis-vertical"
                                 variant="ghost"
                                 color="neutral"
                                 size="md"
+                                :aria-label="t('wallets.moreActions')"
                                 :class="{ 'bg-elevated': isDropdownOpen }"
                             />
                         </UDropdownMenu>
@@ -174,6 +180,7 @@ const actionItems = computed(() => [
                             color="neutral"
                             size="md"
                             class="cursor-pointer"
+                            :aria-label="t('wallets.moreActions')"
                             @click="openDropdown"
                         />
                     </div>
@@ -232,11 +239,13 @@ const actionItems = computed(() => [
             v-if="confirmMounted"
             v-model:open="deleteConfirmOpen"
             :title="t('charges.delete')"
-            :description="t('charges.deletingConfirm')"
+            :description="t('charges.deletingConfirm', { title: charge.title })"
             :confirm-label="t('charges.delete')"
             :cancel-label="t('charges.cancel')"
             :loading="deleting"
+            :error="deleteError"
             @confirm="onDeleteConfirmed"
+            @update:open="val => { if (!val) deleteError = null }"
         />
     </div>
 </template>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { RouterView } from 'vue-router'
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { useHead } from '@unhead/vue'
@@ -12,6 +12,7 @@ import EmailIsNotConfirmedAlert from '@/components/profile/EmailIsNotConfirmedAl
 import { useProfileStore } from '@/stores/profile'
 import { useAuthStore } from '@/stores/auth'
 import { useLocaleStore, syncLocaleWithI18n } from '@/stores/locale'
+import { webSiteLink } from '@/shared/links'
 
 const { locale } = useI18n()
 
@@ -33,6 +34,12 @@ const { loading } = storeToRefs(profileStore)
 const { isLogged } = storeToRefs(authStore)
 
 onMounted(() => profileStore.loadProfile())
+
+watch(loading, done => {
+    if (!done && !isLogged.value) {
+        window.location.href = webSiteLink('/')
+    }
+})
 </script>
 
 <template>
@@ -45,19 +52,24 @@ onMounted(() => profileStore.loadProfile())
         </template>
 
         <template v-else-if="isLogged">
-            <AppHeader />
+            <div class="min-h-dvh flex flex-col">
+                <AppHeader />
 
-            <UContainer class="pb-1">
-                <EmailIsNotConfirmedAlert />
+                <UContainer class="flex-1 pb-1">
+                    <EmailIsNotConfirmedAlert />
 
-                <RouterView />
-            </UContainer>
+                    <RouterView />
+                </UContainer>
 
-            <AppFooter />
+                <AppFooter />
+            </div>
+        </template>
+
+        <template v-else>
+            <div class="animate-pulse p-4">
+                <div class="h-12 bg-gray-200 dark:bg-gray-700 rounded mb-4" />
+                <div class="h-64 bg-gray-200 dark:bg-gray-700 rounded" />
+            </div>
         </template>
     </UApp>
 </template>
-
-<style lang="scss">
-
-</style>

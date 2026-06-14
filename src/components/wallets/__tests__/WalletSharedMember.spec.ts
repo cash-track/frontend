@@ -6,8 +6,9 @@ import { TooltipProvider } from 'reka-ui'
 import { User } from '@/api/models/user'
 import WalletSharedMember from '../WalletSharedMember.vue'
 
-const { mockUnshareWallet } = vi.hoisted(() => ({
+const { mockUnshareWallet, mockNotifyError } = vi.hoisted(() => ({
     mockUnshareWallet: vi.fn(),
+    mockNotifyError: vi.fn(),
 }))
 
 vi.mock('vue-i18n', () => ({
@@ -22,7 +23,7 @@ vi.mock('@/api/wallets', () => ({
 }))
 
 vi.mock('@/composables/useNotifications', () => ({
-    useNotifications: () => ({ notifySuccess: vi.fn(), notifyError: vi.fn() }),
+    useNotifications: () => ({ notifySuccess: vi.fn(), notifyError: mockNotifyError }),
 }))
 
 const globalStubs = {
@@ -34,6 +35,8 @@ const globalStubs = {
                 props: ['loading', 'disabled', 'variant', 'color', 'icon', 'size', 'title'],
                 emits: ['click'],
             },
+            UTooltip: { template: '<span><slot /></span>', props: ['text', 'arrow'] },
+            Tooltip: { template: '<span><slot /></span>', props: ['text', 'arrow'] },
         },
     },
 }
@@ -103,5 +106,20 @@ describe('WalletSharedMember', () => {
         expect(mockUnshareWallet).toHaveBeenCalledWith(1, 7)
         expect(wrapper.emitted('deleted')).toBeTruthy()
         expect(wrapper.emitted('deleted')![0]).toEqual([7])
+    })
+
+    it('shows shareRevokeError toast on remove failure', async () => {
+        mockUnshareWallet.mockRejectedValue(new Error('fail'))
+
+        const wrapper = mount(WalletSharedMember, {
+            props: { walletId: 1, walletName: 'Test', user: makeUser(5), isAllowedToRemove: true },
+            ...globalStubs,
+        })
+
+        const vm = wrapper.vm as unknown as { onRemove: () => Promise<void> }
+        await vm.onRemove()
+
+        expect(mockNotifyError).toHaveBeenCalledWith('wallets.shareRevokeError')
+        expect(mockNotifyError).not.toHaveBeenCalledWith('wallets.shareMembersLoadingError')
     })
 })

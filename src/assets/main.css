@@ -19,4 +19,18 @@
   --color-green-950: #0a2329;
 }
 
+@utility scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
 
+html {
+    @apply bg-gray-100 dark:bg-gray-800;
+}
+
+body {
+    @apply bg-white dark:bg-gray-700;
+}

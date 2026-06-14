@@ -19,6 +19,7 @@ const props = defineProps<{
 
 const deleteConfirmOpen = ref(false)
 const deleting = ref(false)
+const deleteError = ref<string | null>(null)
 
 const emit = defineEmits<{
     'wallet-changed': []
@@ -30,6 +31,7 @@ const authStore = useAuthStore()
 const { notifyError } = useNotifications()
 
 const actionItems = computed(() => [
+    ...(!authStore.isEmailConfirmed ? [[{ label: t('emailConfirmRequired'), type: 'label' as const, icon: 'i-lucide-info' }]] : []),
     [
         {
             label: t('wallets.share'),
@@ -70,7 +72,7 @@ const actionItems = computed(() => [
             icon: 'i-lucide-trash-2',
             color: 'error' as const,
             disabled: !authStore.isEmailConfirmed,
-            onSelect: () => { deleteConfirmOpen.value = true },
+            onSelect: () => { deleteError.value = null; deleteConfirmOpen.value = true },
         },
     ],
 ])
@@ -79,38 +81,39 @@ async function onActivate() {
     try {
         await activateWallet(props.wallet.id)
         emit('wallet-changed')
-    } catch { notifyError(t('wallets.loadingError')) }
+    } catch { notifyError(t('wallets.activateError')) }
 }
 
 async function onDisable() {
     try {
         await disableWallet(props.wallet.id)
         emit('wallet-changed')
-    } catch { notifyError(t('wallets.loadingError')) }
+    } catch { notifyError(t('wallets.disableError')) }
 }
 
 async function onArchive() {
     try {
         await archiveWallet(props.wallet.id)
         emit('wallet-changed')
-    } catch { notifyError(t('wallets.loadingError')) }
+    } catch { notifyError(t('wallets.archiveError')) }
 }
 
 async function onUnArchive() {
     try {
         await unarchiveWallet(props.wallet.id)
         emit('wallet-changed')
-    } catch { notifyError(t('wallets.loadingError')) }
+    } catch { notifyError(t('wallets.unArchiveError')) }
 }
 
 async function onDeleteConfirmed() {
+    deleteError.value = null
     deleting.value = true
     try {
         await deleteWallet(props.wallet.id)
         deleteConfirmOpen.value = false
         router.push({ name: 'wallets' })
     } catch {
-        notifyError(t('wallets.loadingError'))
+        deleteError.value = t('wallets.deleteError')
     } finally {
         deleting.value = false
     }
@@ -129,16 +132,20 @@ async function onDeleteConfirmed() {
         <div class="flex justify-between items-start gap-4">
             <h2 class="text-2xl font-bold">{{ wallet.name }}</h2>
             <div class="flex gap-2 shrink-0">
-                <UButton
-                    :to="{ name: 'wallets.edit', params: { walletID: wallet.id.toString(), nameForTitle: wallet.name } }"
-                    icon="i-lucide-pencil"
-                    color="primary"
-                    :disabled="!authStore.isEmailConfirmed"
-                >
-                    {{ t('wallets.edit') }}
-                </UButton>
+                <UTooltip :text="t('emailConfirmRequired')" :arrow="true" :disabled="authStore.isEmailConfirmed">
+                    <span class="inline-flex">
+                        <UButton
+                            :to="{ name: 'wallets.edit', params: { walletID: wallet.id.toString(), nameForTitle: wallet.name } }"
+                            icon="i-lucide-pencil"
+                            color="primary"
+                            :disabled="!authStore.isEmailConfirmed"
+                        >
+                            {{ t('wallets.edit') }}
+                        </UButton>
+                    </span>
+                </UTooltip>
                 <UDropdownMenu :items="actionItems">
-                    <UButton icon="i-lucide-ellipsis-vertical" color="primary" variant="outline" />
+                    <UButton icon="i-lucide-ellipsis-vertical" color="primary" variant="outline" :aria-label="t('wallets.moreActions')" />
                 </UDropdownMenu>
             </div>
         </div>
@@ -166,11 +173,13 @@ async function onDeleteConfirmed() {
         <ConfirmModal
             v-model:open="deleteConfirmOpen"
             :title="t('wallets.delete')"
-            :description="t('wallets.deletingConfirm')"
+            :description="t('wallets.deletingConfirm', { name: wallet.name })"
             :confirm-label="t('wallets.delete')"
             :cancel-label="t('wallets.cancel')"
             :loading="deleting"
+            :error="deleteError"
             @confirm="onDeleteConfirmed"
+            @update:open="val => { if (!val) deleteError = null }"
         />
     </div>
 </template>

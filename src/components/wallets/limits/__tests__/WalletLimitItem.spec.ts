@@ -12,6 +12,9 @@ vi.mock('vue-i18n', () => ({
         t: (key: string) => key,
         locale: ref('en'),
     }),
+    createI18n: () => ({
+        global: { t: (key: string) => key, locale: { value: 'en' }, setLocaleMessage: vi.fn() },
+    }),
 }))
 
 vi.mock('vue-router', () => ({
@@ -97,11 +100,38 @@ describe('WalletLimitItem', () => {
         expect(bar.attributes('style')).toContain('width: 100%')
     })
 
-    it('displays percentage text when percentage > 10', () => {
+    it('displays the floored percentage inside the bar', () => {
         const wrapper = shallowMount(WalletLimitItem, {
             ...stubs,
             props: { walletLimit: makeWalletLimit(50), wallet: makeWallet() },
         })
         expect(wrapper.find('.text-xs').text()).toBe('50%')
+    })
+
+    it('floors 99.5% to 99% and bar is grey (not exceeded)', () => {
+        const wrapper = shallowMount(WalletLimitItem, {
+            ...stubs,
+            props: { walletLimit: makeWalletLimit(99.5), wallet: makeWallet() },
+        })
+        expect(wrapper.find('.text-xs').text()).toBe('99%')
+        expect(wrapper.find('.bg-gray-400').exists()).toBe(true)
+        expect(wrapper.find('.bg-red-500').exists()).toBe(false)
+    })
+
+    it('always shows percentage label for small limits (5%)', () => {
+        const wrapper = shallowMount(WalletLimitItem, {
+            ...stubs,
+            props: { walletLimit: makeWalletLimit(5), wallet: makeWallet() },
+        })
+        expect(wrapper.text()).toContain('5%')
+    })
+
+    it('renders 100% label and red bar when limit is exceeded (100.4%)', () => {
+        const wrapper = shallowMount(WalletLimitItem, {
+            ...stubs,
+            props: { walletLimit: makeWalletLimit(100.4), wallet: makeWallet() },
+        })
+        expect(wrapper.find('.text-xs').text()).toBe('100%')
+        expect(wrapper.find('.bg-red-500').exists()).toBe(true)
     })
 })

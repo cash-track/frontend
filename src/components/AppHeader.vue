@@ -2,7 +2,8 @@
 import { computed, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
-import { useColorMode } from '@vueuse/core'
+import { useRoute } from 'vue-router'
+import { useColorMode, useMediaQuery } from '@vueuse/core'
 import type { DropdownMenuItem } from '@nuxt/ui'
 import { useLocaleStore } from '@/stores/locale'
 import { useAuthStore } from '@/stores/auth'
@@ -14,6 +15,7 @@ import LogoFull from '@/components/LogoFull.vue'
 import HamburgerMenu from '@/components/Shared/HamburgerMenu.vue'
 
 const { t } = useI18n()
+const route = useRoute()
 const localeStore = useLocaleStore()
 const { locale } = storeToRefs(localeStore)
 const authStore = useAuthStore()
@@ -23,6 +25,15 @@ const { profile } = storeToRefs(profileStore)
 const mode = useColorMode()
 
 const isHeaderOpened = ref(false)
+
+// The nav lives inside the collapsible. On mobile the hamburger toggles it; on
+// desktop (md+) the hamburger is hidden, so force the collapsible open there.
+const isDesktop = useMediaQuery('(min-width: 768px)')
+const isMenuOpen = computed({
+    get: () => isDesktop.value || isHeaderOpened.value,
+    set: (value) => { isHeaderOpened.value = value },
+})
+
 const availableLocales = computed<DropdownMenuItem[][]>(() => {
     return [
         locales.map<DropdownMenuItem>(function (item): DropdownMenuItem {
@@ -51,6 +62,10 @@ watch(locale, (newLocale) => {
     if (isLogged.value) {
         updateLocale(newLocale).catch(() => {})
     }
+})
+
+watch(() => route.fullPath, () => {
+    isHeaderOpened.value = false
 })
 
 const profileMenuItems = computed<DropdownMenuItem[][]>(() => {
@@ -85,11 +100,11 @@ function onLogout() {
 </script>
 
 <template>
-    <div class="header">
+    <div class="mb-5 py-2 px-4 bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-600">
         <UContainer>
-            <div class="navbar">
-                <div class="navbar-mobile-head">
-                    <ULink class="logo-link" :to="webSiteLink('/')">
+            <div>
+                <div class="flex justify-between md:hidden">
+                    <ULink class="w-[162px] inline-block my-0.5 mr-4 py-0 h-9" :to="webSiteLink('/')">
                         <LogoFull />
                     </ULink>
 
@@ -97,30 +112,32 @@ function onLogout() {
                         class="text-xl"
                         variant="subtle"
                         color="neutral"
+                        :aria-expanded="isHeaderOpened"
+                        :aria-label="t('menu')"
+                        aria-controls="app-header-menu"
                         @click="onMobileHeaderClick"
                     >
-                        <HamburgerMenu />
+                        <HamburgerMenu :isOpen="isHeaderOpened" />
                     </UButton>
                 </div>
                 <UCollapsible
-                    v-model:open="isHeaderOpened"
+                    v-model:open="isMenuOpen"
                     :unmountOnHide="false"
-                    class="collapse-root"
                 >
                     <template #content>
-                        <div class="navbar-root">
-                            <div class="navbar-main">
-                                <ULink class="logo-link" :to="webSiteLink('/')">
+                        <div id="app-header-menu" class="grid grid-flow-row justify-stretch md:grid-flow-col">
+                            <div class="flex justify-start">
+                                <ULink class="w-[162px] my-0.5 mr-4 py-0 h-9 hidden md:block" :to="webSiteLink('/')">
                                     <LogoFull />
                                 </ULink>
 
-                                <ul>
+                                <ul class="flex flex-col md:flex-row">
                                     <li>
                                         <ULink
                                             :to="{ name: 'wallets' }"
-                                            class="navbar-link"
+                                            class="block px-2 py-2 text-black/50 hover:text-black/70 active:text-black/70 dark:text-white/80 dark:hover:text-green-500 dark:active:text-green-500"
                                             exact
-                                            active-class="active"
+                                            active-class="text-black/90! dark:text-green-500/80!"
                                         >
                                             {{ t('wallets.wallets') }}
                                         </ULink>
@@ -128,9 +145,9 @@ function onLogout() {
                                     <li>
                                         <ULink
                                             :to="{ name: 'tags' }"
-                                            class="navbar-link"
+                                            class="block px-2 py-2 text-black/50 hover:text-black/70 active:text-black/70 dark:text-white/80 dark:hover:text-green-500 dark:active:text-green-500"
                                             exact
-                                            active-class="active"
+                                            active-class="text-black/90! dark:text-green-500/80!"
                                         >
                                             {{ t('tags.tags') }}
                                         </ULink>
@@ -138,53 +155,55 @@ function onLogout() {
                                     <li>
                                         <ULink
                                             :to="{ name: 'profile' }"
-                                            class="navbar-link"
+                                            class="block px-2 py-2 text-black/50 hover:text-black/70 active:text-black/70 dark:text-white/80 dark:hover:text-green-500 dark:active:text-green-500"
                                             exact
-                                            active-class="active"
+                                            active-class="text-black/90! dark:text-green-500/80!"
                                         >
                                             {{ t('profile.profile') }}
                                         </ULink>
                                     </li>
                                     <li>
-                                        <ULink :to="webSiteLink('/help')" class="navbar-link">
+                                        <ULink :to="webSiteLink('/help')" class="block px-2 py-2 text-black/50 hover:text-black/70 active:text-black/70 dark:text-white/80 dark:hover:text-green-500 dark:active:text-green-500">
                                             {{ t('help') }}
                                         </ULink>
                                     </li>
                                     <li>
                                         <ULink
                                             :to="webSiteLink('/about')"
-                                            class="navbar-link truncate"
+                                            class="block px-2 py-2 text-black/50 hover:text-black/70 active:text-black/70 dark:text-white/80 dark:hover:text-green-500 dark:active:text-green-500 truncate"
                                         >
                                             {{ t('about') }}
                                         </ULink>
                                     </li>
                                 </ul>
                             </div>
-                            <div class="navbar-right">
+                            <div class="flex justify-start flex-col md:justify-end md:flex-row">
                                 <UButton
                                     :icon="mode === 'dark' ? 'i-lucide-moon' : 'i-lucide-sun'"
                                     color="neutral"
                                     variant="subtle"
+                                    :aria-label="t('darkMode')"
                                     @click="mode = mode === 'dark' ? 'light' : 'dark'"
-                                    class="color-mode-selector cursor-pointer"
+                                    class="mr-4 ring-0 cursor-pointer"
                                 />
                                 <UDropdownMenu
-                                    class="lang-selector"
+                                    class="mr-4 text-xl ring-0"
                                     :items="availableLocales"
-                                    :popper="{ placement: 'bottom-start' }"
+                                    :content="{ side: 'bottom', align: 'start' }"
                                 >
                                     <UButton
                                         color="neutral"
                                         :label="currentLocale?.flag"
                                         variant="subtle"
                                         trailing-icon="i-heroicons-chevron-down-20-solid"
+                                        :aria-label="t('language')"
                                         class="cursor-pointer"
                                     />
                                 </UDropdownMenu>
                                 <UDropdownMenu
-                                    class="profile-menu"
+                                    class="ring-0"
                                     :items="profileMenuItems"
-                                    :popper="{ placement: 'bottom-start' }"
+                                    :content="{ side: 'bottom', align: 'start' }"
                                 >
                                     <UButton
                                         color="neutral"
@@ -218,103 +237,3 @@ function onLogout() {
         </UContainer>
     </div>
 </template>
-
-<style>
-@import 'tailwindcss';
-
-@custom-variant dark (&:where(.dark, .dark *));
-
-html.dark {
-    &,
-    .footer,
-    .header {
-        @apply bg-gray-800;
-
-        border-bottom: 1px solid #474747;
-
-        body {
-            @apply bg-gray-700;
-        }
-    }
-}
-
-html,
-.footer,
-.header {
-    @apply bg-gray-100;
-
-    border-bottom: 1px solid #e5e5e5;
-
-    body {
-        @apply bg-white;
-    }
-}
-
-@media (min-width: 768px) {
-    .header .navbar .collapse-root > div {
-        content-visibility: auto;
-    }
-}
-
-.header {
-    @apply mb-5 py-2 px-4 dark:border-gray-600;
-
-    .navbar {
-        .navbar-root {
-            @apply grid grid-flow-row justify-stretch md:grid-flow-col;
-        }
-
-        .navbar-mobile-head {
-            @apply flex justify-between md:hidden;
-        }
-
-        .navbar-main {
-            @apply flex justify-start;
-
-            .logo-link {
-                @apply hidden md:block;
-            }
-        }
-
-        .navbar-right {
-            @apply flex justify-start flex-col md:justify-end md:flex-row;
-        }
-
-        .logo-link {
-            width: 162px;
-
-            @apply inline-block my-0.5 mr-4 py-0 h-9;
-        }
-
-        .lang-selector {
-            @apply mr-4 text-xl ring-0;
-        }
-
-        .color-mode-selector {
-            @apply mr-4 ring-0;
-        }
-
-        .profile-menu {
-            @apply ring-0;
-        }
-
-        .navbar-link {
-            @apply text-black/50 hover:text-black/70 active:text-black/70 dark:text-white/80 dark:hover:text-green-500 dark:active:text-green-500;
-
-            &.active {
-                @apply text-black/90 dark:text-green-500/80;
-            }
-        }
-
-        ul {
-            @apply flex flex-col md:flex-row;
-
-            li {
-                a {
-                    @apply block px-2 py-2;
-                }
-            }
-        }
-    }
-}
-</style>

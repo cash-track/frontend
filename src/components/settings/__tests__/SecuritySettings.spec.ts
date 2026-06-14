@@ -14,6 +14,9 @@ vi.mock('vue-i18n', () => ({
         t: (key: string) => key,
         locale: ref('en'),
     }),
+    createI18n: () => ({
+        global: { t: (key: string) => key, locale: { value: 'en' }, setLocaleMessage: vi.fn() },
+    }),
 }))
 
 vi.mock('@/api/profile/password', () => ({
