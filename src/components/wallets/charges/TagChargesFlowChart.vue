@@ -68,6 +68,8 @@ const chartOptions = computed<ChartOptions<'bar'>>(() => ({
     maintainAspectRatio: false,
     scales: {
         y: {
+            // Headroom above the tallest bar so it never touches the axis ceiling.
+            grace: '5%',
             ticks: {
                 precision: 0,
                 callback: (value) => {
@@ -146,7 +148,7 @@ defineExpose({ reload: loadData, chartOptions })
             >
                 <UIcon name="i-lucide-loader-circle" class="size-6 animate-spin text-muted" />
             </div>
-            <div v-if="hasData">
+            <div v-if="hasData" class="relative h-full">
                 <Bar :data="chartData" :options="chartOptions" />
             </div>
             <div v-else-if="!loading" class="absolute inset-0 flex flex-col items-center justify-center text-muted">

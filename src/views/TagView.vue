@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, shallowRef, watch, onMounted, useTemplateRef } from 'vue'
+import { ref, shallowRef, watch, onMounted, onUnmounted, nextTick, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { getTagById, getTagCharges, getTagTotals, getCommonTags } from '@/api/tags'
@@ -13,10 +13,11 @@ import ChargesFilter from '@/components/wallets/charges/ChargesFilter.vue'
 import ChargeItem from '@/components/wallets/charges/ChargeItem.vue'
 import TagChargesFlowChart from '@/components/wallets/charges/TagChargesFlowChart.vue'
 import WalletsActiveShortList from '@/components/wallets/WalletsActiveShortList.vue'
+import { useChargesGrouping } from '@/composables/useChargesGrouping'
 
 const props = defineProps<{ tagID: string }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const router = useRouter()
 
 const chartRef = useTemplateRef<InstanceType<typeof TagChargesFlowChart>>('chartRef')
@@ -38,7 +39,10 @@ const errorCharges = ref<string | null>(null)
 const currentPage = ref(1)
 const filter = ref<FilterState>({ dateFrom: '', dateTo: '' })
 const showFilters = ref(false)
+const sentinelRef = ref<HTMLElement | null>(null)
+let observer: IntersectionObserver | null = null
 
+const { chargesGrouped } = useChargesGrouping(charges, t, locale)
 
 async function loadTag() {
     loadingTag.value = true
@@ -99,13 +103,31 @@ async function loadCharges(page: number) {
 }
 
 async function loadMore() {
-    if (!pagination.value || currentPage.value >= pagination.value.totalPages) return
+    if (loadingMore.value || !pagination.value?.hasNext) return
     loadingMore.value = true
     try {
         await loadCharges(currentPage.value + 1)
     } finally {
         loadingMore.value = false
     }
+}
+
+function setupObserver() {
+    if (observer) observer.disconnect()
+    observer = new IntersectionObserver(entries => {
+        if (entries[0]?.isIntersecting) {
+            loadMore()
+        }
+    }, { rootMargin: '200px' })
+}
+
+function observeSentinel() {
+    nextTick(() => {
+        if (sentinelRef.value && observer) {
+            observer.disconnect()
+            observer.observe(sentinelRef.value)
+        }
+    })
 }
 
 async function selectTag(id: number) {
@@ -127,6 +149,14 @@ async function selectTag(id: number) {
 // single source of truth — no duplicate check needed here.
 watch(() => props.tagID, async newTagID => {
     await selectTag(parseInt(newTagID, 10))
+})
+
+// Re-observe sentinel whenever loading finishes (sentinel enters DOM)
+watch(loadingCharges, val => {
+    if (!val) observeSentinel()
+})
+watch(loadingMore, val => {
+    if (!val) observeSentinel()
 })
 
 function onFilterChange(f: FilterState) {
@@ -151,11 +181,16 @@ async function onChargeDeleted(chargeId: string) {
 }
 
 onMounted(() => {
+    setupObserver()
     getCommonTags()
         .then(tags => { commonTags.value = tags })
         .catch(() => {})
         .finally(() => { loadingCommonTags.value = false })
     loadTag()
+})
+
+onUnmounted(() => {
+    observer?.disconnect()
 })
 </script>
 
@@ -271,33 +306,42 @@ onMounted(() => {
                     </UButton>
                 </div>
                 <template v-if="!errorCharges">
-                    <ChargeItem
-                        v-for="charge in charges"
-                        :key="charge.id"
-                        :charge="charge"
-                        :wallet="charge.wallet!"
-                        @updated="onChargeUpdated"
-                        @deleted="onChargeDeleted"
-                        @tag-selected="selectTag"
-                    />
+                    <template v-for="[group, groupCharges] in chargesGrouped" :key="group">
+                        <!-- Day group header -->
+                        <div class="px-0 sm:px-4 py-2 -mx-4 sm:mx-0">
+                            <div class="flex items-center gap-2">
+                                <div class="w-6 shrink-0 h-px bg-black/10 dark:bg-white/10" />
+                                <span class="text-sm text-muted">{{ group }}</span>
+                                <div class="flex-1 h-px bg-black/10 dark:bg-white/10" />
+                            </div>
+                        </div>
+                        <ChargeItem
+                            v-for="charge in groupCharges"
+                            :key="charge.id"
+                            :charge="charge"
+                            :wallet="charge.wallet!"
+                            :show-wallet="true"
+                            @updated="onChargeUpdated"
+                            @deleted="onChargeDeleted"
+                            @tag-selected="selectTag"
+                        />
+                    </template>
                     <div v-if="charges.length === 0" class="flex flex-col items-center justify-center py-12 text-muted">
                         <UIcon name="i-lucide-receipt" class="size-10 mb-2 opacity-30" />
                         <p class="text-sm">{{ t('charges.empty') }}</p>
+                    </div>
+
+                    <!-- Infinite scroll sentinel -->
+                    <div ref="sentinelRef" class="h-1" />
+
+                    <!-- Loading more spinner -->
+                    <div v-if="loadingMore" class="flex justify-center py-4">
+                        <UIcon name="i-lucide-loader-circle" class="size-5 animate-spin text-muted" />
+                        <span class="ml-2 text-sm text-muted">{{ t('charges.loadingMore') }}</span>
                     </div>
                 </template>
             </template>
         </div>
 
-        <!-- Load more -->
-        <div v-if="!errorCharges && pagination && currentPage < pagination.totalPages" class="flex justify-center">
-            <UButton
-                variant="outline"
-                color="neutral"
-                :loading="loadingMore"
-                @click="loadMore"
-            >
-                {{ t('charges.loadMore') }}
-            </UButton>
-        </div>
     </div>
 </template>

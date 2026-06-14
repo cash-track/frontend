@@ -4,8 +4,17 @@ import { mount, flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import TagView from '../TagView.vue'
 import { Tag as TagModel } from '@/api/models/tag'
-import { ChargeTotal } from '@/api/models/charge'
+import { Charge, ChargeTotal } from '@/api/models/charge'
+import { WalletShort } from '@/api/models/wallet'
+import { Currency } from '@/api/models/currency'
 import { Pagination } from '@/api/models/pagination'
+
+// Stub IntersectionObserver (jsdom doesn't implement it)
+vi.stubGlobal('IntersectionObserver', class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+})
 
 const mockReplace = vi.fn()
 
@@ -67,13 +76,20 @@ const makeGlobal = () => ({
             },
             TotalsRow: { template: '<div />', props: ['loading', 'incomeAmount', 'expenseAmount', 'currency'] },
             ChargesFilter: { name: 'ChargesFilter', template: '<div />' },
-            ChargeItem: { template: '<div />', props: ['charge', 'wallet'], emits: ['updated', 'deleted', 'tag-selected'] },
+            ChargeItem: {
+                name: 'ChargeItemStub',
+                template: '<div data-testid="charge-item" />',
+                props: ['charge', 'wallet', 'showWallet'],
+                emits: ['updated', 'deleted', 'tag-selected'],
+            },
             TagChargesFlowChart: { template: '<div />', props: ['tagId', 'currency', 'filter'] },
+            RouterLink: { template: '<a><slot /></a>', props: ['to'] },
             UButton: {
                 template: '<button @click="$emit(\'click\')">{{ label }}</button>',
                 props: ['label', 'icon', 'variant', 'color', 'size', 'loading', 'disabled'],
                 emits: ['click'],
             },
+            UBadge: { template: '<span><slot /></span>', props: ['color', 'variant', 'size'] },
             UAlert: { template: '<div />', props: ['color', 'description', 'icon', 'variant'] },
             UIcon: { template: '<span />', props: ['name', 'class'] },
             Icon: { template: '<span />', props: ['name', 'class'] },
@@ -179,7 +195,7 @@ describe('TagView.vue', () => {
         expect(callsAfterSecond - callsBefore).toBe(1)
     })
 
-    it('load more button uses charges.loadMore key', async () => {
+    it('no manual load-more button is rendered (replaced by infinite scroll)', async () => {
         const tag = makeTag({ id: 1, name: 'Food' })
         const paginationMultiPage = new Pagination({ page: 1, limit: 20, total: 40, totalPages: 2, hasNext: true, hasPrev: false })
         vi.mocked(getTagCharges).mockResolvedValue({ data: [], pagination: paginationMultiPage })
@@ -188,8 +204,16 @@ describe('TagView.vue', () => {
         const wrapper = mount(TagView, makeGlobal())
         await flushAll()
 
-        expect(wrapper.text()).toContain('charges.loadMore')
-        expect(wrapper.text()).not.toContain('charges.loadingMore')
+        expect(wrapper.text()).not.toContain('charges.loadMore')
+    })
+
+    it('infinite scroll sentinel div is rendered after charges load', async () => {
+        const wrapper = mount(TagView, makeGlobal())
+        await flushAll()
+
+        // The sentinel is a plain div with ref="sentinelRef" and class="h-1"
+        const sentinel = wrapper.find('.h-1')
+        expect(sentinel.exists()).toBe(true)
     })
 
     it('watcher handles external navigation to a new tag URL', async () => {
@@ -255,6 +279,103 @@ describe('TagView.vue', () => {
 
         // Empty state should now render (charges resolved to [])
         expect(wrapper.text()).toContain('charges.empty')
+    })
+
+    it('renders day group headers for charges (today group)', async () => {
+        const usd = new Currency({
+            id: 'USD',
+            code: 'USD',
+            name: 'US Dollar',
+            char: '$',
+            rate: 1.0,
+            updatedAt: new Date(),
+        })
+        const walletShort = new WalletShort({
+            id: 10,
+            name: 'Travel',
+            slug: 'travel',
+            totalAmount: 0,
+            isActive: true,
+            isPublic: false,
+            isArchived: false,
+            defaultCurrencyCode: 'USD',
+            defaultCurrency: usd,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        })
+        const todayCharge = new Charge({
+            id: 'charge-today',
+            operation: '-',
+            amount: 50,
+            title: 'Coffee',
+            description: null,
+            userId: 1,
+            walletId: 10,
+            dateTime: new Date(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            user: null,
+            tags: [],
+            wallet: walletShort,
+        })
+        const pagination = new Pagination({ page: 1, limit: 20, total: 1, totalPages: 1, hasNext: false, hasPrev: false })
+        vi.mocked(getTagCharges).mockResolvedValue({ data: [todayCharge], pagination })
+
+        const wrapper = mount(TagView, makeGlobal())
+        await flushAll()
+
+        // The t mock returns the i18n key; 'charges.today' is the group label for today
+        expect(wrapper.text()).toContain('charges.today')
+    })
+
+    it('passes showWallet=true to ChargeItem so wallet names can be displayed', async () => {
+        const usd = new Currency({
+            id: 'USD',
+            code: 'USD',
+            name: 'US Dollar',
+            char: '$',
+            rate: 1.0,
+            updatedAt: new Date(),
+        })
+        const walletShort = new WalletShort({
+            id: 10,
+            name: 'Travel',
+            slug: 'travel',
+            totalAmount: 0,
+            isActive: true,
+            isPublic: false,
+            isArchived: false,
+            defaultCurrencyCode: 'USD',
+            defaultCurrency: usd,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        })
+        const charge = new Charge({
+            id: 'charge-w',
+            operation: '-',
+            amount: 50,
+            title: 'Coffee',
+            description: null,
+            userId: 1,
+            walletId: 10,
+            dateTime: new Date(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            user: null,
+            tags: [],
+            wallet: walletShort,
+        })
+        const pagination = new Pagination({ page: 1, limit: 20, total: 1, totalPages: 1, hasNext: false, hasPrev: false })
+        vi.mocked(getTagCharges).mockResolvedValue({ data: [charge], pagination })
+
+        const wrapper = mount(TagView, makeGlobal())
+        await flushAll()
+
+        // Find all ChargeItem stubs by name (we gave the stub name: 'ChargeItemStub')
+        const chargeItemComps = wrapper.findAllComponents({ name: 'ChargeItemStub' })
+        expect(chargeItemComps.length).toBeGreaterThan(0)
+        // Verify the showWallet prop is true
+        expect(chargeItemComps[0].props('showWallet')).toBe(true)
     })
 
     it('filter change with failing request shows error alert', async () => {

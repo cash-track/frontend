@@ -3,7 +3,7 @@ import { nextTick } from 'vue'
 import { shallowMount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { Charge } from '@/api/models/charge'
-import { Wallet } from '@/api/models/wallet'
+import { Wallet, WalletShort } from '@/api/models/wallet'
 import { Currency } from '@/api/models/currency'
 import { useAuthStore } from '@/stores/auth'
 import ChargeItem from '../ChargeItem.vue'
@@ -26,6 +26,7 @@ vi.mock('vue-i18n', () => ({
 vi.mock('vue-router', () => ({
     useRouter: () => ({ push: vi.fn() }),
     useRoute: () => ({ params: {} }),
+    RouterLink: { name: 'RouterLink', template: '<a><slot /></a>', props: ['to'] },
 }))
 
 vi.mock('@/api/charges', () => ({
@@ -58,6 +59,45 @@ function makeWallet(): Wallet {
         updatedAt: new Date(),
         users: [],
         latestCharges: [],
+    })
+}
+
+function makeWalletShort(overrides: Partial<{
+    id: number
+    name: string
+    isActive: boolean
+    isArchived: boolean
+}> = {}): WalletShort {
+    return new WalletShort({
+        id: overrides.id ?? 2,
+        name: overrides.name ?? 'My Wallet',
+        slug: 'my-wallet',
+        totalAmount: 500,
+        isActive: overrides.isActive ?? true,
+        isPublic: false,
+        isArchived: overrides.isArchived ?? false,
+        defaultCurrencyCode: 'USD',
+        defaultCurrency: usd,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+    })
+}
+
+function makeChargeWithWallet(walletShort: WalletShort): Charge {
+    return new Charge({
+        id: 'charge-w',
+        operation: '-',
+        amount: 10,
+        title: 'Dinner',
+        description: null,
+        userId: 1,
+        walletId: walletShort.id,
+        dateTime: new Date('2025-03-15T12:00:00'),
+        createdAt: new Date('2025-03-15T12:00:00'),
+        updatedAt: new Date('2025-03-15T12:00:00'),
+        user: null,
+        tags: [],
+        wallet: walletShort,
     })
 }
 
@@ -329,6 +369,89 @@ describe('ChargeItem', () => {
         const allItems = vm.actionItems.flat()
         const labelItem = allItems.find(item => item.type === 'label')
         expect(labelItem).toBeUndefined()
+    })
+
+    it('does NOT render wallet name when showWallet is false (default)', () => {
+        const walletShort = makeWalletShort({ name: 'Savings' })
+        const charge = makeChargeWithWallet(walletShort)
+        const wrapper = shallowMount(ChargeItem, {
+            props: { charge, wallet: makeWallet() },
+        })
+
+        expect(wrapper.text()).not.toContain('@Savings')
+    })
+
+    it('renders wallet reference block when showWallet is true and charge.wallet exists', () => {
+        const walletShort = makeWalletShort({ name: 'Savings', isActive: true })
+        const charge = makeChargeWithWallet(walletShort)
+        const wrapper = shallowMount(ChargeItem, {
+            props: { charge, wallet: makeWallet(), showWallet: true },
+        })
+
+        // When showWallet=true and charge.wallet is set, a badge for the wallet status renders.
+        // shallowMount stubs UBadge as <badge-stub> (Nuxt UI internal name: Badge).
+        // The presence of the badge confirms the v-if="showWallet && charge.wallet" branch is entered.
+        const activeBadge = wrapper.find('badge-stub[color="success"]')
+        expect(activeBadge.exists()).toBe(true)
+    })
+
+    it('renders wallets.active badge for active wallet when showWallet is true', () => {
+        const walletShort = makeWalletShort({ isActive: true, isArchived: false })
+        const charge = makeChargeWithWallet(walletShort)
+        const wrapper = shallowMount(ChargeItem, {
+            props: { charge, wallet: makeWallet(), showWallet: true },
+        })
+
+        // shallowMount auto-stubs UBadge by its internal name (Badge -> badge-stub)
+        const activeBadge = wrapper.find('badge-stub[color="success"]')
+        expect(activeBadge.exists()).toBe(true)
+        // Archived badge must not appear
+        const archivedBadge = wrapper.find('badge-stub[color="neutral"]')
+        expect(archivedBadge.exists()).toBe(false)
+    })
+
+    it('renders wallets.archived badge for archived wallet when showWallet is true', () => {
+        const walletShort = makeWalletShort({ isActive: false, isArchived: true })
+        const charge = makeChargeWithWallet(walletShort)
+        const wrapper = shallowMount(ChargeItem, {
+            props: { charge, wallet: makeWallet(), showWallet: true },
+        })
+
+        // Archived: neutral color badge present, success badge absent
+        const archivedBadge = wrapper.find('badge-stub[color="neutral"]')
+        expect(archivedBadge.exists()).toBe(true)
+        const activeBadge = wrapper.find('badge-stub[color="success"]')
+        expect(activeBadge.exists()).toBe(false)
+    })
+
+    it('wallet name RouterLink receives correct :to binding when showWallet is true', () => {
+        const walletShort = makeWalletShort({ id: 42, name: 'Travel', isActive: true })
+        const charge = makeChargeWithWallet(walletShort)
+        const wrapper = shallowMount(ChargeItem, {
+            props: { charge, wallet: makeWallet(), showWallet: true },
+        })
+
+        // Confirm the showWallet branch renders (badge present = condition is true)
+        const badge = wrapper.find('badge-stub[color="success"]')
+        expect(badge.exists()).toBe(true)
+
+        // The vue-router mock names the stub 'RouterLink', so findComponent matches it
+        // and its :to prop is assertable.
+        const routerLink = wrapper.findComponent({ name: 'RouterLink' })
+        expect(routerLink.exists()).toBe(true)
+        const to = routerLink.props('to') as { name: string; params: { walletID: string } }
+        expect(to.name).toBe('wallets.show')
+        expect(to.params.walletID).toBe('42')
+    })
+
+    it('does not render wallet reference when showWallet is true but charge.wallet is null', () => {
+        const charge = makeCharge({ title: 'NoWallet' })
+        const wrapper = shallowMount(ChargeItem, {
+            props: { charge, wallet: makeWallet(), showWallet: true },
+        })
+
+        // charge.wallet is null — no @ reference should appear
+        expect(wrapper.text()).not.toContain('@')
     })
 
     it('fullDateTime is locale-aware: not the old ISO pattern, matches Intl output', () => {

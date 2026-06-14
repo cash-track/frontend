@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { RouterLink } from 'vue-router'
 import type { Charge } from '@/api/models/charge'
 import type { Wallet, WalletShort } from '@/api/models/wallet'
 import type { Tag as TagModel } from '@/api/models/tag'
@@ -18,6 +19,7 @@ const props = defineProps<{
     readOnly?: boolean
     selectable?: boolean
     selected?: boolean
+    showWallet?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -186,11 +188,20 @@ defineExpose({ fullDateTime, chargeTime })
                     </div>
                 </div>
 
-                <!-- Second row: time + user + tags -->
+                <!-- Second row: time + wallet ref + user + tags -->
                 <div class="flex items-center gap-2 mt-1" :class="{ 'flex-wrap': isExpanded }">
                     <UTooltip :text="fullDateTime" :arrow="true">
                         <span class="text-xs text-muted cursor-default">{{ chargeTime }}</span>
                     </UTooltip>
+                    <template v-if="showWallet && charge.wallet">
+                        <RouterLink
+                            class="text-xs text-muted hover:text-default transition-colors"
+                            :to="{ name: 'wallets.show', params: { walletID: charge.wallet.id.toString() } }"
+                            @click.stop
+                        >@{{ charge.wallet.name }}</RouterLink>
+                        <UBadge v-if="charge.wallet.isActive" size="xs" color="success" variant="subtle">{{ t('wallets.active') }}</UBadge>
+                        <UBadge v-else-if="charge.wallet.isArchived" size="xs" color="neutral" variant="subtle">{{ t('wallets.archived') }}</UBadge>
+                    </template>
                     <UAvatar
                         v-if="charge.user"
                         :src="charge.user.photoUrl ?? undefined"

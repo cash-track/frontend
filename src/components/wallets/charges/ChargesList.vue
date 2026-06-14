@@ -10,6 +10,7 @@ import type { FilterState } from './ChargesFilter.vue'
 import ChargeItem from './ChargeItem.vue'
 import { useWalletsStore } from '@/stores/wallets'
 import { useMoneyFormatter } from '@/composables/useMoneyFormatter'
+import { useChargesGrouping } from '@/composables/useChargesGrouping'
 
 const props = defineProps<{
     wallet: Wallet
@@ -40,39 +41,7 @@ const currentPage = ref(1)
 const sentinelRef = ref<HTMLElement | null>(null)
 let observer: IntersectionObserver | null = null
 
-const chargesGrouped = computed(() => {
-    const map = new Map<string, Charge[]>()
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-
-    for (const charge of charges.value) {
-        const chargeDate = new Date(charge.dateTime)
-        chargeDate.setHours(0, 0, 0, 0)
-
-        const diff = Math.floor((today.getTime() - chargeDate.getTime()) / (1000 * 60 * 60 * 24))
-
-        let group: string
-        if (diff === 0) {
-            group = t('charges.today')
-        } else {
-            group = chargeDate.toLocaleDateString(locale.value, {
-                weekday: 'long',
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric',
-            })
-        }
-
-        let list = map.get(group)
-        if (!list) {
-            list = []
-            map.set(group, list)
-        }
-        list.push(charge)
-    }
-
-    return map
-})
+const { chargesGrouped } = useChargesGrouping(charges, t, locale)
 
 const moveTargetWallets = computed(() =>
     walletsStore.activeWallets.filter(w => w.isActive && w.id !== props.wallet.id),
