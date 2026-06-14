@@ -12,11 +12,13 @@ const {
     mockFindUsersByCommonWallets,
     mockShareWallet,
     mockNotifyError,
+    mockRouterPush,
 } = vi.hoisted(() => ({
     mockGetWalletUsers: vi.fn(),
     mockFindUsersByCommonWallets: vi.fn(),
     mockShareWallet: vi.fn(),
     mockNotifyError: vi.fn(),
+    mockRouterPush: vi.fn(),
 }))
 
 vi.mock('vue-i18n', () => ({
@@ -24,6 +26,12 @@ vi.mock('vue-i18n', () => ({
         t: (key: string) => key,
         locale: ref('en'),
     }),
+}))
+
+vi.mock('vue-router', () => ({
+    useRouter: () => ({ push: mockRouterPush }),
+    useRoute: () => ({ params: {}, query: {}, name: '' }),
+    RouterLink: { template: '<a><slot /></a>' },
 }))
 
 vi.mock('@/api/wallets', () => ({
@@ -91,7 +99,9 @@ const globalStubs = {
             WalletSharedMember: { template: '<div />', props: ['walletId', 'walletName', 'user', 'isAllowedToRemove'], emits: ['deleted'] },
             USeparator: { template: '<hr />', props: ['label'] },
             UAvatar: { template: '<img :alt="alt" />', props: ['src', 'alt', 'size'] },
-            UButton: { template: '<button @click="$emit(\'click\')">btn</button>', props: ['label', 'loading', 'disabled', 'variant', 'size'], emits: ['click'] },
+            UButton: { template: '<button :aria-label="ariaLabel" @click="$emit(\'click\')">btn</button>', props: ['label', 'loading', 'disabled', 'variant', 'size', 'icon', 'ariaLabel'], emits: ['click'] },
+            UTooltip: { template: '<span><slot /></span>', props: ['text', 'arrow'] },
+            Tooltip: { template: '<span><slot /></span>', props: ['text', 'arrow'] },
             UFormField: { template: '<div><slot /></div>', props: ['label', 'error'] },
             UInput: { template: '<input />', props: ['modelValue', 'type', 'placeholder', 'class', 'disabled'], emits: ['update:modelValue', 'keydown'] },
         },
@@ -133,5 +143,22 @@ describe('WalletShare', () => {
         await vm.onInvite(makeUser())
 
         expect(mockNotifyError).not.toHaveBeenCalled()
+    })
+
+    it('close button navigates back to wallets.show', async () => {
+        const wallet = makeWallet()
+        const wrapper = mount(WalletShare, {
+            props: { wallet },
+            ...globalStubs,
+        })
+
+        const closeBtn = wrapper.find('button[aria-label="wallets.shareBack"]')
+        expect(closeBtn.exists()).toBe(true)
+        await closeBtn.trigger('click')
+
+        expect(mockRouterPush).toHaveBeenCalledWith({
+            name: 'wallets.show',
+            params: { walletID: '1', nameForTitle: 'Test Wallet' },
+        })
     })
 })

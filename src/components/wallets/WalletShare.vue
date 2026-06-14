@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { shallowRef, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 import { getWalletUsers, shareWallet } from '@/api/wallets'
 import { findUserByEmail, findUsersByCommonWallets } from '@/api/users'
 import type { Wallet } from '@/api/models/wallet'
@@ -12,6 +13,7 @@ import WalletSharedMember from './WalletSharedMember.vue'
 const props = defineProps<{ wallet: Wallet }>()
 
 const { t } = useI18n()
+const router = useRouter()
 const { fieldErrors, handleError, reset } = useApiErrors()
 const { notifyError } = useNotifications()
 
@@ -74,14 +76,33 @@ async function onInvite(user: User) {
 function onMemberDeleted(userId: number) {
     members.value = members.value.filter(u => u.id !== userId)
 }
+
+function onClose() {
+    router.push({
+        name: 'wallets.show',
+        params: { walletID: props.wallet.id.toString(), nameForTitle: props.wallet.name },
+    })
+}
 </script>
 
 <template>
     <UCard>
         <template #header>
-            <h2 class="font-semibold text-lg">
-                {{ t('wallets.shareTitle') }} <span class="font-bold">{{ wallet.name }}</span>
-            </h2>
+            <div class="flex items-center justify-between gap-2">
+                <h2 class="font-semibold text-lg">
+                    {{ t('wallets.shareTitle') }} <span class="font-bold">{{ wallet.name }}</span>
+                </h2>
+                <UTooltip :text="t('wallets.shareBack')" :arrow="true">
+                    <UButton
+                        icon="i-lucide-x"
+                        variant="ghost"
+                        color="neutral"
+                        size="sm"
+                        :aria-label="t('wallets.shareBack')"
+                        @click="onClose"
+                    />
+                </UTooltip>
+            </div>
         </template>
 
         <div class="space-y-4">

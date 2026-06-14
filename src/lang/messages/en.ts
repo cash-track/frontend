@@ -192,6 +192,7 @@ export default {
         cancel: 'Cancel',
 
         shareTitle: 'Members of',
+        shareBack: 'Back to wallet',
         shareMembersLoadingError: 'Unable to load users of wallet. Please try again later.',
         shareCommonUsers: 'Users you may know as you have common wallets',
         shareSelect: 'Select',
