@@ -8,8 +8,6 @@ import ProfileView from '@/views/ProfileView.vue'
 import TagsView from '@/views/TagsView.vue'
 import TagView from '@/views/TagView.vue'
 import SettingsView from '@/views/settings/SettingsView.vue'
-import ProfileSettingsView from '@/views/settings/ProfileSettingsView.vue'
-import SecuritySettingsView from '@/views/settings/SecuritySettingsView.vue'
 
 const router = createRouter({
     history: createWebHistory(import.meta.env.BASE_URL),
@@ -41,28 +39,17 @@ const router = createRouter({
             path: '/settings',
             name: 'settings',
             component: SettingsView,
-            redirect: { name: 'settings.profile' },
             meta: {
                 title: 'Settings | Cash Track',
             },
-            children: [
-                {
-                    path: 'profile',
-                    name: 'settings.profile',
-                    component: ProfileSettingsView,
-                    meta: {
-                        title: 'Profile Settings | Cash Track',
-                    },
-                },
-                {
-                    path: 'security',
-                    name: 'settings.security',
-                    component: SecuritySettingsView,
-                    meta: {
-                        title: 'Security Settings | Cash Track',
-                    },
-                },
-            ],
+        },
+        {
+            path: '/settings/profile',
+            redirect: { name: 'settings' },
+        },
+        {
+            path: '/settings/security',
+            redirect: { name: 'settings' },
         },
         {
             path: '/wallets/create',

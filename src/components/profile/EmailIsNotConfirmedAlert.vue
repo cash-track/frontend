@@ -27,7 +27,7 @@ const open = shallowRef(true)
                 color="info"
                 variant="soft"
                 :label="t('profileSettings.profileSettings')"
-                :to="{ name: 'settings.profile' }"
+                :to="{ name: 'settings' }"
             />
         </template>
     </UAlert>

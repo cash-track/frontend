@@ -79,7 +79,7 @@ const profileMenuItems = computed<DropdownMenuItem[][]>(() => {
             {
                 label: t('settings'),
                 icon: 'i-heroicons-cog-6-tooth-20-solid',
-                to: { name: 'settings.profile' },
+                to: { name: 'settings' },
             },
             {
                 label: t('signOut'),
