@@ -22,14 +22,14 @@ test.describe('Profile page', () => {
 test.describe('Settings — profile', () => {
     test('navigates to profile settings and form is visible', async ({ page }) => {
         await page.goto('/settings')
-        await expect(page).toHaveURL(/\/settings\/profile/, { timeout: 10000 })
+        await expect(page).toHaveURL(/\/settings$/, { timeout: 10000 })
 
-        // Name input is visible
+        // Profile is the default tab; its name input is visible without interaction
         await expect(page.getByLabel(/^(name|ім.я)\*?$/i).first()).toBeVisible({ timeout: 10000 })
     })
 
     test('changes display name and saves', async ({ page }) => {
-        await page.goto('/settings/profile')
+        await page.goto('/settings')
 
         const nameInput = page.getByLabel(/^(name|ім.я)\*?$/i)
         await nameInput.waitFor({ state: 'visible' })
@@ -60,7 +60,7 @@ test.describe('Settings — profile', () => {
     })
 
     test('locale combobox is present in settings', async ({ page }) => {
-        await page.goto('/settings/profile')
+        await page.goto('/settings')
 
         // Language combobox exists in the profile settings form
         await expect(page.getByRole('combobox', { name: /language|мова/i })).toBeVisible({ timeout: 10000 })
@@ -69,7 +69,11 @@ test.describe('Settings — profile', () => {
 
 test.describe('Settings — security', () => {
     test('security page renders password form and passkeys section', async ({ page }) => {
-        await page.goto('/settings/security')
+        await page.goto('/settings')
+
+        // Security is the second tab; Reka Tabs only mounts the active panel, so
+        // the security form isn't in the DOM until the tab is selected.
+        await page.getByRole('tab', { name: /security|безпека/i }).click()
 
         await expect(page.getByLabel(/current password|поточний пароль/i)).toBeVisible({ timeout: 10000 })
         await expect(page.locator('body')).toContainText(/passkey|ключ доступу/i)

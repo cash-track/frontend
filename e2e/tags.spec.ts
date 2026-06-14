@@ -33,10 +33,17 @@ test.describe('Tags CRUD', () => {
     test('navigates to tag detail page', async ({ page }) => {
         await page.goto('/tags')
 
-        // Click on a tag chip
+        // Clicking a tag chip opens an actions popover (View / Edit / Delete);
+        // the chip itself no longer navigates directly.
         const firstTagChip = page.locator('button[class*="rounded-full"]').first()
         await firstTagChip.waitFor({ state: 'visible', timeout: 10000 })
         await firstTagChip.click()
+
+        // "View" in the popover navigates to the tag detail page.
+        await page
+            .getByRole('button', { name: /^(view|переглянути)$/i })
+            .first()
+            .click({ timeout: 10000 })
 
         await expect(page).toHaveURL(/\/tags\/\d+/)
         await expect(page.locator('body')).not.toContainText('Unknown error')
@@ -55,7 +62,7 @@ test.describe('Navigation', () => {
         await expect(page).toHaveURL(/\/profile/)
 
         await page.goto('/settings')
-        await expect(page).toHaveURL(/\/settings\/profile/)
+        await expect(page).toHaveURL(/\/settings$/)
     })
 
     test('root redirects to /wallets', async ({ page }) => {
