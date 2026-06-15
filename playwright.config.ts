@@ -37,6 +37,15 @@ export default defineConfig({
             name: 'chromium',
             use: { ...devices['Desktop Chrome'] },
             dependencies: ['setup'],
+            // Desktop runs everything EXCEPT the mobile-only specs.
+            testIgnore: /.*\.mobile\.spec\.ts/,
+        },
+        {
+            name: 'mobile-chrome',
+            use: { ...devices['Pixel 5'] }, // 393×851, hasTouch, isMobile
+            dependencies: ['setup'],
+            // Only *.mobile.spec.ts run on the touch viewport.
+            testMatch: /.*\.mobile\.spec\.ts/,
         },
     ],
 
