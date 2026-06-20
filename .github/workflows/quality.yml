@@ -17,3 +17,5 @@ jobs:
   quality:
     uses: cash-track/.github/.github/workflows/quality-node.yml@main
     secrets: inherit
+    with:
+      test-command: 'npm run type-check && npm run test:unit -- --run'
