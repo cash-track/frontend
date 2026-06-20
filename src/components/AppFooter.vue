@@ -19,13 +19,13 @@ const year = new Date().getFullYear()
                     <nav class="inline-flex items-center gap-3 flex-wrap justify-center sm:justify-end">
                         <ULink
                             :to="webSiteLink('/cookie-policy')"
-                            class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+                            class="text-primary-500 hover:text-primary-700 transition-colors"
                         >
                             {{ t('cookiePolicy') }}
                         </ULink>
                         <ULink
                             :to="webSiteLink('/privacy-policy')"
-                            class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+                            class="text-primary-500 hover:text-primary-700 transition-colors"
                         >
                             {{ t('privacyPolicy') }}
                         </ULink>
@@ -33,7 +33,7 @@ const year = new Date().getFullYear()
                             href="https://t.me/cash_track"
                             target="_blank"
                             rel="noopener noreferrer"
-                            class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+                            class="text-primary-500 hover:text-primary-700 transition-colors"
                             aria-label="Telegram"
                         >
                             <UIcon name="simple-icons:telegram" class="size-4" />

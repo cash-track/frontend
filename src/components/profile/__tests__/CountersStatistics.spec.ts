@@ -77,4 +77,14 @@ describe('CountersStatistics.vue', () => {
         expect(wrapper.text()).toContain('profile.incomeChargesAmount')
         expect(wrapper.text()).toContain('profile.expenseChargesAmount')
     })
+
+    it('uses grid layout for counter rows', async () => {
+        vi.mocked(getCounterStats).mockResolvedValue(mockStats)
+
+        const wrapper = mount(CountersStatistics, globalStubs)
+        await flushPromises()
+
+        expect(wrapper.find('.grid-cols-2').exists()).toBe(true)
+        expect(wrapper.find('.grid-cols-3').exists()).toBe(true)
+    })
 })
