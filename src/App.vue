@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { RouterView } from 'vue-router'
+import { RouterView, useRouter } from 'vue-router'
 import { computed, onMounted, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
@@ -13,8 +13,10 @@ import { useProfileStore } from '@/stores/profile'
 import { useAuthStore } from '@/stores/auth'
 import { useLocaleStore, syncLocaleWithI18n } from '@/stores/locale'
 import { webSiteLink } from '@/shared/links'
+import { setDocumentTitle } from '@/router'
 
 const { locale } = useI18n()
+const router = useRouter()
 
 const lang = computed(() => locales[locale.value as keyof typeof locales].code)
 
@@ -40,36 +42,28 @@ watch(loading, done => {
         window.location.href = webSiteLink('/')
     }
 })
+
+watch(locale, () => setDocumentTitle(router.currentRoute.value))
 </script>
 
 <template>
     <UApp :locale="locales[locale as unknown as keyof typeof locales]">
-        <template v-if="loading">
-            <div class="animate-pulse p-4">
-                <div class="h-12 bg-gray-200 dark:bg-gray-700 rounded mb-4" />
-                <div class="h-64 bg-gray-200 dark:bg-gray-700 rounded" />
-            </div>
-        </template>
+        <div class="min-h-dvh flex flex-col">
+            <AppHeader />
 
-        <template v-else-if="isLogged">
-            <div class="min-h-dvh flex flex-col">
-                <AppHeader />
+            <UContainer class="flex-1 pb-1">
+                <!-- Gated on isLogged so the email-not-confirmed alert can't flash during the
+                     profile-load window (isEmailConfirmed defaults to false). -->
+                <EmailIsNotConfirmedAlert v-if="isLogged" />
 
-                <UContainer class="flex-1 pb-1">
-                    <EmailIsNotConfirmedAlert />
+                <!-- `loading ||` mounts the route during the profile-load window so each page shows
+                     its own per-section skeletons (the page-specific preloader); `|| isLogged` keeps
+                     it mounted afterwards. Don't reduce to just `isLogged` — that brings back a blank
+                     content area until the profile resolves. -->
+                <RouterView v-if="loading || isLogged" />
+            </UContainer>
 
-                    <RouterView />
-                </UContainer>
-
-                <AppFooter />
-            </div>
-        </template>
-
-        <template v-else>
-            <div class="animate-pulse p-4">
-                <div class="h-12 bg-gray-200 dark:bg-gray-700 rounded mb-4" />
-                <div class="h-64 bg-gray-200 dark:bg-gray-700 rounded" />
-            </div>
-        </template>
+            <AppFooter />
+        </div>
     </UApp>
 </template>

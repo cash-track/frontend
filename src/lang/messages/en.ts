@@ -303,4 +303,21 @@ export default {
 
         total: 'Total',
     },
+
+    titles: {
+        dashboard: 'Dashboard',
+        wallets: 'Wallets',
+        profile: 'Profile',
+        settings: 'Settings',
+        walletCreate: 'Create Wallet',
+        wallet: 'Wallet',
+        walletNamed: '{name}',
+        walletEdit: 'Edit Wallet',
+        walletEditNamed: 'Edit {name}',
+        walletShare: 'Share Wallet',
+        walletShareNamed: 'Share {name}',
+        tag: 'Tag',
+        tagNamed: '{name}',
+        tags: 'Tags',
+    },
 };

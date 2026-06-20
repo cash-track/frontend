@@ -68,12 +68,12 @@ test.describe('S1 — Navigation & App Shell', () => {
 
     // NAV-03 ──────────────────────────────────────────────────────────────────
     test('NAV-03 @smoke direct goto each static route sets correct document.title', async ({ page }) => {
-        const cases: { path: string; title: string }[] = [
-            { path: '/wallets',        title: 'Wallets | Cash Track' },
-            { path: '/tags',           title: 'Tags | Cash Track' },
-            { path: '/profile',        title: 'Profile | Cash Track' },
-            { path: '/settings',       title: 'Settings | Cash Track' },
-            { path: '/wallets/create', title: 'Create Wallet | Cash Track' },
+        const cases: { path: string; title: RegExp }[] = [
+            { path: '/wallets',        title: label('titles.wallets') },
+            { path: '/tags',           title: label('titles.tags') },
+            { path: '/profile',        title: label('titles.profile') },
+            { path: '/settings',       title: label('titles.settings') },
+            { path: '/wallets/create', title: label('titles.walletCreate') },
         ]
 
         for (const { path, title } of cases) {
@@ -272,15 +272,15 @@ test.describe('S1 — Navigation & App Shell', () => {
             try {
                 // /wallets/:walletID → meta.title = 'Wallet | Cash Track' (no named title)
                 await page.goto(`/wallets/${seeded.id}`)
-                await expect(page).toHaveTitle('Wallet | Cash Track', { timeout: 10000 })
+                await expect(page).toHaveTitle(label('titles.wallet'), { timeout: 10000 })
 
                 // /wallets/:walletID/edit → meta.title = 'Edit Wallet | Cash Track'
                 await page.goto(`/wallets/${seeded.id}/edit`)
-                await expect(page).toHaveTitle('Edit Wallet | Cash Track', { timeout: 10000 })
+                await expect(page).toHaveTitle(label('titles.walletEdit'), { timeout: 10000 })
 
                 // /wallets/:walletID/share → meta.title = 'Share Wallet | Cash Track'
                 await page.goto(`/wallets/${seeded.id}/share`)
-                await expect(page).toHaveTitle('Share Wallet | Cash Track', { timeout: 10000 })
+                await expect(page).toHaveTitle(label('titles.walletShare'), { timeout: 10000 })
 
                 await assertNoErrorLeak(page)
             } finally {

@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import type { RouteLocationNormalized } from 'vue-router'
 import WalletsView from '@/views/WalletsView.vue'
 import WalletCreateView from '@/views/WalletCreateView.vue'
 import WalletEditView from '@/views/WalletEditView.vue'
@@ -8,6 +9,29 @@ import ProfileView from '@/views/ProfileView.vue'
 import TagsView from '@/views/TagsView.vue'
 import TagView from '@/views/TagView.vue'
 import SettingsView from '@/views/settings/SettingsView.vue'
+import i18n from '@/lang'
+
+// Brand suffix is appended here in code, NOT inside the i18n messages. vue-i18n treats `|`
+// as the plural-form delimiter, so a message like 'Wallets | Cash Track' would be parsed as
+// two plural forms and t() would return only the first ('Wallets'). Keeping title messages
+// page-name-only and appending the constant suffix here avoids that defect.
+const BRAND = 'Cash Track'
+
+export function setDocumentTitle(route: RouteLocationNormalized) {
+    const nearest = route.matched.slice().reverse().find(r => r.meta && r.meta.title)
+    if (!nearest) return
+    const t = i18n.global.t
+    const nameForTitle = route.params.nameForTitle
+    let pageTitle: string
+    if (typeof nameForTitle === 'string' && typeof nearest.meta.namedTitle === 'string') {
+        pageTitle = t(nearest.meta.namedTitle as string, { name: nameForTitle })
+    } else if (typeof nearest.meta.title === 'string') {
+        pageTitle = t(nearest.meta.title as string)
+    } else {
+        return
+    }
+    document.title = `${pageTitle} | ${BRAND}`
+}
 
 const router = createRouter({
     history: createWebHistory(import.meta.env.BASE_URL),
@@ -16,7 +40,7 @@ const router = createRouter({
             path: '/',
             redirect: '/wallets',
             meta: {
-                title: 'Dashboard | Cash Track',
+                title: 'titles.dashboard',
             },
         },
         {
@@ -24,7 +48,7 @@ const router = createRouter({
             name: 'wallets',
             component: WalletsView,
             meta: {
-                title: 'Wallets | Cash Track',
+                title: 'titles.wallets',
             },
         },
         {
@@ -32,7 +56,7 @@ const router = createRouter({
             name: 'profile',
             component: ProfileView,
             meta: {
-                title: 'Profile | Cash Track',
+                title: 'titles.profile',
             },
         },
         {
@@ -40,7 +64,7 @@ const router = createRouter({
             name: 'settings',
             component: SettingsView,
             meta: {
-                title: 'Settings | Cash Track',
+                title: 'titles.settings',
             },
         },
         {
@@ -56,7 +80,7 @@ const router = createRouter({
             name: 'wallets.create',
             component: WalletCreateView,
             meta: {
-                title: 'Create Wallet | Cash Track',
+                title: 'titles.walletCreate',
             },
         },
         {
@@ -65,8 +89,8 @@ const router = createRouter({
             component: WalletView,
             props: true,
             meta: {
-                title: 'Wallet | Cash Track',
-                namedTitle: '{name} | Cash Track',
+                title: 'titles.wallet',
+                namedTitle: 'titles.walletNamed',
             },
         },
         {
@@ -75,8 +99,8 @@ const router = createRouter({
             component: WalletEditView,
             props: true,
             meta: {
-                title: 'Edit Wallet | Cash Track',
-                namedTitle: 'Edit {name} | Cash Track',
+                title: 'titles.walletEdit',
+                namedTitle: 'titles.walletEditNamed',
             },
         },
         {
@@ -85,19 +109,18 @@ const router = createRouter({
             component: WalletShareView,
             props: true,
             meta: {
-                title: 'Share Wallet | Cash Track',
-                namedTitle: 'Share {name} | Cash Track',
+                title: 'titles.walletShare',
+                namedTitle: 'titles.walletShareNamed',
             },
         },
-
         {
             path: '/tags/:tagID',
             name: 'tags.show',
             component: TagView,
             props: true,
             meta: {
-                title: 'Tag | Cash Track',
-                namedTitle: '{name} | Cash Track',
+                title: 'titles.tag',
+                namedTitle: 'titles.tagNamed',
             },
         },
         {
@@ -105,27 +128,16 @@ const router = createRouter({
             name: 'tags',
             component: TagsView,
             meta: {
-                title: 'Tags | Cash Track',
-                namedTitle: 'Tags | Cash Track',
-            }
+                title: 'titles.tags',
+                namedTitle: 'titles.tags',
+            },
         },
     ],
 })
 
 router.beforeEach((to, from, next) => {
-    const nearestWithTitle = to.matched.slice().reverse().find(r => r.meta && r.meta.title);
-
-    if (nearestWithTitle) {
-        if (to.params.nameForTitle && typeof to.params.nameForTitle === 'string' &&
-            typeof nearestWithTitle.meta.namedTitle === 'string'
-        ) {
-            document.title = nearestWithTitle.meta.namedTitle.replace(/\{name\}/g, to.params.nameForTitle as string)
-        } else if (typeof nearestWithTitle.meta.title === 'string') {
-            document.title = nearestWithTitle.meta.title;
-        }
-    }
-
-    return next();
+    setDocumentTitle(to)
+    return next()
 })
 
 export default router

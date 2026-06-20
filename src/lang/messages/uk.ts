@@ -303,4 +303,21 @@ export default {
 
         total: 'Всього',
     },
+
+    titles: {
+        dashboard: 'Дашборд',
+        wallets: 'Гаманці',
+        profile: 'Профіль',
+        settings: 'Налаштування',
+        walletCreate: 'Створити гаманець',
+        wallet: 'Гаманець',
+        walletNamed: '{name}',
+        walletEdit: 'Змінити гаманець',
+        walletEditNamed: 'Змінити {name}',
+        walletShare: 'Поділитись гаманцем',
+        walletShareNamed: 'Поділитись {name}',
+        tag: 'Тег',
+        tagNamed: '{name}',
+        tags: 'Теги',
+    },
 };

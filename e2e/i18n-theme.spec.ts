@@ -20,6 +20,7 @@
 import { test, expect } from '@playwright/test'
 import {
     shell,
+    label,
     createWalletViaApi,
     deleteWalletViaApi,
     assertNoErrorLeak,
@@ -256,18 +257,18 @@ test.describe('S22 — i18n, dark mode, document titles', () => {
             })
 
             try {
-                const cases: { path: string; title: string }[] = [
-                    { path: '/',                                  title: 'Wallets | Cash Track' },
-                    { path: '/wallets',                           title: 'Wallets | Cash Track' },
-                    { path: '/wallets/create',                    title: 'Create Wallet | Cash Track' },
-                    { path: `/wallets/${seeded.id}`,             title: 'Wallet | Cash Track' },
-                    { path: `/wallets/${seeded.id}/edit`,        title: 'Edit Wallet | Cash Track' },
-                    { path: `/wallets/${seeded.id}/share`,       title: 'Share Wallet | Cash Track' },
-                    { path: '/tags',                              title: 'Tags | Cash Track' },
-                    { path: '/profile',                           title: 'Profile | Cash Track' },
-                    { path: '/settings',                          title: 'Settings | Cash Track' },
-                    { path: '/settings/profile',                  title: 'Settings | Cash Track' }, // redirect
-                    { path: '/settings/security',                 title: 'Settings | Cash Track' }, // redirect
+                const cases: { path: string; title: RegExp }[] = [
+                    { path: '/',                                  title: label('titles.wallets') },
+                    { path: '/wallets',                           title: label('titles.wallets') },
+                    { path: '/wallets/create',                    title: label('titles.walletCreate') },
+                    { path: `/wallets/${seeded.id}`,             title: label('titles.wallet') },
+                    { path: `/wallets/${seeded.id}/edit`,        title: label('titles.walletEdit') },
+                    { path: `/wallets/${seeded.id}/share`,       title: label('titles.walletShare') },
+                    { path: '/tags',                              title: label('titles.tags') },
+                    { path: '/profile',                           title: label('titles.profile') },
+                    { path: '/settings',                          title: label('titles.settings') },
+                    { path: '/settings/profile',                  title: label('titles.settings') }, // redirect
+                    { path: '/settings/security',                 title: label('titles.settings') }, // redirect
                 ]
 
                 for (const { path, title } of cases) {

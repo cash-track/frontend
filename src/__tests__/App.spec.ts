@@ -30,7 +30,15 @@ vi.mock('@/lang', () => ({
 }))
 
 vi.mock('vue-router', () => ({
-    RouterView: { template: '<div />' },
+    RouterView: { template: '<div class="router-view-stub" />' },
+    useRouter: () => ({ currentRoute: { value: { matched: [], params: {}, fullPath: '/' } } }),
+    createRouter: () => ({ beforeEach: vi.fn(), install: vi.fn() }),
+    createWebHistory: () => ({}),
+}))
+
+vi.mock('@/router', () => ({
+    default: { beforeEach: vi.fn(), install: vi.fn() },
+    setDocumentTitle: vi.fn(),
 }))
 
 vi.mock('@/shared/links', () => ({
@@ -73,7 +81,7 @@ const stubs = {
     UContainer: { template: '<div><slot /></div>' },
     AppHeader: { template: '<div />' },
     AppFooter: { template: '<div />' },
-    EmailIsNotConfirmedAlert: { template: '<div />' },
+    EmailIsNotConfirmedAlert: { template: '<div class="email-alert-stub" />' },
 }
 
 // -- import App after all mocks are set up ------------------------------------
@@ -123,18 +131,38 @@ describe('App.vue', () => {
         expect(hrefSpy).not.toHaveBeenCalled()
     })
 
-    it('shows skeleton while loading', async () => {
+    it('renders the app shell immediately and mounts the route while loading (no generic preloader)', async () => {
         mockLoading.value = true
+        mockIsLogged.value = false
         const wrapper = mount(App, { global: { stubs } })
         await nextTick()
-        expect(wrapper.find('.animate-pulse').exists()).toBe(true)
+        // Shell (header+footer wrapper) renders immediately — old UX restored
+        expect(wrapper.find('.min-h-dvh').exists()).toBe(true)
+        // No generic full-page preloader anymore
+        expect(wrapper.find('.animate-pulse').exists()).toBe(false)
+        // Route is mounted during the profile-load window so each page shows its OWN skeletons
+        expect(wrapper.find('.router-view-stub').exists()).toBe(true)
+        // Email-not-confirmed alert must NOT flash before login is confirmed
+        expect(wrapper.find('.email-alert-stub').exists()).toBe(false)
     })
 
-    it('shows skeleton (else branch) when not loading and not logged in', async () => {
+    it('unmounts the route once confirmed logged-out, but keeps the shell', async () => {
         mockLoading.value = false
         mockIsLogged.value = false
         const wrapper = mount(App, { global: { stubs } })
         await nextTick()
-        expect(wrapper.find('.animate-pulse').exists()).toBe(true)
+        // Shell still renders (header/footer always present)
+        expect(wrapper.find('.min-h-dvh').exists()).toBe(true)
+        // Route is not mounted — avoids showing stale authenticated content while the redirect fires
+        expect(wrapper.find('.router-view-stub').exists()).toBe(false)
+    })
+
+    it('mounts the route and shows the email alert when logged in', async () => {
+        mockLoading.value = false
+        mockIsLogged.value = true
+        const wrapper = mount(App, { global: { stubs } })
+        await nextTick()
+        expect(wrapper.find('.router-view-stub').exists()).toBe(true)
+        expect(wrapper.find('.email-alert-stub').exists()).toBe(true)
     })
 })
