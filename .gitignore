@@ -47,3 +47,6 @@ components.d.ts
 
 # Legacy Vue 2 app kept as reference during migration
 old/
+
+# vite-plugin-pwa dev artifacts
+dev-dist/
