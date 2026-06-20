@@ -391,6 +391,8 @@ defineExpose({ wallet, error, showCreateForm, showFilters, showGraph, showLimits
                                     color="neutral"
                                     size="md"
                                     icon="i-lucide-x"
+                                    :name="t('wallets.clear')"
+                                    :aria-label="t('wallets.clear')"
                                     @click="selectedTags = []"
                                 >
                                     {{ t('wallets.clear') }}

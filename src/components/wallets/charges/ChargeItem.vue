@@ -139,6 +139,7 @@ defineExpose({ fullDateTime, chargeTime })
                     selectable && !isEdit ? 'cursor-pointer hover:ring-2 ring-primary ring-offset-1' : 'cursor-default',
                 ]"
                 :aria-label="t('charges.selectCharge')"
+                :name="t('charges.selectCharge')"
                 :disabled="!selectable || isEdit"
                 @click.stop="selectable && !isEdit ? emit('toggle-selected', charge) : undefined"
             >
