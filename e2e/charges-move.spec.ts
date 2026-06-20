@@ -29,10 +29,10 @@ const moveToolbar = (page: import('@playwright/test').Page) =>
 const clearSelectionBtn = (page: import('@playwright/test').Page) =>
     page.getByRole('button', { name: label('charges.clearSelection') })
 
-// Selected count text (charges.selectedCount)
+// Selected count text (charges.selectedCount = '{count} selected' | '{count} обрано')
 const selectedCountText = (page: import('@playwright/test').Page) =>
     page.locator('span.text-sm.text-muted').filter({
-        hasText: /\d+\s*(selected|вибрано)/i,
+        hasText: /\d+\s*(selected|обрано)/i,
     })
 
 // Move error alert (closable UAlert, description = charges.moveError)

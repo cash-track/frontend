@@ -26,12 +26,26 @@ import {
     assertNoErrorLeak,
 } from './support'
 
-// ── Helper: detect current app locale from html.lang ─────────────────────────
+// ── Helper: detect the current app locale ────────────────────────────────────
+// We read the *store* locale via the language menu's disabled item, NOT html.lang.
+// AppHeader disables the menu item whose code === the active store locale, and the
+// store is settled the instant the nav appears: profile load runs setProfile(), which
+// synchronously logs in (renders the nav) AND applies the account locale to the store.
+// html.lang instead follows the i18n locale, which lags the store during the async
+// locale import after profile load — reading it here races (it can briefly disagree
+// with the menu, so switchLocale would then target the disabled current-locale item).
 async function getAppLocale(page: Parameters<typeof shell.hamburger>[0]): Promise<'en' | 'uk'> {
-    // Wait for nav to be non-empty (profile load complete → locale finalised)
     await expect(shell.navWallets(page)).not.toBeEmpty({ timeout: 5000 })
-    const lang = await page.evaluate(() => document.documentElement.lang)
-    return lang === 'uk' ? 'uk' : 'en'
+    await shell.languageToggle(page).click()
+    await expect(page.getByRole('menuitem').first()).toBeVisible({ timeout: 5000 })
+    const ukDisabled = await page
+        .getByRole('menuitem')
+        .filter({ hasText: 'Українська' })
+        .isDisabled()
+    // Close the menu so the caller resumes from a clean state.
+    await page.keyboard.press('Escape')
+    await expect(page.getByRole('menuitem').first()).toBeHidden({ timeout: 5000 })
+    return ukDisabled ? 'uk' : 'en'
 }
 
 // ── Helper: open language dropdown and click the target locale item ───────────
@@ -43,12 +57,37 @@ async function switchLocale(
 ): Promise<void> {
     const itemText = targetLocale === 'uk' ? 'Українська' : 'English'
     await shell.languageToggle(page).click()
-    await expect(page.getByRole('menuitem').first()).toBeVisible({ timeout: 5000 })
-    await page.getByRole('menuitem').filter({ hasText: itemText }).click()
-    // Wait for i18n switch to propagate (html.lang attribute update)
+    // Target is the non-current locale, so its item must be enabled — wait for it rather
+    // than racing the brief settle window where the store locale is still being applied.
+    const item = page.getByRole('menuitem').filter({ hasText: itemText })
+    await expect(item).toBeEnabled({ timeout: 5000 })
+    await item.click()
+    // Wait for i18n switch to propagate (html.lang attribute update). Switching TO uk the
+    // first time on a page does an `await import('./messages/uk')` (lang/index.ts:63) before
+    // setI18nLanguage flips html.lang — Vite transforms that chunk on first request, so under
+    // cold start + parallel-worker load it can take several seconds. 10s gives that margin;
+    // the PUT this test asserts already fired synchronously from AppHeader's watch(locale).
     await expect
-        .poll(() => page.evaluate(() => document.documentElement.lang), { timeout: 5000 })
+        .poll(() => page.evaluate(() => document.documentElement.lang), { timeout: 10000 })
         .toBe(targetLocale)
+}
+
+// ── Helper: navigate and wait for the initial profile load to settle ─────────
+// AppHeader (and the language toggle) render immediately — they live outside the RouterView
+// loading gate — but GET /api/profile resolves a beat later, and setProfile() then runs
+// localeChange(account.locale). Switching locale before that lands lets the late localeChange
+// stomp the switch back to the account locale (the IT-02/IT-03 flake: cookie + html.lang revert
+// to en). Register the wait BEFORE goto so we don't miss the early response (cf. wallet-limits).
+async function gotoReady(page: Parameters<typeof shell.hamburger>[0], path: string): Promise<void> {
+    const profileLoaded = page.waitForResponse(
+        res =>
+            res.url().endsWith('/api/profile') &&
+            res.request().method() === 'GET' &&
+            res.status() < 500,
+        { timeout: 15000 },
+    )
+    await page.goto(path)
+    await profileLoaded
 }
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -67,7 +106,7 @@ test.describe('S22 — i18n, dark mode, document titles', () => {
                 }
             })
 
-            await page.goto('/wallets')
+            await gotoReady(page, '/wallets')
             const currentLocale = await getAppLocale(page)
             const targetLocale = currentLocale === 'en' ? 'uk' : 'en'
 
@@ -107,7 +146,7 @@ test.describe('S22 — i18n, dark mode, document titles', () => {
                 }
             })
 
-            await page.goto('/wallets')
+            await gotoReady(page, '/wallets')
             const currentLocale = await getAppLocale(page)
             const targetLocale = currentLocale === 'en' ? 'uk' : 'en'
 
@@ -182,7 +221,7 @@ test.describe('S22 — i18n, dark mode, document titles', () => {
                 }
             })
 
-            await page.goto('/wallets')
+            await gotoReady(page, '/wallets')
             const currentLocale = await getAppLocale(page)
             const targetLocale = currentLocale === 'en' ? 'uk' : 'en'
 
@@ -247,6 +286,10 @@ test.describe('S22 — i18n, dark mode, document titles', () => {
     test(
         'IT-05 document.title set correctly for each route by router.beforeEach',
         async ({ page, request }) => {
+            // 11 sequential navigations + title assertions — legitimately heavy and borderline on
+            // the default 30s budget under full-suite parallel load (passes solo in ~half that).
+            // Triple the budget rather than thin the route coverage.
+            test.slow()
             // Seed a wallet so we can visit its parameterised routes.
             // Note: the `namedTitle` feature ('{name} | Cash Track') is dead code —
             // vue-router 4.1.4+ discards params not declared in the route path

@@ -146,6 +146,11 @@ test.describe('S15 — Settings: Profile tab', () => {
             }
         })
 
+        // Wait until the form is populated from the loaded profile before editing.
+        // The route mounts during the profile-load window, so filling too early lets the
+        // late watch(profile) overwrite the typed value (submitting the original name).
+        await expect(settings.nameInput(page)).not.toHaveValue('', { timeout: 10000 })
+
         // Change the Name field
         await settings.nameInput(page).fill('E2E Updated Name')
 
@@ -236,16 +241,20 @@ test.describe('S15 — Settings: Profile tab', () => {
             await route.fulfill({
                 status: 422,
                 contentType: 'application/json',
-                body: JSON.stringify({ errors: { nickName: ['Nick name is already taken'] } }),
+                body: JSON.stringify({ errors: { nickName: ['Nick name already claimed'] } }),
             })
         })
+
+        // Ensure the profile has populated the field before typing — otherwise the late
+        // watch(profile) resets nickName and cancels the pending availability check.
+        await expect(settings.nickNameInput(page)).not.toHaveValue('', { timeout: 10000 })
 
         await settings.nickNameInput(page).fill('takennick')
         await page.waitForTimeout(1100)
 
         // Field error should appear
         await expect(
-            page.getByText('Nick name is already taken').first(),
+            page.getByText('Nick name already claimed').first(),
         ).toBeVisible({ timeout: 5000 })
         // Intentional error — skip assertNoErrorLeak
     })

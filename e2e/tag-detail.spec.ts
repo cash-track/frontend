@@ -482,6 +482,11 @@ test.describe('S10 — Tag Detail', () => {
         request,
         page,
     }) => {
+        // Three full page navigations (/wallets → tagA → tagB-via-chip → back → tagA), each
+        // re-firing the profile + tag loads, plus heading waits up to 10s apiece. Passes solo
+        // in ~6s but tips over the default 30s budget under full-suite parallel load (5 workers).
+        // Triple the budget rather than thin the back/forward coverage.
+        test.slow()
         const tagA = await createTagViaApi(request, { name: `E2EtagA${Date.now()}` })
         const tagB = await createTagViaApi(request, { name: `E2EtagB${Date.now()}` })
         try {

@@ -328,7 +328,10 @@ test.describe('S11 — Charges List', () => {
 
             // Expand the row so its tag chips render (collapsed rows hide them).
             await row.click()
-            const tagChip = row.locator('button[class*="rounded-full"]').first()
+            // Scope to the chip carrying the seeded tag name — the row's first
+            // rounded-full button is the (text-less) select control, not a tag chip.
+            const tagChip = row.locator('button[class*="rounded-full"]')
+                .filter({ hasText: tagName }).first()
             await expect(tagChip).toBeVisible({ timeout: 5000 })
             await tagChip.click()
 

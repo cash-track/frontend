@@ -2,7 +2,7 @@
 // CE-01..CE-08
 import { test, expect } from '@playwright/test'
 import {
-    label, labelStrings,
+    label, labelExact, labelStrings,
     routeJson,
     createWalletViaApi, createChargeViaApi, deleteWalletViaApi,
     charge, assertNoErrorLeak,
@@ -10,15 +10,19 @@ import {
 
 // ── Local selectors ──────────────────────────────────────────────────────────
 
-// The inline ChargeEdit form (identified by its update button inside a form)
+// The inline ChargeEdit form (identified by its update button inside a form).
+// Use labelExact so the anchored "Update"/"Змінити" matches only the submit button —
+// the form also contains link-style "Edit details"/"Edit date" (UK: "Змінити деталі"/
+// "Змінити дату") toggles that a substring match on "Змінити" would collide with.
 const editForm = (page: import('@playwright/test').Page) =>
     page.locator('form').filter({
-        has: page.getByRole('button', { name: label('charges.update') }),
+        has: page.getByRole('button', { name: labelExact('charges.update') }),
     }).first()
 
-// Update button in the edit form
+// Update (submit) button in the edit form — anchored to exclude the "Edit details"/
+// "Edit date" toggle buttons that share the "Змінити" prefix in Ukrainian.
 const updateButton = (page: import('@playwright/test').Page) =>
-    page.getByRole('button', { name: label('charges.update') })
+    page.getByRole('button', { name: labelExact('charges.update') })
 
 // Cancel button in the edit/create form
 const cancelButton = (page: import('@playwright/test').Page) =>

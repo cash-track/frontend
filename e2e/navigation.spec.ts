@@ -192,14 +192,26 @@ test.describe('S1 — Navigation & App Shell', () => {
                 }
             })
 
+            // Wait for the initial profile load to settle BEFORE switching locale. AppHeader
+            // (its nav labels + language toggle) renders immediately — outside the RouterView
+            // loading gate — so the nav is non-empty long before GET /api/profile resolves, and
+            // `not.toBeEmpty` returns at once without actually waiting for the profile. setProfile()
+            // then runs localeChange(account.locale); if that lands *after* a manual switch it
+            // stomps the switch back to the account locale (the flake: nav reverts to "Wallets").
+            // Register the wait before goto so we don't miss the early response (cf. wallet-limits).
+            const profileLoaded = page.waitForResponse(
+                res =>
+                    res.url().endsWith('/api/profile') &&
+                    res.request().method() === 'GET' &&
+                    res.status() < 500,
+                { timeout: 15000 },
+            )
             await page.goto('/wallets')
+            await profileLoaded
 
             // Detect current locale from the LIVE page state, not the cookie.
-            // The profile store calls localeChange(user.locale) when the profile loads,
-            // which may override the initial cookie value. We detect by reading the html
-            // lang attribute (set by setI18nLanguage() in src/lang/index.ts).
-            // We wait for the profile load to complete first by waiting for the nav to
-            // show a non-empty label.
+            // localeChange(user.locale) has now run (profile loaded above), so the html lang
+            // attribute (set by setI18nLanguage() in src/lang/index.ts) reflects the account locale.
             await expect(shell.navWallets(page)).not.toBeEmpty({ timeout: 5000 })
             const htmlLang = await page.evaluate(() => document.documentElement.lang)
             const currentLocale = htmlLang === 'uk' ? 'uk' : 'en'

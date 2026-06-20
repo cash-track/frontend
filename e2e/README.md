@@ -15,7 +15,7 @@ npm run test:e2e:smoke                            # P0 smoke subset (@smoke); ad
 
 The dev stack must already be running (`https://my.dev-cash-track.app` + gateway). Auth is handled
 once by `setup/global-setup.ts` (logs in via the gateway, saves `setup/.auth.json`); every spec
-reuses it through `storageState`. **Never read `.env.local` / `.testing.local`** — dotenv loads the
+reuses it through `storageState`. **Never read `.env.local`** — dotenv loads the
 credentials automatically.
 
 ## Projects
