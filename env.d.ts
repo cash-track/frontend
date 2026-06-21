@@ -14,3 +14,9 @@ interface ImportMetaEnv {
 interface ImportMeta {
     readonly env: ImportMetaEnv
 }
+
+interface Window {
+    // Runtime config injected by entrypoint.sh into index.html at container start.
+    // See src/shared/env.ts (getEnv) for resolution and fallback behaviour.
+    __APP_CONFIG__?: Partial<Record<keyof ImportMetaEnv, string>>
+}

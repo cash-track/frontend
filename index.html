@@ -5,6 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cash Track</title>
 
+    <!-- Runtime config. entrypoint.sh replaces these placeholders with container env
+         vars at container start, so one built image serves every environment. In local
+         dev / preview the placeholders stay and the app falls back to import.meta.env
+         (see src/shared/env.ts). -->
+    <script>
+      window.__APP_CONFIG__ = {
+        VITE_WEBSITE_URL: '__VITE_WEBSITE_URL__',
+        VITE_GATEWAY_URL: '__VITE_GATEWAY_URL__',
+      }
+    </script>
+
     <!-- Manifest & icons -->
     <link rel="manifest" href="/site.webmanifest">
     <link rel="icon" href="/favicon.ico">

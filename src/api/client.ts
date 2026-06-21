@@ -1,5 +1,6 @@
 import axios, { AxiosError, type AxiosInstance } from 'axios'
 import { webSiteLink } from '@/shared/links'
+import { getEnv } from '@/shared/env'
 
 export class CsrfError extends Error {
     constructor(cause: Error) {
@@ -11,7 +12,7 @@ export class CsrfError extends Error {
 
 export function createAxiosInstance(): AxiosInstance {
     const instance = axios.create({
-        baseURL: import.meta.env.VITE_GATEWAY_URL,
+        baseURL: getEnv('VITE_GATEWAY_URL'),
         withCredentials: true,
     })
 
