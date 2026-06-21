@@ -1,46 +1,16 @@
-import { AxiosResponse } from 'axios';
-import { ApiCall, Repository } from '@/api/client';
+import { apiCall } from './client'
+import { User } from './models/user'
 
-export interface UsersRepositoryInterface {
-    findByEmail(email: string): Promise<AxiosResponse<UserResponseInterface>>
-    findByCommonWallets(): Promise<AxiosResponse<UsersResponseInterface>>
+export async function findUserByEmail(email: string): Promise<User> {
+    return apiCall(async client => {
+        const res = await client.get(`/api/users/find/by-email/${encodeURIComponent(email)}`)
+        return User.from(res.data.data)
+    })
 }
 
-export class UsersRepository extends Repository implements UsersRepositoryInterface {
-
-    @ApiCall()
-    public findByEmail(email: string): Promise<AxiosResponse<UserResponseInterface>> {
-        return this.client.get<UserResponseInterface>(`/api/users/find/by-email/${email}`)
-    }
-
-    @ApiCall()
-    public findByCommonWallets(): Promise<AxiosResponse<UsersResponseInterface>> {
-        return this.client.get<UsersResponseInterface>('/api/users/find/by-common-wallets')
-    }
-}
-
-export interface UserResponseInterface {
-    data: UserInterface;
-}
-
-export interface UsersResponseInterface {
-    data: Array<UserInterface>;
-}
-
-export interface UserInterface {
-    id: number;
-    name: string;
-    lastName: string;
-    nickName: string;
-    photoUrl: string | null;
-}
-
-export function emptyUser(): UserInterface {
-    return {
-        id: 0,
-        name: '',
-        lastName: '',
-        nickName: '',
-        photoUrl: '',
-    };
+export async function findUsersByCommonWallets(): Promise<User[]> {
+    return apiCall(async client => {
+        const res = await client.get('/api/users/find/by-common-wallets')
+        return (res.data.data as unknown[]).map(User.from)
+    })
 }

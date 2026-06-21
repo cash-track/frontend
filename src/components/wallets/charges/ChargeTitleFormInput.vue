@@ -1,336 +1,246 @@
-<template>
-    <b-form-group label-for="title-suggestion"
-                  class="autocomplete-root"
-                  :invalid-feedback="validationMessage"
-                  :state="validationState"
-                  v-click-outside="onInputInactive"
-    >
-        <b-spinner small class="loader" v-if="autocompleteLoading"></b-spinner>
-        <b-input
-            type="text"
-            id="title-suggestion"
-            required
-            :placeholder="$t('charges.title')"
-            v-model="name"
-            :disabled="disabled"
-            :state="validationState"
-            @keyup="onAutocomplete"
-            @focusin="onInputActive"
-            @change="onInputChanged"
-            autocomplete="off"
-        ></b-input>
-        <b-list-group class="autocomplete" v-show="autocompleteActive">
-            <b-list-group-item>
-                <span class="list-container" v-if="autocompleteFiltered.length">
-                    <tag v-for="tag of autocompleteFiltered"
-                         :tag="tag"
-                         :key="tag.id"
-                         @selected="onSelected"
-                    ></tag>
-                </span>
-            </b-list-group-item>
-            <b-list-group-item>
-                <b-list-group class="items-container">
-                    <b-list-group-item :key="item.title"
-                                       button
-                                       v-for="item of chargeTitleAutocompleteFiltered"
-                                       @click="onTitleSelected(item)"
-                                       class="d-flex justify-content-between align-items-center"
-                                       :class="{'selected':item.selected}"
-                    >
-                        {{ item.title }}
-                        <b-badge>{{ item.count }}</b-badge>
-                    </b-list-group-item>
-                </b-list-group>
-            </b-list-group-item>
-        </b-list-group>
-    </b-form-group>
-</template>
+<script setup lang="ts">
+import { ref, computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { getChargeTitles } from '@/api/charges'
+import { searchWalletTags } from '@/api/tags'
+import type { Tag } from '@/api/models/tag'
+import type { ChargeTitleSuggestion } from '@/api/models/charge'
+import TagChip from '@/components/tags/Tag.vue'
 
-<script lang="ts">
-import { AxiosResponse } from 'axios';
-import { Vue, Component, Prop, Watch } from 'vue-property-decorator'
-import {
-    TagInterface,
-    TagsRepository,
-    TagsRepositoryInterface,
-    TagsResponseInterface
-} from '@/api/tags';
-import Tag from '@/components/tags/Tag.vue';
-import {
-    ChargesRepository,
-    ChargesRepositoryInterface,
-    ChargeTitleInterface,
-    ChargeTitlesResponseInterface
-} from '@/api/charges';
+const props = defineProps<{
+    modelValue: string
+    tags: Tag[]
+    walletId: number
+    disabled?: boolean
+}>()
 
-interface ChargeTitleSelectedInterface extends ChargeTitleInterface {
-    selected: boolean
-}
+const emit = defineEmits<{
+    'update:modelValue': [value: string]
+    'tag-selected': [tag: Tag]
+}>()
 
-@Component({
-    components: {Tag}
+const { t } = useI18n()
+
+const localValue = ref(props.modelValue)
+const dropdownOpen = ref(false)
+const loading = ref(false)
+const debounceHandle = ref<ReturnType<typeof setTimeout> | null>(null)
+const lastQuery = ref('')
+const highlightedIndex = ref(-1)
+
+// Guards against stale responses: an earlier request must never overwrite a newer one.
+let loadToken = 0
+
+// Sync local → parent + trigger autocomplete
+watch(localValue, (val) => {
+    emit('update:modelValue', val)
+    doAutocomplete(val)
 })
-export default class ChargeTitleFormInput extends Vue {
-    @Prop({
-        required: true,
-        type: Array,
-        default: [],
-    })
-    tags!: Array<TagInterface>
 
-    @Prop({
-        required: true,
-        type: String,
-    })
-    value!: string
+const tagSuggestions = ref<Tag[]>([])
+const titleSuggestions = ref<ChargeTitleSuggestion[]>([])
 
-    @Prop({
-        required: false,
-        type: Boolean,
-        default: false,
-    })
-    disabled!: boolean
+const addedTagIds = computed(() => new Set(props.tags.map(tag => tag.id)))
 
-    @Prop({
-        required: false,
-        type: Boolean,
-        default: null,
-    })
-    validationState!: boolean|null
+const filteredTagSuggestions = computed(() =>
+    tagSuggestions.value.filter(tag => !addedTagIds.value.has(tag.id)),
+)
 
-    @Prop({
-        required: false,
-        type: String,
-        default: null,
-    })
-    validationMessage!: string|null
+const filteredTitleSuggestions = computed(() =>
+    titleSuggestions.value.map(item => ({
+        ...item,
+        selected: props.modelValue.trim().toLowerCase() === item.title.toLowerCase(),
+    })),
+)
 
-    @Prop({
-        required: false,
-        type: Boolean,
-        default: false,
-    })
-    resetState!: boolean|null
+// Combined flat list for keyboard navigation
+const allItems = computed(() => {
+    const items: Array<{ type: 'tag'; tag: Tag } | { type: 'title'; title: string }> = []
+    for (const tag of filteredTagSuggestions.value) {
+        items.push({ type: 'tag', tag })
+    }
+    for (const item of filteredTitleSuggestions.value) {
+        items.push({ type: 'title', title: item.title })
+    }
+    return items
+})
 
-    chargesRepository: ChargesRepositoryInterface = new ChargesRepository()
-    tagsRepository: TagsRepositoryInterface = new TagsRepository()
+const listboxId = 'charge-title-listbox'
 
-    name = ''
+const activeDescendantId = computed(() => {
+    if (highlightedIndex.value < 0 || !dropdownOpen.value) return undefined
+    const item = allItems.value[highlightedIndex.value]
+    if (!item) return undefined
+    if (item.type === 'tag') return `charge-title-option-tag-${item.tag.id}`
+    return `charge-title-option-title-${highlightedIndex.value}`
+})
 
-    autocomplete: Array<TagInterface> = []
-    chargeTitleAutocomplete: Array<ChargeTitleInterface> = []
-    autocompleteActive = false
-    autocompleteLoading = false
-    autocompleteDebounceHandle: number|null = null
-    lastAutocompleteQuery = ''
+const hasResults = computed(() =>
+    filteredTagSuggestions.value.length > 0 || filteredTitleSuggestions.value.length > 0,
+)
 
-    get autocompleteFiltered(): Array<TagInterface> {
-        const addedTags = this.tags.map(tag => tag.name)
-
-        return this.autocomplete.filter(tag => addedTags.indexOf(tag.name) === -1)
+function doAutocomplete(value: string) {
+    const q = value.trim()
+    highlightedIndex.value = -1
+    if (q === '') {
+        dropdownOpen.value = false
+        return
     }
 
-    get chargeTitleAutocompleteFiltered(): Array<ChargeTitleSelectedInterface> {
-        const title = this.name.trim().toLowerCase()
-        return this.chargeTitleAutocomplete.map<ChargeTitleSelectedInterface>(item => {
-            return {
-                count: item.count,
-                title: item.title,
-                selected: title === item.title.toLowerCase()
-            }
-        })
+    if (lastQuery.value === q) return
+    lastQuery.value = q
+
+    if (debounceHandle.value !== null) {
+        clearTimeout(debounceHandle.value)
     }
 
-    get hasAutocompleteData(): boolean {
-        if (this.autocompleteFiltered.length > 0) {
-            return true
+    loading.value = true
+    debounceHandle.value = setTimeout(() => {
+        debounceHandle.value = null
+        const token = ++loadToken
+        Promise.all([
+            searchWalletTags(props.walletId, q),
+            getChargeTitles(q),
+        ])
+            .then(([tags, titles]) => {
+                if (token !== loadToken) return
+                tagSuggestions.value = tags
+                titleSuggestions.value = titles
+                dropdownOpen.value = hasResults.value
+            })
+            .catch(() => {})
+            .finally(() => {
+                if (token === loadToken) loading.value = false
+            })
+    }, 300)
+}
+
+function onTagSelect(tag: Tag) {
+    if (addedTagIds.value.has(tag.id)) return
+    emit('tag-selected', tag)
+    doAutocomplete(props.modelValue)
+}
+
+function onTitleSelect(title: string) {
+    localValue.value = title
+    dropdownOpen.value = false
+}
+
+function onKeyDown(e: KeyboardEvent) {
+    if (!dropdownOpen.value || allItems.value.length === 0) return
+
+    if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        highlightedIndex.value = Math.min(highlightedIndex.value + 1, allItems.value.length - 1)
+    } else if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        highlightedIndex.value = Math.max(highlightedIndex.value - 1, 0)
+    } else if (e.key === 'Enter' && highlightedIndex.value >= 0) {
+        e.preventDefault()
+        const item = allItems.value[highlightedIndex.value]
+        if (item.type === 'tag') {
+            onTagSelect(item.tag)
+        } else {
+            onTitleSelect(item.title)
         }
-
-        if (this.chargeTitleAutocompleteFiltered.length > 0 && this.name === '') {
-            return true
-        }
-
-        return this.chargeTitleAutocompleteFiltered.length > 1
-    }
-
-    @Watch('value')
-    protected updateName() {
-        if (this.value === undefined) {
-            return
-        }
-        this.name = this.value
-    }
-
-    public onAutocomplete() {
-        const query = this.name
-
-        if (query.trim() === '') {
-            this.autocompleteActive = false
-            return
-        }
-
-        if (this.lastAutocompleteQuery === query) {
-            return
-        }
-
-        this.lastAutocompleteQuery = query
-
-        if (this.autocompleteDebounceHandle !== null) {
-            window.clearTimeout(this.autocompleteDebounceHandle)
-        }
-
-        this.autocompleteLoading = true
-
-        this.autocompleteDebounceHandle = window.setTimeout(() => {
-            this.autocompleteDebounceHandle = null
-
-            Promise.all([
-                this.tagsRepository.getSuggestions(query),
-                this.chargesRepository.getSuggestions(query)
-            ])
-                .then(this.onAutocompleteLoaded)
-                .catch(error => {
-                    console.error('Unable to load charge title autocomplete for query: ' + query)
-                    console.debug(error)
-                })
-                .finally(() => {
-                    this.autocompleteLoading = false
-                })
-        }, 500)
-    }
-
-    protected onAutocompleteLoaded(responses: Array<AxiosResponse>) {
-        this.onTagsAutocompleteLoaded(responses[0])
-        this.onChargeTitlesAutocompleteLoaded(responses[1])
-        this.autocompleteActive = this.hasAutocompleteData
-    }
-
-    protected onTagsAutocompleteLoaded(response: AxiosResponse<TagsResponseInterface>) {
-        this.autocomplete = response.data.data
-    }
-
-    protected onChargeTitlesAutocompleteLoaded(response: AxiosResponse<ChargeTitlesResponseInterface>) {
-        this.chargeTitleAutocomplete = response.data.data
-    }
-
-    public onSelected(tag: TagInterface) {
-        for (const addedTag of this.tags) {
-            if (addedTag.name === tag.name) {
-                return
-            }
-        }
-
-        this.$emit('selected', tag)
-
-        this.onAutocomplete()
-
-        this.autocompleteActive = this.hasAutocompleteData
-
-        console.log(tag)
-    }
-
-    public onTitleSelected(title: ChargeTitleInterface) {
-        if (this.name === title.title) {
-            return this.onInputInactive()
-        }
-
-        this.name = title.title
-
-        this.onInputChanged()
-
-        this.onAutocomplete()
-
-        this.autocompleteActive = this.hasAutocompleteData
-
-        console.log(title)
-    }
-
-    public onInputActive() {
-        this.autocompleteActive = this.hasAutocompleteData
-    }
-
-    public onInputInactive() {
-        this.autocompleteActive = false
-    }
-
-    public onInputChanged() {
-        this.$emit('input', this.name)
-    }
-
-    @Watch('resetState')
-    protected onReset() {
-        this.autocomplete = []
-        this.chargeTitleAutocomplete = []
-        this.autocompleteActive = false
+    } else if (e.key === 'Escape') {
+        dropdownOpen.value = false
     }
 }
+
+function onFocus() {
+    if (hasResults.value) {
+        dropdownOpen.value = true
+    }
+}
+
+function onBlur() {
+    setTimeout(() => { dropdownOpen.value = false }, 200)
+}
+
+function reset() {
+    ++loadToken
+    if (debounceHandle.value !== null) {
+        clearTimeout(debounceHandle.value)
+        debounceHandle.value = null
+    }
+    loading.value = false
+    tagSuggestions.value = []
+    titleSuggestions.value = []
+    dropdownOpen.value = false
+    lastQuery.value = ''
+    highlightedIndex.value = -1
+}
+
+watch(() => props.modelValue, (val) => {
+    if (val === '') reset()
+    if (val !== localValue.value) localValue.value = val
+})
+
+defineExpose({ reset })
 </script>
 
-<style lang="scss" scoped>
-.autocomplete-root {
-    position: relative;
-
-    .loader {
-        color: #495057;
-        position: absolute;
-        top: 10px;
-        right: 12px;
-        font-size: 14px;
-    }
-
-    .autocomplete {
-        position: absolute;
-        z-index: 1;
-        width: 100%;
-        box-shadow: rgb(238 238 238) 0 4px 4px;
-        margin-top: -3px;
-        border-top-right-radius: 0;
-        border-top-left-radius: 0;
-
-        .list-container {
-            margin-right: 5px;
-        }
-
-        .text-notice {
-            font-size: 14px;
-        }
-
-        .list-group-item {
-            padding: 10px 10px;
-            border-top-width: 0;
-
-            overflow: scroll;
-            white-space: pre;
-            vertical-align: top;
-            position: relative;
-            width: 100%;
-            padding-right: 28px;
-
-            &+.list-group-item {
-                padding: 0;
-                max-height: 155px;
-                overflow-y: scroll;
-            }
-        }
-
-        .items-container {
-            .list-group-item {
-                padding: 6px 10px;
-                font-size: 14px;
-                border-left-width: 0;
-                border-right-width: 0;
-                overflow: visible;
-
-                &.selected {
-                    background-color: #eee;
-                }
-
-                &:last-child {
-                    border-bottom-width: 0;
-                }
-            }
-        }
-    }
-}
-</style>
+<template>
+    <div class="relative">
+        <UInput
+            v-model="localValue"
+            :placeholder="t('charges.title')"
+            :disabled="disabled"
+            autocomplete="off"
+            class="w-full"
+            size="lg"
+            role="combobox"
+            aria-autocomplete="list"
+            :aria-expanded="dropdownOpen"
+            :aria-controls="listboxId"
+            :aria-activedescendant="activeDescendantId"
+            @focus="onFocus"
+            @blur="onBlur"
+            @keydown="onKeyDown"
+        >
+            <template #trailing>
+                <UIcon v-if="loading" name="i-lucide-loader-circle" class="animate-spin size-4 shrink-0 text-dimmed" />
+            </template>
+        </UInput>
+        <div
+            v-if="dropdownOpen"
+            :id="listboxId"
+            role="listbox"
+            class="absolute z-10 -mt-1 border-t-0 rounded-t-none w-full rounded-md border border-default bg-default shadow-lg max-h-60 overflow-y-auto"
+        >
+            <!-- Tag suggestions -->
+            <div v-if="filteredTagSuggestions.length > 0" class="p-2 flex gap-1 border-b border-default overflow-x-auto">
+                <TagChip
+                    v-for="(tag, index) in filteredTagSuggestions"
+                    :key="tag.id"
+                    :id="`charge-title-option-tag-${tag.id}`"
+                    role="option"
+                    :aria-selected="index === highlightedIndex"
+                    :tag="tag"
+                    :highlighted="index === highlightedIndex"
+                    @mousedown.prevent="onTagSelect(tag)"
+                />
+            </div>
+            <!-- Title suggestions -->
+            <div v-if="filteredTitleSuggestions.length > 0">
+                <button
+                    v-for="(item, i) in filteredTitleSuggestions"
+                    :key="item.title"
+                    :id="`charge-title-option-title-${filteredTagSuggestions.length + i}`"
+                    type="button"
+                    role="option"
+                    :aria-selected="(filteredTagSuggestions.length + i) === highlightedIndex"
+                    class="w-full text-left px-3 py-2 text-sm flex justify-between items-center transition-colors"
+                    :class="[
+                        item.selected ? 'bg-elevated' : '',
+                        (filteredTagSuggestions.length + i) === highlightedIndex ? 'bg-elevated ring-1 ring-inset ring-primary' : 'hover:bg-elevated',
+                    ]"
+                    @mousedown.prevent="onTitleSelect(item.title)"
+                >
+                    <span>{{ item.title }}</span>
+                    <UBadge variant="subtle" color="neutral" size="xs">{{ item.count }}</UBadge>
+                </button>
+            </div>
+        </div>
+    </div>
+</template>

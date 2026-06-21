@@ -1,84 +1,56 @@
-<template>
-    <b-row>
-        <b-col md="12" v-if="loadFailed">
-            <warning-message :message="$t('profile.chargesFlowLoadingError')" :show="loadFailed"></warning-message>
-        </b-col>
-        <b-col md="6" v-if="!loadFailed">
-            <charges-stats-card :type="typeIncomeID" :stats="incomeStatistics" :currency="currency"></charges-stats-card>
-        </b-col>
-        <b-col md="6" v-if="!loadFailed">
-            <charges-stats-card :type="typeExpenseID" :stats="expenseStatistics" :currency="currency"></charges-stats-card>
-        </b-col>
-        <b-col md="12">
-            <b-alert show variant="secondary">
-                <b-icon-info-circle></b-icon-info-circle>
-                {{ $t('profile.chargesFlowNotice') }}
-            </b-alert>
-        </b-col>
-    </b-row>
-</template>
+<script setup lang="ts">
+import { ref, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { getChargesFlowStats, type ChargesFlowStats } from '@/api/profile'
+import ChargesStatsCard from './ChargesStatsCard.vue'
 
-<script lang="ts">
-import { Component, Vue } from 'vue-property-decorator'
-import ChargesStatsCard from '@/components/profile/ChargesStatsCard.vue';
-import {
-    ChargesFlowStatisticsResponseInterface,
-    ChargesFlowTypeStatisticsInterface,
-    ProfileRepository,
-    ProfileRepositoryInterface
-} from '@/api/profile/profile';
-import { TypeIncome, TypeExpense } from '@/api/charges';
-import { CurrencyInterface } from '@/api/currency';
-import WarningMessage from '@/components/shared/WarningMessage.vue';
+const { t } = useI18n()
 
-@Component({
-    components: {WarningMessage, ChargesStatsCard}
+const stats = ref<ChargesFlowStats | null>(null)
+const loadFailed = ref(false)
+
+onMounted(async () => {
+    try {
+        stats.value = await getChargesFlowStats()
+    } catch {
+        loadFailed.value = true
+    }
 })
-export default class ChargesFlowStatistics extends Vue {
-    repository: ProfileRepositoryInterface = new ProfileRepository()
-
-    incomeStatistics: ChargesFlowTypeStatisticsInterface|null = null;
-    expenseStatistics: ChargesFlowTypeStatisticsInterface|null = null;
-    currency: CurrencyInterface|null = null;
-
-    loadFailed = false
-
-    mounted() {
-        this.load();
-    }
-
-    get typeIncomeID(): string {
-        return TypeIncome;
-    }
-
-    get typeExpenseID(): string {
-        return TypeExpense;
-    }
-
-    protected load() {
-        this.loadFailed = false;
-
-        this.repository.getStatisticsChargesFlow()
-            .then(response => {
-                this.onLoaded(response.data);
-
-                return response;
-            })
-            .catch(this.onError);
-    }
-
-    protected onLoaded(response: ChargesFlowStatisticsResponseInterface) {
-        this.incomeStatistics = response.data[TypeIncome];
-        this.expenseStatistics = response.data[TypeExpense];
-        this.currency = response.data.currency;
-    }
-
-    protected onError() {
-        this.loadFailed = true;
-    }
-}
 </script>
 
-<style lang="scss" scoped>
-
-</style>
+<template>
+    <div>
+        <UAlert
+            v-if="loadFailed"
+            color="warning"
+            variant="subtle"
+            :title="t('profile.chargesFlowLoadingError')"
+            class="mb-4"
+        />
+        <template v-else-if="stats">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <ChargesStatsCard
+                    type="+"
+                    :stats="stats.income"
+                    :currency="stats.currency"
+                />
+                <ChargesStatsCard
+                    type="-"
+                    :stats="stats.expense"
+                    :currency="stats.currency"
+                />
+            </div>
+            <UAlert
+                color="neutral"
+                variant="subtle"
+                icon="i-lucide-info"
+                :description="t('profile.chargesFlowNotice')"
+                class="mb-4"
+            />
+        </template>
+        <div v-else class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <USkeleton class="h-48 rounded-lg" />
+            <USkeleton class="h-48 rounded-lg" />
+        </div>
+    </div>
+</template>

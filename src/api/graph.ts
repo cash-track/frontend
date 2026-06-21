@@ -1,61 +1,101 @@
-import { AxiosResponse } from 'axios';
-import { ApiCall, Repository } from '@/api/client';
-import { FilterInterface } from '@/api/filters';
+import { apiCall } from './client'
 
-export const GROUP_BY_DAY = 'day'
-export const GROUP_BY_MONTH = 'month'
-export const GROUP_BY_YEAR = 'year'
-
-export interface GraphRepositoryInterface {
-    getTagGraph(tagId: number, filter?: FilterInterface): Promise<AxiosResponse<AmountGraphResponseInterface>>
-    getWalletGraphAmount(walletId: number, filter?: FilterInterface): Promise<AxiosResponse<AmountGraphResponseInterface>>
-    getWalletGraphTotal(walletId: number, filter?: FilterInterface): Promise<AxiosResponse<TotalGraphResponseInterface>>
+export interface ChargesFlowTagEntry {
+    income: number
+    expense: number
 }
 
-export class GraphRepository extends Repository implements GraphRepositoryInterface {
+export interface ChargesFlowDataPoint {
+    date: string
+    timestamp: number
+    income: number
+    expense: number
+    tags?: Record<number, ChargesFlowTagEntry>
+}
 
-    @ApiCall()
-    public getTagGraph(tagId: number, filter?: FilterInterface): Promise<AxiosResponse<AmountGraphResponseInterface>> {
-        return this.client.get<AmountGraphResponseInterface>(`/api/tags/${tagId}/charges/graph`, {
-            params: filter?.getQuery()
+export interface ChargesTotalDataPoint {
+    amount: number
+    tags: number[]
+}
+
+export interface GetChargesFlowParams {
+    'group-by'?: 'day' | 'month' | 'year'
+    'date-from'?: string
+    'date-to'?: string
+    tags?: string
+}
+
+export async function getChargesFlowByDate(
+    walletId: number,
+    params?: GetChargesFlowParams,
+): Promise<ChargesFlowDataPoint[]> {
+    return apiCall(async client => {
+        const res = await client.get(`/api/wallets/${walletId}/charges/graph/amount`, { params })
+        return (res.data.data as unknown[]).map(item => {
+            const d = item as Record<string, unknown>
+            const tags: Record<number, ChargesFlowTagEntry> = {}
+            if (d.tags && typeof d.tags === 'object' && !Array.isArray(d.tags)) {
+                for (const [key, val] of Object.entries(d.tags as Record<string, unknown>)) {
+                    const tagId = parseInt(key, 10)
+                    if (!isNaN(tagId) && val && typeof val === 'object') {
+                        const t = val as Record<string, unknown>
+                        tags[tagId] = {
+                            income: typeof t.income === 'number' ? t.income : 0,
+                            expense: typeof t.expense === 'number' ? t.expense : 0,
+                        }
+                    }
+                }
+            }
+            return {
+                date: typeof d.date === 'string' ? d.date : '',
+                timestamp: typeof d.timestamp === 'number' ? d.timestamp : 0,
+                income: typeof d.income === 'number' ? d.income : 0,
+                expense: typeof d.expense === 'number' ? d.expense : 0,
+                ...(Object.keys(tags).length > 0 ? { tags } : {}),
+            }
         })
-    }
+    })
+}
 
-    @ApiCall()
-    public getWalletGraphAmount(walletId: number, filter?: FilterInterface): Promise<AxiosResponse<AmountGraphResponseInterface>> {
-        return this.client.get<AmountGraphResponseInterface>(`/api/wallets/${walletId}/charges/graph/amount`, {
-            params: filter?.getQuery()
+export async function getTagChargesFlow(
+    tagId: number,
+    params?: GetChargesFlowParams,
+): Promise<ChargesFlowDataPoint[]> {
+    return apiCall(async client => {
+        const res = await client.get(`/api/tags/${tagId}/charges/graph`, { params })
+        return (res.data.data as unknown[]).map(item => {
+            const d = item as Record<string, unknown>
+            return {
+                date: typeof d.date === 'string' ? d.date : '',
+                timestamp: typeof d.timestamp === 'number' ? d.timestamp : 0,
+                income: typeof d.income === 'number' ? d.income : 0,
+                expense: typeof d.expense === 'number' ? d.expense : 0,
+            }
         })
-    }
+    })
+}
 
-    @ApiCall()
-    public getWalletGraphTotal(walletId: number, filter?: FilterInterface): Promise<AxiosResponse<TotalGraphResponseInterface>> {
-        return this.client.get<TotalGraphResponseInterface>(`/api/wallets/${walletId}/charges/graph/total`, {
-            params: filter?.getQuery()
+export interface GetChargesTotalParams {
+    'charge-type'?: 'income' | 'expense'
+    'date-from'?: string
+    'date-to'?: string
+    tags?: string
+}
+
+export async function getChargesTotalByType(
+    walletId: number,
+    params?: GetChargesTotalParams,
+): Promise<ChargesTotalDataPoint[]> {
+    return apiCall(async client => {
+        const res = await client.get(`/api/wallets/${walletId}/charges/graph/total`, {
+            params,
         })
-    }
-}
-
-export interface AmountGraphDataEntry extends ValuesDataEntry {
-    date: string;
-    timestamp: number;
-    tags: Record<number, ValuesDataEntry>|undefined;
-}
-
-export interface ValuesDataEntry {
-    income: number|undefined;
-    expense: number|undefined;
-}
-
-export interface AmountGraphResponseInterface {
-    data: Array<AmountGraphDataEntry>;
-}
-
-export interface TotalGraphDataEntry {
-    amount: number;
-    tags: Array<number>;
-}
-
-export interface TotalGraphResponseInterface {
-    data: Array<TotalGraphDataEntry>;
+        return (res.data.data as unknown[]).map(item => {
+            const d = item as Record<string, unknown>
+            return {
+                amount: typeof d.amount === 'number' ? d.amount : 0,
+                tags: Array.isArray(d.tags) ? (d.tags as number[]) : [],
+            }
+        })
+    })
 }

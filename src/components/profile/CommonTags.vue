@@ -1,78 +1,39 @@
-<template>
-    <div class="common-tags-root">
-        <h6>
-            {{ $t('profile.commonTags') }}
+<script setup lang="ts">
+import { ref, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { getCommonTags } from '@/api/tags'
+import type { Tag } from '@/api/models/tag'
+import TagChip from '@/components/tags/Tag.vue'
 
-            <b-spinner v-if="!loadFailed && isLoading" small></b-spinner>
+const { t } = useI18n()
 
-            <b-icon-exclamation-triangle-fill
-                v-if="loadFailed && !isLoading"
-                variant="warning"
-            ></b-icon-exclamation-triangle-fill>
-        </h6>
+const tags = ref<Tag[] | null>(null)
+const loadFailed = ref(false)
 
-        <div v-if="!isLoading && !loadFailed" class="list-ltr">
-            <tag v-for="tag of tags" :tag="tag" :key="tag.id" @selected="onTagSelected"></tag>
-        </div>
-    </div>
-</template>
-
-<script lang="ts">
-import { Component, Vue } from 'vue-property-decorator'
-import { TagInterface, TagsRepository, TagsRepositoryInterface, TagsResponseInterface } from '@/api/tags'
-import Tag from '@/components/tags/Tag.vue'
-
-@Component({
-    components: {Tag},
+onMounted(async () => {
+    try {
+        tags.value = await getCommonTags()
+    } catch {
+        loadFailed.value = true
+    }
 })
-export default class CommonTags extends Vue {
-    repository: TagsRepositoryInterface = new TagsRepository()
-
-    tags: Array<TagInterface>|null = null
-
-    loadFailed = false
-
-    mounted() {
-        this.load();
-    }
-
-    get isLoading(): boolean {
-        return this.tags === null;
-    }
-
-    protected load() {
-        this.loadFailed = false;
-
-        this.repository.getCommons()
-            .then(response => {
-                this.onLoaded(response.data);
-
-                return response;
-            })
-            .catch(this.onError);
-    }
-
-    protected onLoaded(response: TagsResponseInterface) {
-        this.tags = response.data;
-    }
-
-    protected onError() {
-        this.loadFailed = true;
-    }
-
-    protected onTagSelected(tag: TagInterface) {
-        this.$router.push({
-            name: 'tags.show',
-            params: {
-                'tagID': tag.id.toString(),
-            }
-        })
-    }
-}
 </script>
 
-<style lang="scss" scoped>
-.common-tags-root {
-    padding-bottom: 20px;
-}
-</style>
+<template>
+    <div>
+        <h3 class="text-sm font-semibold text-muted uppercase tracking-wide mb-3 flex items-center gap-2">
+            {{ t('profile.commonTags') }}
+            <UIcon v-if="!loadFailed && tags === null" name="i-lucide-loader-circle" class="size-3 animate-spin" />
+            <UIcon v-if="loadFailed" name="i-lucide-triangle-alert" class="size-3 text-warning" />
+        </h3>
+        <div v-if="tags && tags.length > 0" class="flex flex-wrap gap-2">
+            <TagChip
+                v-for="tag in tags"
+                :key="tag.id"
+                :tag="tag"
+                :navigable="true"
+            />
+        </div>
+        <p v-else-if="tags && tags.length === 0" class="text-sm text-muted">—</p>
+    </div>
+</template>

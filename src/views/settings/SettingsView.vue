@@ -1,28 +1,27 @@
-<template>
-    <b-row class="personal-settings">
-        <b-col md="4" class="mb-3">
-            <b-card no-body :header="$t('personalSettings.header')">
-                <b-list-group flush>
-                    <b-list-group-item :to="{name: 'settings.profile'}" exact-active-class="active">{{ $t('personalSettings.profile') }}</b-list-group-item>
-                    <b-list-group-item :to="{name: 'settings.security'}" exact-active-class="active">{{ $t('personalSettings.security') }}</b-list-group-item>
-                </b-list-group>
-            </b-card>
-        </b-col>
-        <b-col md="8">
-            <router-view></router-view>
-        </b-col>
-    </b-row>
-</template>
+<script setup lang="ts">
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+import ProfileSettingsView from '@/views/settings/ProfileSettingsView.vue'
+import SecuritySettingsView from '@/views/settings/SecuritySettingsView.vue'
 
-<script lang="ts">
-import { Vue, Component } from 'vue-property-decorator'
+const { t } = useI18n()
 
-@Component
-export default class SettingsView extends Vue {}
+const tabs = computed(() => [
+    { label: t('personalSettings.profile'), icon: 'i-lucide-user', slot: 'profile' as const },
+    { label: t('personalSettings.security'), icon: 'i-lucide-shield', slot: 'security' as const },
+])
 </script>
 
-<style scoped>
-.personal-settings .card > .list-group {
-    border-top: none;
-}
-</style>
+<template>
+    <UContainer class="pb-6">
+        <h1 class="text-2xl font-semibold mb-6">{{ t('personalSettings.header') }}</h1>
+        <UTabs :items="tabs" class="mt-2">
+            <template #profile>
+                <ProfileSettingsView class="mt-3" />
+            </template>
+            <template #security>
+                <SecuritySettingsView class="mt-3" />
+            </template>
+        </UTabs>
+    </UContainer>
+</template>

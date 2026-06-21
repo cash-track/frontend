@@ -1,117 +1,75 @@
-<template>
-    <div>
-        <email-is-not-confirmed-alert></email-is-not-confirmed-alert>
+<script setup lang="ts">
+import { ref, computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { storeToRefs } from 'pinia'
+import draggable from 'vuedraggable'
+import { useWalletsStore } from '@/stores/wallets'
+import { sortWallets } from '@/api/wallets'
+import type { Wallet } from '@/api/models/wallet'
+import WalletCard from './WalletCard.vue'
 
-        <warning-message :message="$t('wallets.listLoadingError').toString()" :show="isLoadingFailed"></warning-message>
+const { t } = useI18n()
+const walletsStore = useWalletsStore()
+const { activeWallets, loading, failed } = storeToRefs(walletsStore)
 
-        <draggable v-show="!isLoadingFailed"
-                   :list="wallets"
-                   v-bind="dragOptions"
-                   group="wallets"
-                   delay="250"
-                   delay-on-touch-only="true"
-                   @end="drag = false"
-                   @start="drag = true">
-            <transition-group type="transition" :name="!drag ? 'flip-list' : null" class="row">
-                <b-col md="6" lg="4" v-for="wallet of wallets" :key="wallet.id">
-                    <wallet-card :wallet="wallet"></wallet-card>
-                </b-col>
-            </transition-group>
-        </draggable>
+const localWallets = ref<Wallet[]>([])
 
-        <b-alert variant="success" :show="isEmailConfirmed && displayNoWallets">
-            <h2>{{ $t('wallets.noWallets') }}</h2>
-            {{ $t('wallets.noWalletsMessage') }}
-            <b-button variant="success" size="sm" :to="{name: 'wallets.create'}">{{ $t('wallets.noWalletsCreate') }}</b-button>
-        </b-alert>
-    </div>
-</template>
+watch(activeWallets, (wallets) => {
+    localWallets.value = [...wallets]
+}, { immediate: true })
 
-<script lang="ts">
-import { Component, Watch, Mixins } from 'vue-property-decorator';
-import draggable from 'vuedraggable';
-import Loader from '@/shared/Loader';
-import {
-    WalletFullInterface,
-    WalletsRepositoryInterface,
-    WalletsRepository
-} from '@/api/wallets';
-import WarningMessage from '@/components/shared/WarningMessage.vue';
-import WalletCard from '@/components/wallets/WalletCard.vue';
-import EmailIsNotConfirmedAlert from '@/components/profile/EmailIsNotConfirmedAlert.vue';
+const showEmpty = computed(
+    () => !loading.value && !failed.value && localWallets.value.length === 0,
+)
 
-@Component({
-    components: {draggable, WalletCard, WarningMessage, EmailIsNotConfirmedAlert}
-})
-export default class WalletsActiveGridList extends Mixins(Loader) {
-    repository: WalletsRepositoryInterface = new WalletsRepository()
-
-    drag = false
-    isJustLoaded = true
-
-    mounted() {
-        if (!this.isLoading) {
-            this.$store.dispatch('loadActiveWallets')
-        }
-    }
-
-    get isEmailConfirmed(): boolean {
-        return this.$store.state.isEmailConfirmed
-    }
-
-    get wallets(): Array<WalletFullInterface> {
-        return this.$store.state.activeWallets
-    }
-
-    get isLoading(): boolean {
-        return !this.$store.state.activeWalletsLoadingStatus;
-    }
-
-    get isLoadingFailed(): boolean {
-        return this.$store.state.activeWalletsLoadingFailed
-    }
-
-    get displayNoWallets(): boolean {
-        return !this.isLoading && !this.isLoadingFailed && this.wallets.length === 0
-    }
-
-    get dragOptions() {
-        return {
-            animation: 200,
-            group: "description",
-            disabled: false,
-            ghostClass: "ghost"
-        };
-    }
-
-    @Watch('wallets')
-    protected onOrderChanged() {
-        if (this.isLoading || this.isLoadingFailed || this.wallets.length === 0) {
-            return;
-        }
-
-        if (this.isJustLoaded) {
-            this.isJustLoaded = false
-            return;
-        }
-
-        this.$store.commit('activeWalletsChanged', this.wallets)
-
-        this.repository.sortUnArchived({
-            sort: this.wallets.map(wallet => wallet.id),
-        })
-    }
+async function onDragEnd() {
+    await sortWallets(localWallets.value.map(w => w.id))
 }
 </script>
 
-<style lang="scss" scoped>
-.flip-list-move {
-    transition: transform 0.5s;
-}
-.no-move {
-    transition: transform 0s;
-}
-.ghost {
-    opacity: 0.5;
-}
-</style>
+<template>
+    <div>
+        <div v-if="loading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <USkeleton v-for="i in 3" :key="i" class="h-48 rounded-lg" />
+        </div>
+
+        <UAlert
+            v-else-if="failed"
+            color="error"
+            variant="soft"
+            icon="i-lucide-triangle-alert"
+            :title="t('wallets.listLoadingError')"
+        />
+
+        <UAlert
+            v-else-if="showEmpty"
+            color="success"
+            variant="soft"
+            icon="i-lucide-wallet"
+            :title="t('wallets.noWallets')"
+            :description="t('wallets.noWalletsMessage')"
+            :actions="[{
+                label: t('wallets.noWalletsCreate'),
+                color: 'success',
+                variant: 'subtle',
+                to: { name: 'wallets.create' },
+            }]"
+        />
+
+        <draggable
+            v-else
+            v-model="localWallets"
+            item-key="id"
+            :animation="200"
+            ghost-class="opacity-50"
+            :delay="250"
+            :delay-on-touch-only="true"
+            class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+            @end="onDragEnd"
+        >
+            <template #item="{ element }">
+                <WalletCard :wallet="element" />
+            </template>
+        </draggable>
+    </div>
+</template>

@@ -1,30 +1,34 @@
-<template>
-    <b-alert :show="shouldDisplay" dismissible variant="info" >
-        <h4 class="alert-heading">{{ $t('profile.emailNotConfirmed') }}</h4>
-        {{ $t('profile.emailNotConfirmedMainMessage') }}<br>
-        {{ $t('profile.emailNotConfirmedResendMessage') }}<br>
-        <b-button variant="outline-info" class="mt-2" :to="{name: 'settings.profile'}">{{ $t('profileSettings.profileSettings') }}</b-button>
-    </b-alert>
-</template>
+<script setup lang="ts">
+import { shallowRef } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useAuthStore } from '@/stores/auth'
 
-<script lang="ts">
-import { Vue, Component, Prop } from 'vue-property-decorator'
+const { t } = useI18n()
+const auth = useAuthStore()
 
-@Component
-export default class EmailIsNotConfirmedAlert extends Vue {
-    @Prop({default: () => null})
-    show!: false
-
-    get shouldDisplay(): boolean {
-        if (this.show !== null) {
-            return true;
-        }
-
-        return !this.$store.state.isEmailConfirmed
-    }
-}
+const open = shallowRef(true)
 </script>
 
-<style lang="scss" scoped>
-
-</style>
+<template>
+    <UAlert
+        v-if="!auth.isEmailConfirmed && open"
+        v-model:open="open"
+        color="info"
+        variant="soft"
+        :title="t('profile.emailNotConfirmed')"
+        :close="true"
+        class="mb-4"
+    >
+        <template #description>
+            <p class="mb-2">{{ t('profile.emailNotConfirmedMainMessage') }}</p>
+            <p class="mb-3">{{ t('profile.emailNotConfirmedResendMessage') }}</p>
+            <UButton
+                size="md"
+                color="info"
+                variant="soft"
+                :label="t('profileSettings.profileSettings')"
+                :to="{ name: 'settings' }"
+            />
+        </template>
+    </UAlert>
+</template>

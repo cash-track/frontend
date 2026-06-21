@@ -1,224 +1,150 @@
-<template>
-    <div class="wallet-limit" @click="onSelected" :class="{'active': selected}">
-        <div class="justify-content-between align-items-end d-sm-flex block">
-            <div>
-                <b-icon-arrow-up variant="primary" scale="1" class="d-none d-sm-inline type-icon" v-if="isIncome" />
-                <b-icon-arrow-down variant="danger" scale="1" class="d-none d-sm-inline type-icon" v-if="isExpense" />
-                <tag v-for="tag of walletLimit.limit.tags" :key="tag.id" :tag="tag" />
-            </div>
-            <div>
+<script setup lang="ts">
+import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { deleteLimit } from '@/api/limits'
+import type { WalletLimit } from '@/api/models/limit'
+import type { Limit } from '@/api/models/limit'
+import type { Wallet } from '@/api/models/wallet'
+import Tag from '@/components/tags/Tag.vue'
+import LimitForm from './LimitForm.vue'
+import ConfirmModal from '@/components/Shared/ConfirmModal.vue'
+import MoneyAmount from '@/components/Shared/MoneyAmount.vue'
 
-                <div class="wallet-limit-total-container text-left text-sm-right">
-                    <div class="wallet-limit-action">
-                        <b-dropdown size="sm" no-caret right>
-                            <template v-slot:button-content>
-                                <b-icon-three-dots></b-icon-three-dots>
-                            </template>
-                            <b-dropdown-item @click="onEdit">{{ $t('limits.edit') }}</b-dropdown-item>
-                            <b-dropdown-item @click="onDelete">{{ $t('limits.delete') }}</b-dropdown-item>
-                        </b-dropdown>
-                    </div>
-                    <span class="wallet-limit-total" v-if="isIncome">
-                        <span class="text-primary wallet-limit-total-value">
-                            <b-icon-arrow-up variant="primary" scale="1" class="d-none d-sm-inline"></b-icon-arrow-up>
-                            {{ walletLimit.amount | money(wallet.defaultCurrency) }}
-                            <span class="limit-value">/ {{ walletLimit.limit.amount | money(wallet.defaultCurrency) }}</span>
-                        </span>
-                    </span>
-                    <span class="wallet-limit-total" v-if="isExpense">
-                        <span class="text-danger wallet-limit-total-value">
-                            <b-icon-arrow-down variant="danger" scale="1" class="d-none d-sm-inline"></b-icon-arrow-down>
-                            {{ walletLimit.amount | money(wallet.defaultCurrency) }}
-                            <span class="limit-value">/ {{ walletLimit.limit.amount | money(wallet.defaultCurrency) }}</span>
-                        </span>
-                    </span>
-                </div>
-            </div>
-        </div>
+const props = defineProps<{
+    walletLimit: WalletLimit
+    wallet: Wallet
+}>()
 
-        <b-progress :max="100" show-progress variant="success">
-            <b-progress-bar :value="walletLimit.percentage" :class="{'overused': isExpense && walletLimit.percentage > 100}">
-                <span v-show="displayBarPercentage">
-                    <strong>{{ walletLimit.percentage.toFixed() }} %</strong>
-                </span>
-            </b-progress-bar>
-        </b-progress>
+const emit = defineEmits<{
+    updated: [limit: Limit]
+    deleted: [limit: Limit]
+}>()
 
-        <b-collapse v-if="walletLimit?.limit?.id" :id="getEditCollapseId()">
-            <div class="wallet-limit-edit" v-if="isEdit">
-                <limit-form :wallet="wallet" :edit="walletLimit.limit" @updated="onUpdated" @cancelled="onEditClosed"/>
-            </div>
-        </b-collapse>
-    </div>
-</template>
+const { t } = useI18n()
 
-<script lang="ts">
-import { Vue, Component, Prop } from 'vue-property-decorator'
-import Tag from '@/components/tags/Tag.vue';
-import { LimitsRepository, LimitsRepositoryInterface, WalletLimitInterface } from '@/api/limits';
-import { WalletInterface } from '@/api/wallets';
-import LimitForm, { LimitUpdatedEvent } from '@/components/wallets/limits/LimitForm.vue';
+const isEditing = ref(false)
+const deleteConfirmOpen = ref(false)
+const deleting = ref(false)
 
-@Component({
-    components: {LimitForm, Tag}
-})
-export default class WalletLimitItem extends Vue {
-    @Prop()
-    wallet!: WalletInterface
+const isIncome = computed(() => props.walletLimit.limit.operation === '+')
+const isExpense = computed(() => props.walletLimit.limit.operation === '-')
+const isExceeded = computed(() => props.walletLimit.isExceeded)
+const barPercent = computed(() => Math.min(props.walletLimit.percentage, 100))
+const displayPercent = computed(() => Math.floor(props.walletLimit.percentage))
+const labelInside = computed(() => props.walletLimit.percentage > 15)
 
-    @Prop()
-    walletLimit!: WalletLimitInterface
+const menuItems = computed(() => [
+    [
+        { label: t('limits.edit'), icon: 'i-lucide-pencil', onSelect: () => { isEditing.value = true } },
+    ],
+    [
+        { label: t('limits.delete'), icon: 'i-lucide-trash-2', color: 'error' as const, onSelect: () => { deleteConfirmOpen.value = true } },
+    ],
+])
 
-    repository: LimitsRepositoryInterface = new LimitsRepository()
-
-    selected: boolean = false
-    isEdit: boolean = false
-
-    get isIncome(): boolean {
-        return this.walletLimit.limit.operation === '+'
+async function onDeleteConfirmed() {
+    deleting.value = true
+    try {
+        await deleteLimit(props.wallet.id, props.walletLimit.limit.id)
+        deleteConfirmOpen.value = false
+        emit('deleted', props.walletLimit.limit)
+    } catch (err) {
+        console.error('unable to delete limit', err)
+    } finally {
+        deleting.value = false
     }
+}
 
-    get isExpense(): boolean {
-        return this.walletLimit.limit.operation === '-'
-    }
+function onUpdated(limit: Limit) {
+    isEditing.value = false
+    emit('updated', limit)
+}
 
-    get displayBarPercentage(): boolean {
-        return this.walletLimit.percentage > 10
-    }
-
-    getEditCollapseId(): string {
-        return `wallet-limit-edit-${this.walletLimit.limit.id}`
-    }
-
-    onSelected() {
-        this.selected = !this.selected
-    }
-
-    onEdit() {
-        this.isEdit = true;
-        this.$root.$emit('bv::toggle::collapse', this.getEditCollapseId())
-    }
-
-    onEditClosed() {
-        this.isEdit = false;
-        this.$root.$emit('bv::toggle::collapse', this.getEditCollapseId())
-    }
-
-    onDelete() {
-        if (! confirm(this.$t('limits.deletingConfirm').toString())) {
-            return
-        }
-
-        this.repository.delete(this.wallet.id, this.walletLimit.limit.id).then(() => {
-            this.$emit('deleted', {
-                limit: this.walletLimit.limit,
-            })
-        }).catch(error => {
-            console.log('unable to delete limit', error)
-        })
-    }
-
-    onUpdated(event: LimitUpdatedEvent) {
-        this.$emit('updated', event)
-        this.onEditClosed()
-    }
+function onEditCancelled() {
+    isEditing.value = false
 }
 </script>
 
-<style lang="scss">
-@import "node_modules/bootstrap/scss/functions";
-@import "node_modules/bootstrap/scss/variables";
-@import "node_modules/bootstrap/scss/mixins/_breakpoints";
+<template>
+    <div class="py-2">
+        <!-- Header: tags + amount -->
+        <div class="flex flex-col sm:flex-row sm:flex-wrap sm:items-end sm:justify-between gap-2 mb-1">
+            <div class="flex flex-wrap items-center gap-1">
+                <UIcon
+                    v-if="isIncome"
+                    name="i-lucide-arrow-up"
+                    class="text-primary hidden sm:inline-block size-6"
+                />
+                <UIcon
+                    v-if="isExpense"
+                    name="i-lucide-arrow-down"
+                    class="text-red-500 hidden sm:inline-block size-6"
+                />
+                <Tag
+                    v-for="tag in walletLimit.limit.tags"
+                    :key="tag.id"
+                    :tag="tag"
+                />
+            </div>
+            <div class="flex items-center gap-2 justify-between sm:justify-normal">
+                <span class="text-lg whitespace-nowrap" :class="isIncome ? 'text-primary' : 'text-red-500'">
+                    <UIcon
+                        :name="isIncome ? 'i-lucide-arrow-up' : 'i-lucide-arrow-down'"
+                        class="hidden sm:inline-block size-6 mr-1 -mt-0.5"
+                    />
+                    <MoneyAmount :amount="walletLimit.amount" :currency="wallet.defaultCurrency" />
+                    <span class="text-sm text-muted"> / <MoneyAmount :amount="walletLimit.limit.amount" :currency="wallet.defaultCurrency" /></span>
+                </span>
+                <UDropdownMenu :items="menuItems">
+                    <UButton
+                        icon="i-lucide-ellipsis-vertical"
+                        variant="ghost"
+                        color="neutral"
+                        size="md"
+                        :aria-label="t('actions')"
+                    />
+                </UDropdownMenu>
+            </div>
+        </div>
 
-.type-icon {
-    width: 20px;
-    height: 20px;
-    margin-right: 5px;
-    vertical-align: middle;
-}
+        <!-- Progress bar -->
+        <div class="relative w-full h-5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+            <div
+                class="h-full rounded-full transition-all duration-300 flex items-center justify-center"
+                :class="isExpense && isExceeded ? 'bg-red-500' : 'bg-gray-400'"
+                :style="{ width: `${barPercent}%` }"
+            >
+                <span v-if="labelInside" class="text-xs font-bold text-white">
+                    {{ displayPercent }}%
+                </span>
+            </div>
+            <span
+                v-if="!labelInside"
+                class="absolute top-1/2 -translate-y-1/2 ml-1 text-xs font-bold text-default"
+                :style="{ left: `${barPercent}%` }"
+            >
+                {{ displayPercent }}%
+            </span>
+        </div>
 
-.wallet-limit {
-    padding: 7px 0 14px;
-    position: relative;
-    cursor: pointer;
+        <!-- Edit form (collapsible) -->
+        <div v-if="isEditing" class="mt-3 p-4 bg-elevated border border-default rounded-lg">
+            <LimitForm
+                :wallet="wallet"
+                :edit="walletLimit.limit"
+                @updated="onUpdated"
+                @cancelled="onEditCancelled"
+            />
+        </div>
 
-    .badge-tag {
-        margin-bottom: 5px;
-    }
-
-    .progress-bar {
-        background-color: #a5acb2 !important;
-
-        &.overused {
-            background-color: #ec5454 !important;
-        }
-    }
-
-    .wallet-limit-action {
-        display: none;
-        opacity: 0;
-        margin-right: 15px;
-        animation: fade-right-out 400ms cubic-bezier(0.68, -0.6, 0.32, 1.6) 0s 1 normal none;
-
-        .dropdown > button {
-            height: 20px;
-            margin-top: -4px;
-            padding-top: 0;
-            padding-bottom: 0;
-
-            & > svg {
-                display: block;
-            }
-        }
-    }
-
-    .wallet-limit-total-container {
-        padding-bottom: 5px;
-
-        .wallet-limit-total {
-            white-space: nowrap;
-            font-size: 20px;
-            line-height: 20px;
-
-            .limit-value {
-                font-size: 14px;
-            }
-        }
-    }
-
-    .wallet-limit-edit {
-        padding: 15px;
-        margin-top: 10px;
-        background: #eee;
-        border-top: 1px #ddd solid;
-        border-bottom: 1px #ddd solid;
-    }
-
-    &:hover, &.active {
-        .wallet-limit-action {
-            display: inline-block;
-            opacity: 1;
-        }
-    }
-
-}
-
-@keyframes fade-right-out {
-    0% {
-        opacity: 0;
-        transform: translateX(15px);
-    }
-
-    100% {
-        opacity: 1;
-        transform: translateX(0);
-    }
-}
-
-@include media-breakpoint-down(sm) {
-    .wallet-limit-action {
-        float: right;
-    }
-}
-
-</style>
+        <ConfirmModal
+            v-model:open="deleteConfirmOpen"
+            :title="t('limits.delete')"
+            :description="t('limits.deletingConfirm')"
+            :confirm-label="t('limits.delete')"
+            :cancel-label="t('limits.cancel')"
+            :loading="deleting"
+            @confirm="onDeleteConfirmed"
+        />
+    </div>
+</template>

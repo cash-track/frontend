@@ -1,62 +1,56 @@
-<template>
-    <b-row>
-        <b-col md="12">
-            <h4>{{ $t('profile.latestWallets') }}</h4>
-            <hr>
-        </b-col>
-        <b-col md="6" v-for="wallet in walletsOrdered" :key="wallet.id">
-            <wallet-card :wallet="wallet"></wallet-card>
-        </b-col>
-    </b-row>
-</template>
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { getLatestWallets } from '@/api/profile'
+import type { Wallet } from '@/api/models/wallet'
+import WalletCard from '@/components/wallets/WalletCard.vue'
 
-<script lang="ts">
-import { Component, Vue } from 'vue-property-decorator'
-import WarningMessage from '@/components/shared/WarningMessage.vue';
-import WalletCard from '@/components/wallets/WalletCard.vue';
-import { ProfileRepository, ProfileRepositoryInterface } from '@/api/profile/profile';
-import { WalletFullInterface, WalletsFullResponseInterface } from '@/api/wallets';
+const { t } = useI18n()
 
-@Component({
-    components: {WalletCard, WarningMessage}
+const wallets = ref<Wallet[] | null>(null)
+const loadFailed = ref(false)
+
+const walletsOrdered = computed(() => {
+    if (!wallets.value) return []
+    return [...wallets.value].sort((a, b) => {
+        if (a.isActive === b.isActive) return 0
+        return a.isActive ? -1 : 1
+    })
 })
-export default class LatestWallets extends Vue {
-    repository: ProfileRepositoryInterface = new ProfileRepository()
 
-    wallets: Array<WalletFullInterface> = []
-
-    loadFailed = false
-
-    get walletsOrdered(): Array<WalletFullInterface> {
-        return this.wallets.sort((a: WalletFullInterface, b: WalletFullInterface) => a.isActive === b.isActive ? 0 : (a.isActive ? -1 : 1))
+onMounted(async () => {
+    try {
+        wallets.value = await getLatestWallets()
+    } catch {
+        loadFailed.value = true
     }
-
-    mounted() {
-        this.load();
-    }
-
-    protected load() {
-        this.loadFailed = false;
-
-        this.repository.getWalletsLatest()
-            .then(response => {
-                this.onLoaded(response.data);
-
-                return response;
-            })
-            .catch(this.onError);
-    }
-
-    protected onLoaded(response: WalletsFullResponseInterface) {
-        this.wallets = response.data;
-    }
-
-    protected onError() {
-        this.loadFailed = true;
-    }
-}
+})
 </script>
 
-<style lang="scss" scoped>
+<template>
+    <div>
+        <h2 class="text-lg font-semibold mb-4">{{ t('profile.latestWallets') }}</h2>
 
-</style>
+        <UAlert
+            v-if="loadFailed"
+            color="warning"
+            variant="subtle"
+            :title="t('wallets.listLoadingError')"
+            class="mb-4"
+        />
+
+        <div v-else-if="wallets === null" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <USkeleton v-for="i in 4" :key="i" class="h-40 rounded-lg" />
+        </div>
+
+        <div v-else-if="walletsOrdered.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <WalletCard
+                v-for="wallet in walletsOrdered"
+                :key="wallet.id"
+                :wallet="wallet"
+            />
+        </div>
+
+        <p v-else class="text-sm text-muted">—</p>
+    </div>
+</template>

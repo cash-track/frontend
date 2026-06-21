@@ -1,321 +1,250 @@
-<template>
-    <b-form novalidate @submit="onSubmit">
-        <b-card footer-tag="footer" header-tag="header">
-            <template v-slot:header>
-                <div class="text-md-center">
-                    <b>{{ $t('profileSettings.profileSettings') }}</b>
-                </div>
-            </template>
+<script setup lang="ts">
+import { reactive, shallowRef, computed, onMounted, onBeforeUnmount, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { storeToRefs } from 'pinia'
+import { useProfileStore } from '@/stores/profile'
+import { updateProfile, checkNickName, getSocial } from '@/api/profile'
+import { getFeaturedCurrencies } from '@/api/currency'
+import { useApiErrors } from '@/composables/useApiErrors'
+import { locales } from '@/lang'
+import type { Currency } from '@/api/models/currency'
 
-            <b-form-group
-                label-align-lg="right"
-                label-cols-lg="4"
-                label-for="name"
-                :invalid-feedback="validationMessage('name')"
-                :state="validationState('name')"
-                :description="$t('profileSettings.nameDescription')"
-            >
-                <template v-slot:label>{{ $t('profileSettings.name') }}</template>
-                <b-form-input
-                    id="name"
-                    v-model="form.name"
-                    required
-                    type="text"
-                    :disabled="isLoading"
-                    :state="validationState('name')"
-                    @change="resetValidationMessage('name')"
-                ></b-form-input>
-            </b-form-group>
+import EmailFormInput from '@/components/settings/EmailFormInput.vue'
 
-            <b-form-group
-                label-align-lg="right"
-                label-cols-lg="4"
-                label-for="lastName"
-                :invalid-feedback="validationMessage('lastName')"
-                :state="validationState('lastName')"
-                :description="$t('profileSettings.lastNameDescription')"
-            >
-                <template v-slot:label>{{ $t('profileSettings.lastName') }}</template>
-                <b-form-input
-                    id="lastName"
-                    v-model="form.lastName"
-                    required
-                    type="text"
-                    :disabled="isLoading"
-                    :state="validationState('lastName')"
-                    @change="resetValidationMessage('lastName')"
-                ></b-form-input>
-            </b-form-group>
+const { t } = useI18n()
+const profileStore = useProfileStore()
+const { profile } = storeToRefs(profileStore)
+const { fieldErrors, generalError, handleError, reset } = useApiErrors()
 
-            <b-form-group
-                label-align-lg="right"
-                label-cols-lg="4"
-                label-for="nickName"
-                :invalid-feedback="validationMessage('nickName')"
-                :state="nickNameValidationState"
-                :description="$t('profileSettings.nickNameDescription')"
-            >
-                <template v-slot:label>{{ $t('profileSettings.nickName') }}</template>
-                <b-form-input
-                    id="nickName"
-                    v-model="form.nickName"
-                    required
-                    type="text"
-                    debounce="1000"
-                    :disabled="isLoading"
-                    :state="nickNameValidationState"
-                    @change="resetValidationMessage('nickName')"
-                ></b-form-input>
-            </b-form-group>
-
-            <email-form-input></email-form-input>
-
-            <b-form-group
-                label-align-lg="right"
-                label-cols-lg="4"
-                label-for="defaultCurrencyCode"
-                :invalid-feedback="validationMessage('defaultCurrencyCode')"
-                :state="validationState('defaultCurrencyCode')"
-                :description="$t('profileSettings.defaultCurrencyDescription')"
-            >
-                <template v-slot:label>{{ $t('profileSettings.defaultCurrency') }}</template>
-                <b-form-select
-                    id="defaultCurrencyCode"
-                    v-model="form.defaultCurrencyCode"
-                    required
-                    type="text"
-                    :disabled="isLoading"
-                    :state="validationState('defaultCurrencyCode')"
-                    @change="resetValidationMessage('defaultCurrencyCode')"
-                >
-                    <b-form-select-option
-                        v-for="currency of currencies"
-                        v-bind:key="currency.code"
-                        :value="currency.code"
-                    >
-                        {{ currency.code }}
-                    </b-form-select-option>
-                </b-form-select>
-            </b-form-group>
-
-            <b-form-group
-                label-align-lg="right"
-                label-cols-lg="4"
-                label-for="locale"
-                :invalid-feedback="validationMessage('locale')"
-                :state="validationState('locale')"
-                :description="$t('profileSettings.languageDescription')"
-            >
-                <template v-slot:label>{{ $t('profileSettings.language') }}</template>
-                <b-form-select
-                    id="locale"
-                    v-model="form.locale"
-                    required
-                    type="text"
-                    :disabled="isLoading"
-                    :state="validationState('locale')"
-                    @change="resetValidationMessage('locale')"
-                >
-                    <b-form-select-option
-                        v-for="l of locales"
-                        v-bind:key="l.code"
-                        :value="l.code"
-                    >
-                        {{ l.name }}
-                    </b-form-select-option>
-                </b-form-select>
-            </b-form-group>
-
-            <b-alert
-                variant="warning"
-                fade
-                dismissible
-                :show="hasMessage"
-                @dismissed="resetMessage()"
-            >
-                <b-icon-exclamation-triangle-fill></b-icon-exclamation-triangle-fill>
-                {{ message }}
-            </b-alert>
-
-            <b-alert
-                variant="success"
-                fade
-                dismissible
-                :show="successMessage !== ''"
-                @dismissed="successMessage = ''"
-            >
-                <b-icon-check2-circle></b-icon-check2-circle>
-                {{ successMessage }}
-            </b-alert>
-
-            <hr>
-
-            <b-form-group label-align-lg="right" label-cols-lg="4">
-                <h5>{{ $t('profileSettings.social') }}</h5>
-            </b-form-group>
-
-            <b-form-group label-align-lg="right" label-cols-lg="4">
-                <template v-slot:label>Google</template>
-                <b-form-checkbox switch size="lg" disabled v-model="isGoogleEnabled" class="mt-1"></b-form-checkbox>
-            </b-form-group>
-
-            <template v-slot:footer>
-                <div class="text-center">
-                    <b-button variant="primary" type="submit" :disabled="isLoading">
-                        {{ $t('profileSettings.save') }}
-                        <b-spinner v-show="isLoading" small></b-spinner>
-                    </b-button>
-                </div>
-            </template>
-        </b-card>
-    </b-form>
-</template>
-
-<script lang="ts">
-import { Mixins, Component, Watch } from 'vue-property-decorator';
-import { MutationPayload } from "vuex";
-import { locales } from '@/lang';
-import Loader from '@/shared/Loader';
-import Messager from '@/shared/Messager';
-import Validator from '@/shared/Validator';
-import EmailFormInput from '@/components/settings/EmailFormInput.vue';
-import { CurrencyInterface, CurrenciesRepository, CurrenciesRepositoryInterface } from '@/api/currency';
-import { ProfileRepository, ProfileRepositoryInterface, UpdateProfileRequestInterface} from '@/api/profile';
-
-@Component({
-    components: {EmailFormInput}
+const form = reactive({
+    name: '',
+    lastName: '',
+    nickName: '',
+    defaultCurrencyCode: '',
+    locale: '',
 })
-export default class ProfileSettings extends Mixins(Loader, Messager, Validator) {
-    profileRepository: ProfileRepositoryInterface = new ProfileRepository()
-    currenciesRepository: CurrenciesRepositoryInterface = new CurrenciesRepository()
 
-    form: UpdateProfileRequestInterface = {
-        name: '',
-        lastName: '',
-        nickName: '',
-        defaultCurrencyCode: '',
-        locale: ''
+const currencies = shallowRef<Currency[]>([])
+const loading = shallowRef(false)
+const successMessage = shallowRef('')
+const isNickNameValid = shallowRef<boolean | null>(null)
+const isGoogleEnabled = shallowRef(false)
+const socialLoading = shallowRef(true)
+const socialFailed = shallowRef(false)
+
+let nickNameTimer: ReturnType<typeof setTimeout> | null = null
+
+const currencyOptions = computed(() =>
+    currencies.value.map(c => ({ label: `${c.code} — ${c.name}`, value: c.code })),
+)
+
+const localeOptions = computed(() =>
+    locales.map(l => ({ label: l.name, value: l.code as string })),
+)
+
+watch(profile, (p) => {
+    if (!p) return
+    form.name = p.name
+    form.lastName = p.lastName ?? ''
+    form.nickName = p.nickName
+    form.defaultCurrencyCode = p.defaultCurrencyCode ?? ''
+    form.locale = p.locale
+}, { immediate: true })
+
+watch(() => form.nickName, (nickName) => {
+    isNickNameValid.value = null
+    if (nickNameTimer !== null) clearTimeout(nickNameTimer)
+
+    const trimmed = nickName.trim()
+    if (!trimmed || trimmed === profile.value?.nickName) {
+        clearNickNameError()
+        return
     }
 
-    isNickNameValid: boolean | null = null
+    nickNameTimer = setTimeout(() => validateNickName(trimmed), 1000)
+})
 
-    currencies: Array<CurrencyInterface> = []
+function clearNickNameError() {
+    if (!fieldErrors.value.nickName) return
+    const next = { ...fieldErrors.value }
+    delete next.nickName
+    fieldErrors.value = next
+}
 
-    successMessage = ''
+onMounted(() => {
+    loadCurrencies()
+    loadSocial()
+})
 
-    // eslint-disable-next-line @typescript-eslint/ban-types
-    unsubscribeFromStore: Function|null = null
+onBeforeUnmount(() => {
+    if (nickNameTimer !== null) clearTimeout(nickNameTimer)
+})
 
-    isGoogleEnabled = false
-
-    mounted() {
-        this.loadProfile()
-        this.loadCurrencies()
-        this.loadSocial()
-
-        if (this.$store.state.isLogged) {
-            this.loadProfile()
-        } else {
-            this.unsubscribeFromStore = this.$store.subscribe(this.onProfileLoaded)
-        }
+async function loadCurrencies() {
+    try {
+        currencies.value = await getFeaturedCurrencies()
+    } catch {
+        // non-fatal
     }
+}
 
-    get locales() {
-        return locales;
+async function loadSocial() {
+    socialLoading.value = true
+    socialFailed.value = false
+    try {
+        const social = await getSocial()
+        isGoogleEnabled.value = social.google
+    } catch {
+        socialFailed.value = true
+    } finally {
+        socialLoading.value = false
     }
+}
 
-    protected onProfileLoaded(mutation: MutationPayload) {
-        if (mutation.type !== 'login') {
-            return
-        }
-
-        this.loadProfile()
+async function validateNickName(nickName: string) {
+    reset()
+    try {
+        await checkNickName(nickName)
+        isNickNameValid.value = true
+    } catch (error) {
+        isNickNameValid.value = false
+        handleError(error)
     }
+}
 
-    protected loadProfile() {
-        if (typeof this.unsubscribeFromStore === 'function') {
-            this.unsubscribeFromStore()
-        }
-
-        this.form.name = this.$store.state.profile.name
-        this.form.lastName = this.$store.state.profile.lastName
-        this.form.nickName = this.$store.state.profile.nickName
-        this.form.defaultCurrencyCode = this.$store.state.profile.defaultCurrencyCode
-        this.form.locale = this.$store.state.profile.locale
-    }
-
-    protected loadCurrencies() {
-        this.currenciesRepository.get().then(response => {
-            this.currencies = response.data.data
-        }).catch(this.dispatchError)
-    }
-
-    protected loadSocial() {
-        this.profileRepository.getSocial().then(response => {
-            this.isGoogleEnabled = response.data.data.google
-        }).catch(this.dispatchError)
-    }
-
-    @Watch('form.nickName')
-    onNickNameChanged() {
-        if (this.$store.state.profile.nickName === this.form.nickName) {
-            return
-        }
-
-        this.isNickNameValid = null
-        this.validateNickName()
-    }
-
-    get nickNameValidationState(): boolean | null {
-        if (this.isNickNameValid !== null) {
-            return this.isNickNameValid
-        }
-
-        return this.validationState('nickName')
-    }
-
-    protected validateNickName() {
-        this.profileRepository.checkNickName({
-            nickName: this.form.nickName
-        }).then(() => {
-            this.isNickNameValid = true
-        }).catch(error => {
-            this.isNickNameValid = false
-
-            if (
-                error.response &&
-                error.response.status === 422 &&
-                error.response.data?.errors?.nickName
-            ) {
-                this.setValidationMessages({
-                    nickName: error.response.data?.errors?.nickName,
-                })
-            }
+async function onSubmit() {
+    reset()
+    successMessage.value = ''
+    loading.value = true
+    try {
+        const updated = await updateProfile({
+            name: form.name,
+            lastName: form.lastName.trim() || null,
+            nickName: form.nickName,
+            defaultCurrencyCode: form.defaultCurrencyCode,
+            locale: form.locale,
         })
-    }
-
-    protected onSubmit(event: Event) {
-        event.preventDefault()
-        event.stopPropagation()
-
-        this.resetValidationMessages()
-        this.resetMessage()
-        this.setLoading()
-        this.successMessage = ''
-
-        this.profileRepository.put(this.form)
-            .then(this.onSuccess)
-            .catch(this.dispatchError)
-            .finally(this.setLoaded)
-    }
-
-    protected onSuccess() {
-        this.$store.dispatch('loadProfile').finally(this.loadProfile)
-        this.successMessage = this.$t('profileSettings.success').toString()
+        profileStore.setProfile(updated)
+        successMessage.value = t('profileSettings.success')
+    } catch (error) {
+        handleError(error)
+    } finally {
+        loading.value = false
     }
 }
 </script>
 
-<style scoped>
+<template>
+    <UCard>
+        <template #header>
+            <h2 class="font-semibold text-lg">{{ t('profileSettings.profileSettings') }}</h2>
+        </template>
 
-</style>
+        <div class="space-y-4">
+            <UFormField
+                :label="t('profileSettings.name')"
+                :description="t('profileSettings.nameDescription')"
+                :error="fieldErrors.name?.[0]"
+                required
+            >
+                <UInput v-model="form.name" :disabled="loading" class="w-full" />
+            </UFormField>
+
+            <UFormField
+                :label="t('profileSettings.lastName')"
+                :error="fieldErrors.lastName?.[0]"
+            >
+                <UInput v-model="form.lastName" :disabled="loading" class="w-full" />
+            </UFormField>
+
+            <UFormField
+                :label="t('profileSettings.nickName')"
+                :description="t('profileSettings.nickNameDescription')"
+                :error="fieldErrors.nickName?.[0]"
+                required
+            >
+                <UInput v-model="form.nickName" :disabled="loading" class="w-full">
+                    <template v-if="isNickNameValid" #trailing>
+                        <UTooltip :text="t('profileSettings.nickNameAvailable')" :arrow="true">
+                            <UIcon name="i-lucide-check" class="text-success size-5" />
+                        </UTooltip>
+                    </template>
+                </UInput>
+            </UFormField>
+
+            <EmailFormInput />
+
+            <UFormField
+                :label="t('profileSettings.defaultCurrency')"
+                :description="t('profileSettings.defaultCurrencyDescription')"
+                :error="fieldErrors.defaultCurrencyCode?.[0]"
+            >
+                <USelect
+                    v-model="form.defaultCurrencyCode"
+                    :items="currencyOptions"
+                    :disabled="loading"
+                    class="w-full"
+                />
+            </UFormField>
+
+            <UFormField
+                :label="t('profileSettings.language')"
+                :description="t('profileSettings.languageDescription')"
+            >
+                <USelect
+                    v-model="form.locale"
+                    :items="localeOptions"
+                    :disabled="loading"
+                    class="w-full"
+                />
+            </UFormField>
+
+            <UAlert
+                v-if="generalError"
+                color="error"
+                :description="generalError"
+                icon="i-lucide-alert-circle"
+            />
+
+            <UAlert
+                v-if="successMessage"
+                color="success"
+                :description="successMessage"
+                icon="i-lucide-check-circle"
+                close
+                @update:open="successMessage = ''"
+            />
+
+            <USeparator />
+
+            <div class="space-y-3">
+                <h3 class="font-medium">{{ t('profileSettings.social') }}</h3>
+                <div class="flex items-center gap-3">
+                    <span class="text-sm">Google</span>
+                    <template v-if="socialLoading">
+                        <USkeleton class="h-5 w-24 rounded-md" />
+                    </template>
+                    <template v-else-if="socialFailed">
+                        <span class="text-sm text-muted">{{ t('profileSettings.socialLoadError') }}</span>
+                    </template>
+                    <template v-else>
+                        <UBadge :color="isGoogleEnabled ? 'success' : 'neutral'" variant="subtle">
+                            {{ isGoogleEnabled ? t('profileSettings.googleConnected') : t('profileSettings.googleNotConnected') }}
+                        </UBadge>
+                    </template>
+                </div>
+            </div>
+        </div>
+
+        <template #footer>
+            <div class="flex justify-end">
+                <UButton
+                    :label="t('profileSettings.save')"
+                    :loading="loading"
+                    :disabled="!form.name || !form.nickName"
+                    @click="onSubmit"
+                />
+            </div>
+        </template>
+    </UCard>
+</template>

@@ -1,158 +1,116 @@
+<script setup lang="ts">
+import { shallowRef, watch, useTemplateRef } from 'vue'
+import { useI18n } from 'vue-i18n'
+import type { DateValue } from '@internationalized/date'
+
+export interface FilterState {
+    dateFrom: string
+    dateTo: string
+    tags?: string
+}
+
+const emit = defineEmits<{
+    'filter-change': [filter: FilterState]
+}>()
+
+const { t } = useI18n()
+
+const dateFrom = shallowRef<DateValue | null>(null)
+const dateTo = shallowRef<DateValue | null>(null)
+
+const dateFromRef = useTemplateRef('dateFromRef')
+const dateToRef = useTemplateRef('dateToRef')
+
+function toDateString(d: DateValue | null): string {
+    if (!d) return ''
+    return `${d.year}-${String(d.month).padStart(2, '0')}-${String(d.day).padStart(2, '0')}`
+}
+
+function emitChange() {
+    emit('filter-change', {
+        dateFrom: toDateString(dateFrom.value),
+        dateTo: toDateString(dateTo.value),
+    })
+}
+
+function resetDateFrom() {
+    dateFrom.value = null
+}
+
+function resetDateTo() {
+    dateTo.value = null
+}
+
+watch(dateFrom, emitChange)
+watch(dateTo, emitChange)
+</script>
+
 <template>
-    <div class="row">
-        <div class="charge-filter-state-container col-md-4 col-12">
-            <b-badge variant="primary" v-show="dateFrom" class="date-state">
-                {{ $t('charges.filterFrom') }}: {{ dateFrom }}
-                <b-button @click="resetDateFrom">
-                    <b-icon icon="x"></b-icon>
-                </b-button>
-            </b-badge>
-            <b-badge variant="primary" v-show="dateTo" class="date-state">
-                {{ $t('charges.filterTo') }}: {{ dateTo }}
-                <b-button @click="resetDateTo">
-                    <b-icon icon="x"></b-icon>
-                </b-button>
-            </b-badge>
+    <div class="flex flex-col sm:flex-row gap-3 items-start">
+        <!-- Active filter badges -->
+        <div class="flex flex-wrap gap-2 items-center sm:w-1/3">
+            <UBadge v-if="dateFrom" color="secondary" variant="soft" class="gap-1 overflow-hidden" size="lg">
+                {{ t('charges.filterFrom') }}: {{ toDateString(dateFrom) }}
+                <button type="button" class="hover:bg-secondary/20 dark:hover:bg-secondary/20 inline-block h-fit w-fit -my-1.5 p-1.5 -mr-2 cursor-pointer" :aria-label="t('wallets.clear')" @click="resetDateFrom">
+                    <UIcon name="i-lucide-x" class="size-4" />
+                </button>
+            </UBadge>
+            <UBadge v-if="dateTo" color="secondary" variant="soft" class="gap-1 overflow-hidden" size="lg">
+                {{ t('charges.filterTo') }}: {{ toDateString(dateTo) }}
+                <button type="button" class="hover:bg-secondary/20 dark:hover:bg-secondary/20 inline-block h-fit w-fit -my-1.5 p-1.5 -mr-2 cursor-pointer" :aria-label="t('wallets.clear')" @click="resetDateTo">
+                    <UIcon name="i-lucide-x" class="size-4" />
+                </button>
+            </UBadge>
         </div>
-        <div class="charge-filter-main-container col-md-8 col-12">
-            <b-input-group class="grouped-filters">
-                <b-form-datepicker :placeholder="$t('charges.filterInputFrom')"
-                                   v-model="dateFrom"
-                                   :locale="locale"
-                                   :date-format-options="dateFormatOptions"
-                ></b-form-datepicker>
-                <b-form-datepicker :placeholder="$t('charges.filterInputTo')"
-                                   v-model="dateTo"
-                                   :locale="locale"
-                                   :date-format-options="dateFormatOptions"
-                ></b-form-datepicker>
-            </b-input-group>
-            <div class="ungrouped-filters">
-                <b-form-datepicker :placeholder="$t('charges.filterInputFrom')"
-                                   v-model="dateFrom"
-                                   :locale="locale"
-                                   :date-format-options="dateFormatOptions"
-                                   class="mb-2"
-                ></b-form-datepicker>
-                <b-form-datepicker :placeholder="$t('charges.filterInputTo')"
-                                   v-model="dateTo"
-                                   :locale="locale"
-                                   :date-format-options="dateFormatOptions"
-                ></b-form-datepicker>
-            </div>
+
+        <!-- Date inputs with calendar popups -->
+        <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-2/3">
+            <UFormField :label="t('charges.filterFrom')" class="w-full sm:flex-1">
+                <UInputDate
+                    ref="dateFromRef"
+                    v-model="dateFrom"
+                    class="w-full"
+                >
+                    <template #trailing>
+                        <UPopover>
+                            <UButton
+                                color="neutral"
+                                variant="link"
+                                size="sm"
+                                icon="i-lucide-calendar"
+                                class="px-0"
+                                :aria-label="t('charges.filterInputFrom')"
+                            />
+                            <template #content>
+                                <UCalendar v-model="dateFrom" class="p-2" />
+                            </template>
+                        </UPopover>
+                    </template>
+                </UInputDate>
+            </UFormField>
+            <UFormField :label="t('charges.filterTo')" class="w-full sm:flex-1">
+                <UInputDate
+                    ref="dateToRef"
+                    v-model="dateTo"
+                    class="w-full"
+                >
+                    <template #trailing>
+                        <UPopover>
+                            <UButton
+                                color="neutral"
+                                variant="link"
+                                size="sm"
+                                icon="i-lucide-calendar"
+                                class="px-0"
+                                :aria-label="t('charges.filterInputTo')"
+                            />
+                            <template #content>
+                                <UCalendar v-model="dateTo" class="p-2" />
+                            </template>
+                        </UPopover>
+                    </template>
+                </UInputDate>
+            </UFormField>
         </div>
     </div>
 </template>
-
-<script lang="ts">
-import { Watch, Vue, Component } from 'vue-property-decorator'
-
-export interface FilterChangeEvent {
-    dateFrom: string;
-    dateTo: string;
-}
-
-@Component
-export default class ChargesFilter extends Vue {
-    public dateFrom = ''
-    public dateTo = ''
-
-    get locale() {
-        return this.$store.state.locale
-    }
-
-    get dateFormatOptions() {
-        return {
-            year: 'numeric',
-            month: 'numeric',
-            day: 'numeric'
-        }
-    }
-
-    @Watch('dateFrom')
-    @Watch('dateTo')
-    protected onChange() {
-        this.$emit('change', {
-            dateFrom: this.dateFrom,
-            dateTo: this.dateTo,
-        })
-    }
-
-    protected resetDateFrom() {
-        this.dateFrom = ''
-    }
-
-    protected resetDateTo() {
-        this.dateTo = ''
-    }
-}
-</script>
-
-<style lang="scss" scoped>
-@import "node_modules/bootstrap/scss/functions";
-@import "node_modules/bootstrap/scss/variables";
-@import "node_modules/bootstrap/scss/mixins/_breakpoints";
-
-.ungrouped-filters {
-    display: none;
-}
-
-.charge-filter-state-container {
-    text-align: right;
-    padding: 20px 35px 20px;
-}
-.charge-filter-main-container {
-    padding: 20px 45px;
-    border-left: 1px solid #eee;
-}
-.date-state {
-    margin-left: 5px;
-
-    button {
-        font-size: 14px;
-        margin: -6px -5px -5px 5px;
-        line-height: 17px;
-        padding: 0 6px 0;
-        background: none;
-        color: inherit;
-        border-radius: 0 3px 3px 0;
-        border: 0;
-
-        &.loading {
-            font-size: 12px;
-        }
-
-        &:hover {
-            background-color: rgb(108 117 125 / 25%);
-        }
-    }
-}
-
-@include media-breakpoint-down(sm) {
-    .date-state {
-        margin-left: 0;
-        margin-right: 5px;
-    }
-
-    .grouped-filters {
-        display: none;
-    }
-
-    .ungrouped-filters {
-        display: block;
-    }
-
-    .charge-filter-state-container {
-        text-align: left;
-        padding-left: 15px;
-        padding-right: 15px;
-        padding-bottom: 0;
-    }
-
-    .charge-filter-main-container {
-        border-left: 0;
-        padding-left: 15px;
-        padding-right: 15px;
-    }
-}
-</style>

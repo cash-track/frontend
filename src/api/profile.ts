@@ -1,126 +1,132 @@
-import { AxiosResponse } from 'axios';
-import { ApiCall, Repository } from '@/api/client';
-import { MessageResponseInterface } from '@/api/responses';
-import { UserInterface } from '@/api/users';
+import { apiCall } from './client'
+import { User } from './models/user'
+import { Currency } from './models/currency'
+import { Wallet } from './models/wallet'
 
-export interface ProfileRepositoryInterface {
-    get(): Promise<AxiosResponse<ProfileResponseInterface>>
-    put(request: UpdateProfileRequestInterface): Promise<AxiosResponse<ProfileResponseInterface>>
-    checkNickName(request: CheckNickNameRequestInterface): Promise<AxiosResponse<MessageResponseInterface>>
-    putPhoto(request: UpdateProfilePhotoRequestInterface): Promise<AxiosResponse<ProfilePhotoResponseInterface>>
-    putLocale(request: UpdateProfileLocaleRequestInterface): Promise<AxiosResponse<ProfileResponseInterface>>
-    getSocial(): Promise<AxiosResponse<ProfileSocialResponseInterface>>
+export interface ChargesFlowPeriod {
+    total: number
+    lastYear: number
+    lastQuarter: number
+    lastMonth: number
 }
 
-export class ProfileRepository extends Repository implements ProfileRepositoryInterface {
+export interface ChargesFlowStats {
+    income: ChargesFlowPeriod
+    expense: ChargesFlowPeriod
+    currency: Currency | null
+}
 
-    @ApiCall()
-    public get(): Promise<AxiosResponse<ProfileResponseInterface>> {
-        return this.client.get<ProfileResponseInterface>('/api/profile')
-    }
+export interface CounterStats {
+    wallets: number
+    walletsArchived: number
+    charges: number
+    chargesIncome: number
+}
 
-    @ApiCall()
-    public put(request: UpdateProfileRequestInterface): Promise<AxiosResponse<ProfileResponseInterface>> {
-        return this.client.put<ProfileResponseInterface>('/api/profile', {
-            name: request.name,
-            lastName: request.lastName,
-            nickName: request.nickName,
-            defaultCurrencyCode: request.defaultCurrencyCode,
-            locale: request.locale,
+export interface UpdateProfileRequest {
+    name: string
+    lastName?: string | null
+    nickName: string
+    defaultCurrencyCode: string
+    locale: string
+}
+
+export interface UploadPhotoResponse {
+    message: string
+    fileName: string
+    url: string
+}
+
+export interface SocialAccounts {
+    google: boolean
+}
+
+export async function getProfile(): Promise<User> {
+    return apiCall(async client => {
+        const res = await client.get('/api/profile')
+        return User.from(res.data.data)
+    })
+}
+
+export async function updateProfile(request: UpdateProfileRequest): Promise<User> {
+    return apiCall(async client => {
+        const res = await client.put('/api/profile', request)
+        return User.from(res.data.data)
+    })
+}
+
+export async function checkNickName(nickName: string): Promise<void> {
+    return apiCall(async client => {
+        await client.post('/api/profile/check/nick-name', { nickName })
+    })
+}
+
+export async function getSocial(): Promise<SocialAccounts> {
+    return apiCall(async client => {
+        const res = await client.get('/api/profile/social')
+        const d = res.data.data as Record<string, unknown>
+        return { google: d.google === true }
+    })
+}
+
+export async function uploadPhoto(photo: File): Promise<UploadPhotoResponse> {
+    return apiCall(async client => {
+        const form = new FormData()
+        form.set('photo', photo)
+        const res = await client.put('/api/profile/photo', form, {
+            headers: { 'Content-Type': 'multipart/form-data' },
         })
-    }
-
-    @ApiCall()
-    public checkNickName(request: CheckNickNameRequestInterface): Promise<AxiosResponse<MessageResponseInterface>> {
-        return this.client.post<MessageResponseInterface>('/api/profile/check/nick-name', {
-            nickName: request.nickName,
-        })
-    }
-
-    @ApiCall()
-    public putPhoto(request: UpdateProfilePhotoRequestInterface): Promise<AxiosResponse<ProfilePhotoResponseInterface>> {
-        const form = new FormData();
-
-        // @ts-expect-error unknown file type
-        form.set('photo', request.photo);
-
-        return this.client.put<ProfilePhotoResponseInterface>('/api/profile/photo', form, {
-            headers: {
-                "Content-Type": "multipart/form-data",
-            }
-        })
-    }
-
-    @ApiCall()
-    public putLocale(request: UpdateProfileLocaleRequestInterface): Promise<AxiosResponse<ProfileResponseInterface>> {
-        return this.client.put<ProfileResponseInterface>('/api/profile/locale', {
-            locale: request.locale,
-        })
-    }
-
-    @ApiCall()
-    public getSocial(): Promise<AxiosResponse<ProfileSocialResponseInterface>> {
-        return this.client.get<ProfileSocialResponseInterface>('/api/profile/social')
-    }
+        return res.data as UploadPhotoResponse
+    })
 }
 
-export interface ProfileResponseInterface {
-    data: ProfileInterface;
+export async function updateLocale(locale: string): Promise<User> {
+    return apiCall(async client => {
+        const res = await client.put('/api/profile/locale', { locale })
+        return User.from(res.data.data)
+    })
 }
 
-export interface ProfilesResponseInterface {
-    data: Array<ProfileInterface>;
-}
-
-export interface ProfileInterface extends UserInterface {
-    email: string;
-    isEmailConfirmed: boolean;
-    defaultCurrencyCode: string;
-    locale: string;
-}
-
-export interface ProfilePhotoResponseInterface {
-    message: string;
-    fileName: string;
-    url: string;
-}
-
-export function emptyProfile(): ProfileInterface {
+function parseFlowPeriod(raw: unknown): ChargesFlowPeriod {
+    const zero: ChargesFlowPeriod = { total: 0, lastYear: 0, lastQuarter: 0, lastMonth: 0 }
+    if (!raw || typeof raw !== 'object') return zero
+    const d = raw as Record<string, unknown>
     return {
-        id: 0,
-        name: '',
-        lastName: '',
-        nickName: '',
-        email: '',
-        isEmailConfirmed: true,
-        photoUrl: '',
-        defaultCurrencyCode: '',
-        locale: '',
-    };
+        total: typeof d.total === 'number' ? d.total : 0,
+        lastYear: typeof d.lastYear === 'number' ? d.lastYear : 0,
+        lastQuarter: typeof d.lastQuarter === 'number' ? d.lastQuarter : 0,
+        lastMonth: typeof d.lastMonth === 'number' ? d.lastMonth : 0,
+    }
 }
 
-export interface UpdateProfileRequestInterface {
-    name: string;
-    lastName: string;
-    nickName: string;
-    defaultCurrencyCode: string;
-    locale: string;
+export async function getChargesFlowStats(): Promise<ChargesFlowStats> {
+    return apiCall(async client => {
+        const res = await client.get('/api/profile/statistics/charges-flow')
+        const d = res.data.data as Record<string, unknown>
+        return {
+            income: parseFlowPeriod(d['+']),
+            expense: parseFlowPeriod(d['-']),
+            currency: d.currency ? Currency.from(d.currency) : null,
+        }
+    })
 }
 
-export interface CheckNickNameRequestInterface {
-    nickName: string;
+export async function getCounterStats(): Promise<CounterStats> {
+    return apiCall(async client => {
+        const res = await client.get('/api/profile/statistics/counters')
+        const d = res.data.data as Record<string, unknown>
+        return {
+            wallets: typeof d.wallets === 'number' ? d.wallets : 0,
+            walletsArchived: typeof d.walletsArchived === 'number' ? d.walletsArchived : 0,
+            charges: typeof d.charges === 'number' ? d.charges : 0,
+            chargesIncome: typeof d.chargesIncome === 'number' ? d.chargesIncome : 0,
+        }
+    })
 }
 
-export interface UpdateProfilePhotoRequestInterface {
-    photo: File | null;
-}
-
-export interface UpdateProfileLocaleRequestInterface {
-    locale: string;
-}
-
-export interface ProfileSocialResponseInterface {
-    data: {
-        google: boolean;
-    };
+export async function getLatestWallets(): Promise<Wallet[]> {
+    return apiCall(async client => {
+        const res = await client.get('/api/profile/wallets/latest')
+        return (res.data.data as unknown[]).map(Wallet.from)
+    })
 }

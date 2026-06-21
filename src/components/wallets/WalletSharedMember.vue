@@ -1,107 +1,62 @@
-<template>
-    <div class="wallet-shared-member d-flex justify-content-between align-items-center">
-        <profile-avatar-badge :user="user">
-            {{ user.name }} {{ user.lastName }}
-        </profile-avatar-badge>
-        <b-button-close
-            v-if="isAllowedToRemove && !isDeleted"
-            v-show="!isLoading && !hasMessage"
-            :title="tooltip"
-            v-b-tooltip.right
-            @click="onDelete"
-        ></b-button-close>
+<script setup lang="ts">
+import { shallowRef } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { unshareWallet } from '@/api/wallets'
+import type { User } from '@/api/models/user'
+import { useNotifications } from '@/composables/useNotifications'
 
-        <b-spinner v-show="isLoading && !hasMessage" small></b-spinner>
+const props = defineProps<{
+    walletId: number
+    walletName: string
+    user: User
+    isAllowedToRemove: boolean
+}>()
 
-        <b-icon-exclamation-triangle-fill
-            class="warning-icon"
-            v-if="hasMessage"
-            variant="warning"
-            v-b-popover="errorMessage"
-            @click="onResetMessage"
-        ></b-icon-exclamation-triangle-fill>
-    </div>
-</template>
+const emit = defineEmits<{
+    deleted: [userId: number]
+}>()
 
-<script lang="ts">
-import { Component, Prop, Mixins, Watch } from 'vue-property-decorator'
-import Loader from '@/shared/Loader';
-import Messager from '@/shared/Messager';
-import ProfileAvatarBadge from '@/components/profile/ProfileAvatarBadge.vue';
-import { UserInterface } from '@/api/users';
-import { WalletInterface, WalletsRepository, WalletsRepositoryInterface } from '@/api/wallets';
+const { t } = useI18n()
+const { notifyError } = useNotifications()
+const removing = shallowRef(false)
 
-export interface WalletSharedMemberDeletedEvent {
-    id: number;
-    user: UserInterface;
-}
-
-@Component({
-    components: {ProfileAvatarBadge}
-})
-export default class WalletSharedMember extends Mixins(Loader, Messager) {
-    @Prop({required: true})
-    user!: UserInterface
-
-    @Prop({required: true})
-    wallet!: WalletInterface
-
-    @Prop({required: true})
-    isAllowedToRemove!: false
-
-    repository: WalletsRepositoryInterface = new WalletsRepository()
-
-    errorMessage = {
-        id: `wallet-shared-member-message-${this.wallet?.id}-${this.user?.id}`,
-        variant: 'warning',
-        placement: 'right',
-        trigger: 'hover focus',
-        content: ''
-    }
-
-    isDeleted = false
-
-    get tooltip(): string {
-        return this.$t('wallets.shareCancelInvite', [this.wallet.name]).toString()
-    }
-
-    @Watch('message')
-    onMessage() {
-        this.errorMessage.content = this.message
-
-        if (this.shouldDisplayMessage()) {
-            this.$root.$emit('bv::show::popover', this.errorMessage.id)
-        } else {
-            this.$root.$emit('bv::hide::popover', this.errorMessage.id)
-        }
-    }
-
-    onResetMessage(event: Event) {
-        event.preventDefault()
-        event.stopPropagation()
-        this.resetMessage()
-    }
-
-    protected onDelete(event: Event) {
-        event.preventDefault()
-        event.stopPropagation()
-
-        this.resetMessage()
-        this.setLoading()
-
-        this.repository.deleteUser(this.wallet.id, this.user).then(() => {
-            this.$emit('deleted', {
-                id: this.user.id,
-                user: this.user,
-            })
-            this.isDeleted = true
-        }).catch(this.dispatchError).finally(this.setLoaded)
+async function onRemove() {
+    removing.value = true
+    try {
+        await unshareWallet(props.walletId, props.user.id)
+        emit('deleted', props.user.id)
+    } catch {
+        notifyError(t('wallets.shareRevokeError'))
+    } finally {
+        removing.value = false
     }
 }
 </script>
 
-<style lang="scss" scoped>
-    .warning-icon {
-        cursor: pointer;
-    }
-</style>
+<template>
+    <div class="flex items-center justify-between gap-2 py-2">
+        <div class="flex items-center gap-2 min-w-0">
+            <UAvatar
+                :src="user.photoUrl ?? undefined"
+                :alt="user.displayName"
+                size="sm"
+            />
+            <span class="text-sm truncate">{{ user.displayName }}</span>
+        </div>
+        <UTooltip
+            v-if="isAllowedToRemove"
+            :arrow="true"
+            :text="t('wallets.shareCancelInvite', [walletName])"
+        >
+            <UButton
+                color="error"
+                variant="ghost"
+                icon="i-lucide-x"
+                size="xs"
+                :aria-label="t('wallets.shareCancelInvite', [walletName])"
+                :loading="removing"
+                @click="onRemove"
+            />
+        </UTooltip>
+    </div>
+</template>

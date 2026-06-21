@@ -1,161 +1,64 @@
-import { AxiosResponse } from 'axios';
-import { ApiCall, Repository } from '@/api/client';
-import { PaginatedResponseInterface } from '@/api/pagination';
-import { TagInterface } from '@/api/tags';
-import { WalletInterface } from '@/api/wallets';
-import { UserInterface } from '@/api/users';
-import { FilterInterface } from '@/api/filters';
+import { apiCall } from './client'
+import { Charge, ChargeTitleSuggestion } from './models/charge'
+import { Pagination } from './models/pagination'
+import type { PaginatedResponse } from './models/pagination'
 
-export interface ChargesRepositoryInterface {
-    get(walletId: number, filter?: FilterInterface): Promise<AxiosResponse<ChargesResponseInterface>>
-    getPaginated(walletId: number, page: number, filter?: FilterInterface): Promise<AxiosResponse<ChargesResponseInterface>>
-    getByTag(tagId: number, filter?: FilterInterface): Promise<AxiosResponse<ChargesResponseInterface>>
-    getByTagPaginated(tagId: number, page: number, filter?: FilterInterface): Promise<AxiosResponse<ChargesResponseInterface>>
-    create(walletId: number, request: ChargeCreateRequestInterface): Promise<AxiosResponse<ChargeResponseInterface>>
-    update(walletId: number, chargeId: string, request: ChargeUpdateRequestInterface): Promise<AxiosResponse<ChargeResponseInterface>>
-    delete(walletId: number, chargeId: string): Promise<AxiosResponse>
-    move(walletId: number, targetWalletId: number, chargeIds: Array<string>): Promise<AxiosResponse>
-    getSuggestions(query: string): Promise<AxiosResponse<ChargeTitlesResponseInterface>>
+export interface ChargeRequest {
+    type: '+' | '-'
+    amount: number
+    title: string
+    description?: string | null
+    tags?: number[] | null
+    dateTime?: string | null
 }
 
-export class ChargesRepository extends Repository implements ChargesRepositoryInterface {
-
-    @ApiCall()
-    public get(walletId: number, filter?: FilterInterface): Promise<AxiosResponse<ChargesResponseInterface>> {
-        return this.client.get<ChargesResponseInterface>(`/api/wallets/${walletId}/charges`, {
-            params: filter?.getQuery()
-        })
-    }
-
-    @ApiCall()
-    public getPaginated(walletId: number, page: number, filter?: FilterInterface): Promise<AxiosResponse<ChargesResponseInterface>> {
-        return this.client.get<ChargesResponseInterface>(`/api/wallets/${walletId}/charges`, {
-            params: filter?.getQuery({
-                'page': page
-            })
-        })
-    }
-
-    @ApiCall()
-    public getByTag(tagId: number, filter?: FilterInterface): Promise<AxiosResponse<ChargesResponseInterface>> {
-        return this.client.get<ChargesResponseInterface>(`/api/tags/${tagId}/charges`, {
-            params: filter?.getQuery()
-        })
-    }
-
-    @ApiCall()
-    public getByTagPaginated(tagId: number, page: number, filter?: FilterInterface): Promise<AxiosResponse<ChargesResponseInterface>> {
-        return this.client.get<ChargesResponseInterface>(`/api/tags/${tagId}/charges`, {
-            params: filter?.getQuery({
-                'page': page
-            })
-        })
-    }
-
-    @ApiCall()
-    public create(walletId: number, request: ChargeCreateRequestInterface): Promise<AxiosResponse<ChargeResponseInterface>> {
-        return this.client.post<ChargeResponseInterface>(`/api/wallets/${walletId}/charges`, {
-            type: request.type,
-            amount: request.amount,
-            title: request.title,
-            description: request.description,
-            tags: request.tags.length ? request.tags.map(tag => tag.id) : null,
-            dateTime: request.dateTime,
-        })
-    }
-
-    @ApiCall()
-    public update(
-        walletId: number,
-        chargeId: string,
-        request: ChargeUpdateRequestInterface
-    ): Promise<AxiosResponse<ChargeResponseInterface>> {
-        return this.client.put<ChargeResponseInterface>(`/api/wallets/${walletId}/charges/${chargeId}`, {
-            type: request.type,
-            amount: request.amount,
-            title: request.title,
-            description: request.description,
-            tags: request.tags.length ? request.tags.map(tag => tag.id) : null,
-            dateTime: request.dateTime,
-        })
-    }
-
-    @ApiCall()
-    public delete(
-        walletId: number,
-        chargeId: string,
-    ): Promise<AxiosResponse> {
-        return this.client.delete(`/api/wallets/${walletId}/charges/${chargeId}`)
-    }
-
-    @ApiCall()
-    public move(
-        walletId: number,
-        targetWalletId: number,
-        chargeIds: Array<string>,
-    ): Promise<AxiosResponse> {
-        return this.client.post(`/api/wallets/${walletId}/charges/move/${targetWalletId}`, {
-            chargeIds: chargeIds,
-        })
-    }
-
-    @ApiCall()
-    public getSuggestions(query: string): Promise<AxiosResponse<ChargeTitlesResponseInterface>> {
-        return this.client.get<ChargeTitlesResponseInterface>(`/api/charges/title/suggestions/${query}`)
-    }
+export interface GetChargesParams {
+    page?: number
+    limit?: number
+    'date-from'?: string
+    'date-to'?: string
+    tags?: string
 }
 
-export const TypeIncome = '+';
-export const TypeExpense = '-';
-
-export interface ChargeInterface {
-    id: string;
-    operation: string;
-    amount: number;
-    title: string;
-    description: string;
-    userId: number;
-    walletId: number;
-    dateTime: string;
-    createdAt: string;
-    updatedAt: string;
-
-    user: UserInterface;
-    wallet: WalletInterface|null;
-    tags: Array<TagInterface>;
+export async function getCharges(walletId: number, params?: GetChargesParams): Promise<PaginatedResponse<Charge>> {
+    return apiCall(async client => {
+        const res = await client.get(`/api/wallets/${walletId}/charges`, { params })
+        return {
+            data: (res.data.data as unknown[]).map(Charge.from),
+            pagination: Pagination.from(res.data.pagination),
+        }
+    })
 }
 
-export interface ChargeTitleInterface {
-    title: string;
-    count: number;
+export async function createCharge(walletId: number, request: ChargeRequest): Promise<Charge> {
+    return apiCall(async client => {
+        const res = await client.post(`/api/wallets/${walletId}/charges`, request)
+        return Charge.from(res.data.data)
+    })
 }
 
-export interface ChargesResponseInterface extends PaginatedResponseInterface{
-    data: Array<ChargeInterface>;
+export async function updateCharge(walletId: number, chargeId: string, request: ChargeRequest): Promise<Charge> {
+    return apiCall(async client => {
+        const res = await client.put(`/api/wallets/${walletId}/charges/${chargeId}`, request)
+        return Charge.from(res.data.data)
+    })
 }
 
-export interface ChargeResponseInterface {
-    data: ChargeInterface;
+export async function deleteCharge(walletId: number, chargeId: string): Promise<void> {
+    return apiCall(async client => {
+        await client.delete(`/api/wallets/${walletId}/charges/${chargeId}`)
+    })
 }
 
-export interface ChargeTitlesResponseInterface {
-    data: Array<ChargeTitleInterface>;
+export async function moveCharges(walletId: number, targetWalletId: number, chargeIds: string[]): Promise<void> {
+    return apiCall(async client => {
+        await client.post(`/api/wallets/${walletId}/charges/move/${targetWalletId}`, { chargeIds })
+    })
 }
 
-export interface ChargeCreateRequestInterface {
-    type: string;
-    amount: number|null;
-    title: string;
-    description: string;
-    tags: Array<TagInterface>;
-    dateTime: string|null;
-}
-
-export interface ChargeUpdateRequestInterface {
-    type: string;
-    amount: number|null;
-    title: string;
-    description: string;
-    tags: Array<TagInterface>;
-    dateTime: string|null;
+export async function getChargeTitles(query: string): Promise<ChargeTitleSuggestion[]> {
+    return apiCall(async client => {
+        const res = await client.get(`/api/charges/title/suggestions/${encodeURIComponent(query)}`)
+        return (res.data.data as unknown[]).map(ChargeTitleSuggestion.from)
+    })
 }

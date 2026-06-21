@@ -1,309 +1,347 @@
-<template>
-    <div class="wallet">
-        <wallets-active-short-list class="mb-4"></wallets-active-short-list>
+<script setup lang="ts">
+import { ref, shallowRef, watch, onMounted, onUnmounted, nextTick, useTemplateRef } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
+import { getTagById, getTagCharges, getTagTotals, getCommonTags } from '@/api/tags'
+import type { Tag } from '@/api/models/tag'
+import type { Charge, ChargeTotal } from '@/api/models/charge'
+import type { Pagination } from '@/api/models/pagination'
+import type { FilterState } from '@/components/wallets/charges/ChargesFilter.vue'
+import TagChip from '@/components/tags/Tag.vue'
+import TotalsRow from '@/components/Shared/TotalsRow.vue'
+import ChargesFilter from '@/components/wallets/charges/ChargesFilter.vue'
+import ChargeItem from '@/components/wallets/charges/ChargeItem.vue'
+import TagChargesFlowChart from '@/components/wallets/charges/TagChargesFlowChart.vue'
+import WalletsActiveShortList from '@/components/wallets/WalletsActiveShortList.vue'
+import { useChargesGrouping } from '@/composables/useChargesGrouping'
 
-        <warning-message :message="$t('tags.statsLoadingError')" :show="loadFailed"></warning-message>
+const props = defineProps<{ tagID: string }>()
 
-        <div v-if="tag !== null">
-            <div class="wallet-header d-flex justify-content-between">
-                <h3>
-                    {{ $t('tags.stats') }}
-                </h3>
-            </div>
+const { t, locale } = useI18n()
+const router = useRouter()
 
-            <div class="wallet-tags list-ltr" v-show="tags.length">
-                <tag v-for="item of tags"
-                     :tag="item"
-                     :key="item.id"
-                     @selected="onTagSelected"
-                     :active="item.id === tagIDParsed"
-                ></tag>
-            </div>
+const chartRef = useTemplateRef<InstanceType<typeof TagChargesFlowChart>>('chartRef')
 
-            <div class="wallet-details d-flex justify-content-center align-items-end" v-if="total.currency !== undefined">
-                <span class="wallet-total" :class="{'wallet-total-small': !isIncomeGreaterThanExpense}" v-if="hasIncome && isIncomeGreaterThanExpense">
-                    <span class="text-muted wallet-total-title">
-                        {{ $t('wallets.income') }}
-                    </span>
-                    <span class="text-primary wallet-total-value">
-                        <b-icon-arrow-up variant="primary" scale="1" class="d-none d-sm-inline"></b-icon-arrow-up>
-                        {{ total.totalIncomeAmount | money(total.currency) }}
-                    </span>
-                </span>
-                <span class="wallet-total" :class="{'wallet-total-small': isIncomeGreaterThanExpense}" v-if="hasExpense || !hasIncome">
-                    <span class="text-muted wallet-total-title">
-                        {{ $t('wallets.expense') }}
-                    </span>
-                    <span class="text-danger wallet-total-value">
-                        <b-icon-arrow-down variant="danger" scale="1" class="d-none d-sm-inline"></b-icon-arrow-down>
-                        {{ total.totalExpenseAmount | money(total.currency) }}
-                    </span>
-                </span>
-                <span class="wallet-total wallet-total-small" v-if="hasIncome && !isIncomeGreaterThanExpense">
-                    <span class="text-muted wallet-total-title">
-                        {{ $t('wallets.income') }}
-                    </span>
-                    <span class="text-primary wallet-total-value">
-                        <b-icon-arrow-up variant="primary" scale="1" class="d-none d-sm-inline"></b-icon-arrow-up>
-                        {{ total.totalIncomeAmount | money(total.currency) }}
-                    </span>
-                </span>
-            </div>
+const selectedTagId = ref(parseInt(props.tagID, 10))
 
-            <div class="wallet-chart">
-                <div class="charge-loader-main d-flex justify-content-center align-items-center" v-if="isLoadingFor('chart') || hasLoadingFailedMessageFor('chart')">
-                    <div class="d-flex align-items-center" v-if="isLoadingFor('chart')">
-                        <b-spinner variant="light"></b-spinner>
-                        <span class="loading-text ml-2">{{ $t('loadingData') }}</span>
-                    </div>
-                    <div class="d-flex align-items-center" v-if="hasLoadingFailedMessageFor('chart')">
-                        <b-icon-exclamation-circle></b-icon-exclamation-circle>
-                        <span class="loading-text ml-2">{{ getLoadingFailedMessageFor('chart') }}</span>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-md-8"></div>
-                    <div class="col-md-4">
-                        <b-input-group :prepend="$t('wallets.groupBy')" class="mb-4">
-                            <b-form-select v-model="selectedGroupBy" :options="groupOptions"></b-form-select>
-                        </b-input-group>
-                    </div>
-                </div>
-                <charges-flow-chart :currency="total.currency" :dataset="graphData" :group="graphGroupBy"></charges-flow-chart>
-            </div>
+const tag = shallowRef<Tag | null>(null)
+const commonTags = shallowRef<Tag[]>([])
+const totals = shallowRef<ChargeTotal | null>(null)
+const charges = ref<Charge[]>([])
+const pagination = ref<Pagination | null>(null)
+const loadingTag = ref(true)
+const loadingTotals = ref(true)
+const loadingCharges = ref(true)
+const loadingCommonTags = ref(true)
+const loadingMore = ref(false)
+const errorTag = ref<string | null>(null)
+const errorCharges = ref<string | null>(null)
+const currentPage = ref(1)
+const filter = ref<FilterState>({ dateFrom: '', dateTo: '' })
+const showFilters = ref(false)
+const sentinelRef = ref<HTMLElement | null>(null)
+let observer: IntersectionObserver | null = null
 
-            <div class="wallet-charges">
-                <charges-filter @change="onFilterChanged"></charges-filter>
-                <charges-list :tag="tag"
-                              :filter="filter"
-                              @updated="onChargeUpdated"
-                              @deleted="onChargeDeleted"
-                              @tag-selected="onTagSelected"
-                ></charges-list>
-            </div>
-        </div>
-    </div>
-</template>
+const { chargesGrouped } = useChargesGrouping(charges, t, locale)
 
-<script lang="ts">
-import { Component, Prop, Watch, Mixins } from 'vue-property-decorator'
-import WarningMessage from '@/components/shared/WarningMessage.vue';
-import ProfileAvatarBadge from '@/components/profile/ProfileAvatarBadge.vue';
-import ProfileAvatar from '@/components/profile/ProfileAvatar.vue';
-import ChargeItem from '@/components/wallets/ChargeItem.vue';
-import ChargeCreate from '@/components/wallets/ChargeCreate.vue';
-import ChargesList from "@/components/wallets/charges/ChargesList.vue";
-import ChargesFilter, { FilterChangeEvent } from '@/components/wallets/charges/ChargesFilter.vue';
-import ChargesFlowChart from '@/components/wallets/charges/ChargesFlowChart.vue';
-import Tag from '@/components/tags/Tag.vue';
-import Loader from '@/shared/Loader';
-import { TagInterface, TagsRepository, TagsRepositoryInterface } from '@/api/tags';
-import { TotalInterface, TotalRepository, TotalRepositoryInterface } from '@/api/total';
-import { emptyFilterData, Filter, FilterDataInterface } from '@/api/filters';
-import {
-    AmountGraphDataEntry,
-    GraphRepository,
-    GraphRepositoryInterface,
-    GROUP_BY_DAY,
-    GROUP_BY_MONTH,
-    GROUP_BY_YEAR
-} from '@/api/graph';
-import WalletsActiveShortList from '@/components/wallets/WalletsActiveShortList.vue';
-
-@Component({
-    components: {
-        WalletsActiveShortList,
-        ChargesList,
-        ChargeCreate,
-        ChargeItem,
-        ChargesFilter,
-        ChargesFlowChart,
-        ProfileAvatar,
-        ProfileAvatarBadge,
-        WarningMessage,
-        Tag,
-    }
-})
-export default class TagView extends Mixins(Loader) {
-    @Prop()
-    tagID!: string
-
-    tagsRepository: TagsRepositoryInterface = new TagsRepository()
-    graphRepository: GraphRepositoryInterface = new GraphRepository()
-    totalRepository: TotalRepositoryInterface = new TotalRepository()
-
-    total: TotalInterface = {
-        totalAmount: 0,
-        totalIncomeAmount: 0,
-        totalExpenseAmount: 0,
-        currency: undefined,
-        tags: undefined,
-    }
-
-    loadFailed = false
-
-    filter: FilterDataInterface = emptyFilterData()
-
-    tag: TagInterface|null = null
-
-    tags: Array<TagInterface> = []
-
-    graphData: Array<AmountGraphDataEntry> = []
-
-    selectedGroupBy = GROUP_BY_MONTH
-    graphGroupBy = GROUP_BY_MONTH
-
-    mounted() {
-        this.loadTags()
-    }
-
-    get groupOptions() {
-        return [
-            {value: GROUP_BY_DAY, text: this.$t('wallets.groupByDay').toString()},
-            {value: GROUP_BY_MONTH, text: this.$t('wallets.groupByMonth').toString()},
-            {value: GROUP_BY_YEAR, text: this.$t('wallets.groupByYear').toString()},
-        ]
-    }
-
-    get tagIDParsed(): number {
-        return parseInt(this.tagID, 10)
-    }
-
-    get isIncomeGreaterThanExpense(): boolean {
-        return this.total.totalIncomeAmount > this.total.totalExpenseAmount
-    }
-
-    get hasIncome(): boolean {
-        return this.total.totalIncomeAmount !== 0
-    }
-
-    get hasExpense(): boolean {
-        return this.total.totalExpenseAmount !== 0
-    }
-
-    protected loadTags() {
-        this.loadFailed = false;
-
-        this.tagsRepository.getCommons().then(response => {
-            this.tags = response.data.data
-            this.onTagChange();
-        }).catch(() => {
-            this.loadFailed = true;
-        })
-    }
-
-    @Watch('tagID')
-    protected onTagChange() {
-        if (this.tagIDParsed === 0) {
-            return
-        }
-
-        for(const tag of this.tags) {
-            if (tag.id === this.tagIDParsed) {
-                this.tag = tag
-            }
-        }
-
-        if (this.tag === null) {
-            this.loadFailed = true;
-            return
-        }
-
-        this.loadTotal()
-        this.loadChart()
-    }
-
-    protected loadTotal() {
-        if (this.tagIDParsed === 0) {
-            return
-        }
-
-        this.totalRepository.getTagTotal(this.tagIDParsed, Filter.createFromData(this.filter)).then(response => {
-            this.total = response.data.data
-        }).catch(() => {
-            this.loadFailed = true;
-        })
-    }
-
-    @Watch('selectedGroupBy')
-    protected loadChart() {
-        if (this.tagIDParsed === 0) {
-            return
-        }
-
-        this.resetLoadingFailedMessageFor('chart')
-        this.setLoadingFor('chart')
-
-        const filter = Filter.createFromData(this.filter)
-        filter.groupBy = this.selectedGroupBy
-
-        this.graphRepository.getTagGraph(this.tagIDParsed, filter).then(response => {
-            this.graphData = response.data.data
-            this.graphGroupBy = this.selectedGroupBy
-        }).catch((error) => {
-            this.setLoadingFailedMessageFor('chart', this.$t('wallets.chartLoadingError').toString())
-            console.error(error)
-        }).finally(() => {
-            this.setLoadedFor('chart')
-        })
-    }
-
-    public onTagSelected(tag: TagInterface) {
-        this.$router.push({
-            name: 'tags.show',
-            params: {
-                'tagID': tag.id.toString(),
-            }
-        })
-    }
-
-    public onChargeUpdated() {
-        this.loadTotal()
-        this.loadChart()
-    }
-
-    public onChargeDeleted() {
-        this.loadTotal()
-        this.loadChart()
-    }
-
-    public onFilterChanged(event: FilterChangeEvent) {
-        this.filter.dateFrom = event.dateFrom
-        this.filter.dateTo = event.dateTo
-        this.loadTotal()
-        this.loadChart()
+async function loadTag() {
+    loadingTag.value = true
+    errorTag.value = null
+    try {
+        tag.value = await getTagById(selectedTagId.value)
+        loadTotals()
+        loadCharges(1)
+    } catch {
+        errorTag.value = t('tags.statsLoadingError')
+        loadingTotals.value = false
+        loadingCharges.value = false
+    } finally {
+        loadingTag.value = false
     }
 }
+
+async function loadTotals() {
+    loadingTotals.value = true
+    try {
+        totals.value = await getTagTotals(selectedTagId.value, {
+            'date-from': filter.value.dateFrom || undefined,
+            'date-to': filter.value.dateTo || undefined,
+        })
+    } catch {
+        // Non-fatal — just don't show totals
+    } finally {
+        loadingTotals.value = false
+    }
+}
+
+async function loadCharges(page: number) {
+    if (page === 1) loadingCharges.value = true
+    errorCharges.value = null
+    try {
+        const res = await getTagCharges(selectedTagId.value, {
+            page,
+            'date-from': filter.value.dateFrom || undefined,
+            'date-to': filter.value.dateTo || undefined,
+        })
+        if (page === 1) {
+            charges.value = res.data
+        } else {
+            charges.value = [...charges.value, ...res.data]
+        }
+        pagination.value = res.pagination
+        currentPage.value = page
+    } catch {
+        if (page === 1) {
+            errorCharges.value = t('charges.loadingError')
+            charges.value = []
+        } else {
+            errorCharges.value = t('charges.loadingMoreError')
+        }
+    } finally {
+        if (page === 1) loadingCharges.value = false
+    }
+}
+
+async function loadMore() {
+    if (loadingMore.value || !pagination.value?.hasNext) return
+    loadingMore.value = true
+    try {
+        await loadCharges(currentPage.value + 1)
+    } finally {
+        loadingMore.value = false
+    }
+}
+
+function setupObserver() {
+    if (observer) observer.disconnect()
+    observer = new IntersectionObserver(entries => {
+        if (entries[0]?.isIntersecting) {
+            loadMore()
+        }
+    }, { rootMargin: '200px' })
+}
+
+function observeSentinel() {
+    nextTick(() => {
+        if (sentinelRef.value && observer) {
+            observer.disconnect()
+            observer.observe(sentinelRef.value)
+        }
+    })
+}
+
+async function selectTag(id: number) {
+    if (id === selectedTagId.value) return
+    selectedTagId.value = id
+    tag.value = null
+    totals.value = null
+    charges.value = []
+    pagination.value = null
+    currentPage.value = 1
+    loadingTotals.value = true
+    loadingCharges.value = true
+    router.replace({ name: 'tags.show', params: { tagID: id.toString() } })
+    await loadTag()
+}
+
+// Handle external navigation (browser back/forward between tag URLs).
+// selectTag's own guard (`if (id === selectedTagId.value) return`) is the
+// single source of truth — no duplicate check needed here.
+watch(() => props.tagID, async newTagID => {
+    await selectTag(parseInt(newTagID, 10))
+})
+
+// Re-observe sentinel whenever loading finishes (sentinel enters DOM)
+watch(loadingCharges, val => {
+    if (!val) observeSentinel()
+})
+watch(loadingMore, val => {
+    if (!val) observeSentinel()
+})
+
+function onFilterChange(f: FilterState) {
+    filter.value = f
+    loadTotals()
+    loadCharges(1)
+    // Chart reloads via its own watch(() => props.filter) after parent re-renders and propagates the new prop.
+    // Calling chartRef.reload() here would run before the prop update and use the stale filter.
+}
+
+async function onChargeUpdated(charge: Charge) {
+    const index = charges.value.findIndex(c => c.id === charge.id)
+    if (index !== -1) charges.value[index] = charge
+    await loadTotals()
+    chartRef.value?.reload()
+}
+
+async function onChargeDeleted(chargeId: string) {
+    charges.value = charges.value.filter(c => c.id !== chargeId)
+    await loadTotals()
+    chartRef.value?.reload()
+}
+
+onMounted(() => {
+    setupObserver()
+    getCommonTags()
+        .then(tags => { commonTags.value = tags })
+        .catch(() => {})
+        .finally(() => { loadingCommonTags.value = false })
+    loadTag()
+})
+
+onUnmounted(() => {
+    observer?.disconnect()
+})
 </script>
 
-<style lang="scss" scoped>
-.wallet-tags {
-    border-top: 1px solid #eee;
-    border-bottom: none;
-}
+<template>
+    <div class="space-y-6">
+        <WalletsActiveShortList />
 
-.wallet-chart {
-    position: relative;
-    border-bottom: 1px solid #eee;
-    padding: 20px 0;
+        <!-- Tag header -->
+        <div class="flex items-center gap-3">
+            <template v-if="loadingTag">
+                <USkeleton class="h-7 w-20 rounded-full" />
+                <USkeleton class="h-8 w-40 rounded-md" />
+            </template>
+            <template v-else-if="tag">
+                <TagChip :tag="tag" class="text-base" />
+                <h1 class="text-2xl font-semibold">{{ t('tags.stats') }}</h1>
+            </template>
+        </div>
 
-    .charge-loader-main {
-        margin: -20px 0;
-        height: 100%;
-        position: absolute;
-        width: 100%;
-        background: rgb(255 255 255 / 77%);
-        z-index: 100;
-        cursor: wait;
-        backdrop-filter: blur(3px);
+        <USeparator />
 
-        .spinner-border {
-            color: #d4d4d4 !important;
-        }
+        <!-- Common tags navigation -->
+        <div class="flex flex-wrap gap-2">
+            <template v-if="loadingCommonTags">
+                <USkeleton v-for="i in 6" :key="i" class="h-7 w-16 rounded-full" />
+            </template>
+            <template v-else-if="commonTags.length > 0">
+                <TagChip
+                    v-for="commonTag in commonTags"
+                    :key="commonTag.id"
+                    :tag="commonTag"
+                    :highlighted="commonTag.id === selectedTagId"
+                    @click="selectTag(commonTag.id)"
+                />
+            </template>
+        </div>
 
-        .loading-text {
-            color: #a9a9a9;
-        }
-    }
-}
-</style>
+        <!-- Tag load error -->
+        <UAlert
+            v-if="errorTag"
+            color="error"
+            :description="errorTag"
+            icon="i-lucide-alert-circle"
+        />
+
+        <USeparator />
+
+        <!-- Totals -->
+        <TotalsRow
+            :loading="loadingTotals"
+            :income-amount="totals?.totalIncomeAmount"
+            :expense-amount="totals?.totalExpenseAmount"
+            :currency="totals?.currency"
+        />
+
+        <!-- Chart (manages its own loading overlay) -->
+        <div class="border border-default rounded-lg p-4">
+            <TagChargesFlowChart
+                ref="chartRef"
+                :tag-id="selectedTagId"
+                :currency="totals?.currency ?? null"
+                :filter="filter"
+            />
+        </div>
+
+        <!-- Filter toggle -->
+        <div class="flex gap-2">
+            <UButton
+                variant="outline"
+                color="neutral"
+                size="md"
+                icon="i-lucide-filter"
+                :class="{ '!bg-elevated': showFilters }"
+                @click="showFilters = !showFilters"
+            >
+                {{ t('wallets.filters') }}
+            </UButton>
+        </div>
+
+        <!-- Filters -->
+        <div v-if="showFilters" class="border border-default rounded-lg p-4">
+            <ChargesFilter @filter-change="onFilterChange" />
+        </div>
+
+        <!-- Charges list -->
+        <div class="rounded-lg">
+            <template v-if="loadingCharges">
+                <div v-for="i in 5" :key="i" class="flex items-center gap-3 px-4 py-3 border-b border-default last:border-b-0">
+                    <USkeleton class="size-8 rounded-full shrink-0" />
+                    <div class="flex-1 space-y-1.5">
+                        <USkeleton class="h-4 w-1/3 rounded" />
+                        <USkeleton class="h-3 w-1/4 rounded" />
+                    </div>
+                    <USkeleton class="h-5 w-20 rounded" />
+                </div>
+            </template>
+            <template v-else>
+                <UAlert
+                    v-if="errorCharges"
+                    color="error"
+                    icon="i-lucide-alert-circle"
+                    :description="errorCharges"
+                    class="mb-3"
+                />
+                <div v-if="errorCharges" class="flex justify-center mt-2">
+                    <UButton
+                        variant="outline"
+                        color="neutral"
+                        size="md"
+                        @click="loadCharges(1)"
+                    >
+                        {{ t('retry') }}
+                    </UButton>
+                </div>
+                <template v-if="!errorCharges">
+                    <template v-for="[group, groupCharges] in chargesGrouped" :key="group">
+                        <!-- Day group header -->
+                        <div class="px-0 sm:px-4 py-2 -mx-4 sm:mx-0">
+                            <div class="flex items-center gap-2">
+                                <div class="w-6 shrink-0 h-px bg-black/10 dark:bg-white/10" />
+                                <span class="text-sm text-muted">{{ group }}</span>
+                                <div class="flex-1 h-px bg-black/10 dark:bg-white/10" />
+                            </div>
+                        </div>
+                        <ChargeItem
+                            v-for="charge in groupCharges"
+                            :key="charge.id"
+                            :charge="charge"
+                            :wallet="charge.wallet!"
+                            :show-wallet="true"
+                            @updated="onChargeUpdated"
+                            @deleted="onChargeDeleted"
+                            @tag-selected="selectTag"
+                        />
+                    </template>
+                    <div v-if="charges.length === 0" class="flex flex-col items-center justify-center py-12 text-muted">
+                        <UIcon name="i-lucide-receipt" class="size-10 mb-2 opacity-30" />
+                        <p class="text-sm">{{ t('charges.empty') }}</p>
+                    </div>
+
+                    <!-- Infinite scroll sentinel -->
+                    <div ref="sentinelRef" class="h-1" />
+
+                    <!-- Loading more spinner -->
+                    <div v-if="loadingMore" class="flex justify-center py-4">
+                        <UIcon name="i-lucide-loader-circle" class="size-5 animate-spin text-muted" />
+                        <span class="ml-2 text-sm text-muted">{{ t('charges.loadingMore') }}</span>
+                    </div>
+                </template>
+            </template>
+        </div>
+
+    </div>
+</template>

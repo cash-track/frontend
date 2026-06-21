@@ -1,44 +1,16 @@
-import { AxiosResponse } from 'axios';
-import { ApiCall, Repository } from '@/api/client';
+import { apiCall } from './client'
+import { Currency } from './models/currency'
 
-export interface CurrenciesRepositoryInterface {
-    get(): Promise<AxiosResponse<CurrenciesResponseInterface>>
-    getFeatured(): Promise<AxiosResponse<CurrenciesResponseInterface>>
+export async function getCurrencies(): Promise<Currency[]> {
+    return apiCall(async client => {
+        const res = await client.get('/api/currencies')
+        return (res.data.data as unknown[]).map(Currency.from)
+    })
 }
 
-export class CurrenciesRepository extends Repository implements CurrenciesRepositoryInterface {
-
-    @ApiCall()
-    public get(): Promise<AxiosResponse<CurrenciesResponseInterface>> {
-        return this.client.get<CurrenciesResponseInterface>('/api/currencies')
-    }
-
-    @ApiCall()
-    public getFeatured(): Promise<AxiosResponse<CurrenciesResponseInterface>> {
-        return this.client.get<CurrenciesResponseInterface>('/api/currencies/featured')
-    }
-}
-
-export interface CurrenciesResponseInterface {
-    data: Array<CurrencyInterface>;
-}
-
-export interface CurrencyInterface {
-    id: string;
-    code: string;
-    name: string;
-    char: string;
-    rate: number;
-    updatedAt: string;
-}
-
-export function emptyCurrency(): CurrencyInterface {
-    return {
-        id: '',
-        code: '',
-        name: '',
-        char: '',
-        rate: 0,
-        updatedAt: '',
-    }
+export async function getFeaturedCurrencies(): Promise<Currency[]> {
+    return apiCall(async client => {
+        const res = await client.get('/api/currencies/featured')
+        return (res.data.data as unknown[]).map(Currency.from)
+    })
 }

@@ -1,155 +1,130 @@
-<template>
-    <b-form novalidate @submit="onSubmit">
-        <b-card footer-tag="footer" header-tag="header">
-            <template v-slot:header>
-                <div class="text-md-center">
-                    <b>{{ $t('securitySettings.changePassword') }}</b>
-                </div>
-            </template>
+<script setup lang="ts">
+import { reactive, shallowRef } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { updatePassword } from '@/api/profile/password'
+import { useApiErrors } from '@/composables/useApiErrors'
 
-            <b-form-group
-                label-align-lg="right"
-                label-cols-lg="4"
-                label-for="currentPassword"
-                :invalid-feedback="validationMessage('currentPassword')"
-                :state="validationState('currentPassword')"
-            >
-                <template v-slot:label>{{ $t('securitySettings.currentPassword') }}</template>
-                <b-form-input
-                    id="currentPassword"
-                    v-model="form.currentPassword"
-                    required
-                    type="password"
-                    :disabled="isLoading"
-                    :state="validationState('currentPassword')"
-                    @change="resetValidationMessage('currentPassword')"
-                ></b-form-input>
-            </b-form-group>
+const { t } = useI18n()
+const { fieldErrors, generalError, handleError, reset } = useApiErrors()
 
-            <b-form-group
-                label-align-lg="right"
-                label-cols-lg="4"
-                label-for="newPassword"
-                :invalid-feedback="validationMessage('newPassword')"
-                :state="validationState('newPassword')"
-                :description="$t('securitySettings.newPasswordDescription')"
-            >
-                <template v-slot:label>{{ $t('securitySettings.newPassword') }}</template>
-                <b-form-input
-                    id="newPassword"
-                    v-model="form.newPassword"
-                    required
-                    type="password"
-                    :disabled="isLoading"
-                    :state="validationState('newPassword')"
-                    @change="resetValidationMessage('newPassword')"
-                ></b-form-input>
-            </b-form-group>
+const form = reactive({
+    currentPassword: '',
+    newPassword: '',
+    newPasswordConfirmation: '',
+})
 
-            <b-form-group
-                label-align-lg="right"
-                label-cols-lg="4"
-                label-for="newPasswordConfirmation"
-                :invalid-feedback="validationMessage('newPasswordConfirmation')"
-                :state="validationState('newPasswordConfirmation')"
-                :description="$t('securitySettings.newPasswordConfirmationDescription')"
-            >
-                <template v-slot:label>{{ $t('securitySettings.newPasswordConfirmation') }}</template>
-                <b-form-input
-                    id="newPasswordConfirmation"
-                    v-model="form.newPasswordConfirmation"
-                    required
-                    type="password"
-                    :disabled="isLoading"
-                    :state="validationState('newPasswordConfirmation')"
-                    @change="resetValidationMessage('newPasswordConfirmation')"
-                ></b-form-input>
-            </b-form-group>
+const loading = shallowRef(false)
+const successMessage = shallowRef('')
 
-            <b-alert
-                variant="warning"
-                fade
-                dismissible
-                :show="hasMessage"
-                @dismissed="resetMessage()"
-            >
-                <b-icon-exclamation-triangle-fill></b-icon-exclamation-triangle-fill>
-                {{ message }}
-            </b-alert>
+function resetForm() {
+    form.currentPassword = ''
+    form.newPassword = ''
+    form.newPasswordConfirmation = ''
+}
 
-            <b-alert
-                variant="success"
-                fade
-                dismissible
-                :show="successMessage !== ''"
-                @dismissed="successMessage = ''"
-            >
-                <b-icon-check2-circle></b-icon-check2-circle>
-                {{ successMessage }}
-            </b-alert>
+async function onSubmit() {
+    reset()
+    successMessage.value = ''
 
-            <template v-slot:footer>
-                <div class="text-center">
-                    <b-button variant="primary" type="submit" :disabled="isLoading">
-                        {{ $t('securitySettings.updatePassword') }}
-                        <b-spinner v-show="isLoading" small></b-spinner>
-                    </b-button>
-                </div>
-            </template>
-        </b-card>
-    </b-form>
-</template>
-
-<script lang="ts">
-import { Mixins, Component } from 'vue-property-decorator'
-import { AxiosResponse } from 'axios';
-import Loader from '@/shared/Loader';
-import Messager from '@/shared/Messager';
-import Validator from '@/shared/Validator';
-import {
-    ChangePasswordRequestInterface,
-    PasswordRepositoryInterface,
-    PasswordRepository
-} from '@/api/profile/password'
-import { MessageResponseInterface } from '@/api/responses';
-
-@Component
-export default class SecuritySettings extends Mixins(Loader, Messager, Validator) {
-    repository: PasswordRepositoryInterface = new PasswordRepository()
-
-    form: ChangePasswordRequestInterface = {
-        currentPassword: '',
-        newPassword: '',
-        newPasswordConfirmation: '',
-    }
-    successMessage = ''
-
-    protected onSubmit(event: Event) {
-        event.preventDefault()
-        event.stopPropagation()
-
-        this.resetValidationMessages()
-        this.resetMessage()
-        this.setLoading()
-        this.successMessage = ''
-
-        this.repository.change(this.form)
-            .then(this.onSuccess)
-            .catch(this.dispatchError)
-            .finally(this.setLoaded)
+    if (form.newPassword !== form.newPasswordConfirmation) {
+        fieldErrors.value = { newPasswordConfirmation: [t('securitySettings.newPasswordConfirmationDescription')] }
+        return
     }
 
-    protected onSuccess(response: AxiosResponse<MessageResponseInterface>) {
-        this.successMessage = response.data.message
-        this.form = {
-            currentPassword: '',
-            newPassword: '',
-            newPasswordConfirmation: '',
-        }
+    loading.value = true
+    try {
+        await updatePassword({
+            currentPassword: form.currentPassword,
+            newPassword: form.newPassword,
+            newPasswordConfirmation: form.newPasswordConfirmation,
+        })
+        successMessage.value = t('securitySettings.success')
+        resetForm()
+    } catch (error) {
+        handleError(error)
+    } finally {
+        loading.value = false
     }
 }
 </script>
 
-<style scoped>
+<template>
+    <UCard>
+        <template #header>
+            <h2 class="font-semibold text-lg">{{ t('securitySettings.changePassword') }}</h2>
+        </template>
 
-</style>
+        <div class="space-y-4">
+            <UFormField
+                :label="t('securitySettings.currentPassword')"
+                :error="fieldErrors.currentPassword?.[0]"
+                required
+            >
+                <UInput
+                    v-model="form.currentPassword"
+                    type="password"
+                    :disabled="loading"
+                    class="w-full"
+                    @change="reset()"
+                />
+            </UFormField>
+
+            <UFormField
+                :label="t('securitySettings.newPassword')"
+                :description="t('securitySettings.newPasswordDescription')"
+                :error="fieldErrors.newPassword?.[0]"
+                required
+            >
+                <UInput
+                    v-model="form.newPassword"
+                    type="password"
+                    :disabled="loading"
+                    class="w-full"
+                    @change="reset()"
+                />
+            </UFormField>
+
+            <UFormField
+                :label="t('securitySettings.newPasswordConfirmation')"
+                :description="t('securitySettings.newPasswordConfirmationDescription')"
+                :error="fieldErrors.newPasswordConfirmation?.[0]"
+                required
+            >
+                <UInput
+                    v-model="form.newPasswordConfirmation"
+                    type="password"
+                    :disabled="loading"
+                    class="w-full"
+                    @change="reset()"
+                />
+            </UFormField>
+
+            <UAlert
+                v-if="generalError"
+                color="error"
+                :description="generalError"
+                icon="i-lucide-alert-circle"
+            />
+
+            <UAlert
+                v-if="successMessage"
+                color="success"
+                :description="successMessage"
+                icon="i-lucide-check-circle"
+                close
+                @update:open="successMessage = ''"
+            />
+        </div>
+
+        <template #footer>
+            <div class="flex justify-end">
+                <UButton
+                    :label="t('securitySettings.updatePassword')"
+                    :loading="loading"
+                    :disabled="!form.currentPassword || !form.newPassword || !form.newPasswordConfirmation"
+                    @click="onSubmit"
+                />
+            </div>
+        </template>
+    </UCard>
+</template>

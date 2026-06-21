@@ -1,120 +1,97 @@
-<template>
-    <div>
-        <h6>{{ $t('profile.counters') }}</h6>
-        <b-list-group>
-            <b-list-group-item class="text-secondary">
-                <b-spinner v-if="!loadFailed && isLoading" small></b-spinner>
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { getCounterStats, type CounterStats } from '@/api/profile'
 
-                <div v-if="!loadFailed && !isLoading"
-                     class="d-flex justify-content-around"
-                >
-                    <div class="counter-item" :title="$t('profile.totalWalletsAmount')" v-b-tooltip.top>
-                        <b-icon-wallet></b-icon-wallet>
-                        <span>{{ counters.wallets }}</span>
-                    </div>
-                    <div class="counter-item" :title="$t('profile.archivedWalletsAmount')" v-b-tooltip.top>
-                        <b-icon-archive-fill></b-icon-archive-fill>
-                        <span>{{ counters.walletsArchived }}</span>
-                    </div>
-                </div>
+const { t } = useI18n()
 
-                <b-icon-exclamation-triangle-fill
-                    v-if="loadFailed && !isLoading"
-                    variant="warning"
-                ></b-icon-exclamation-triangle-fill>
-            </b-list-group-item>
-            <b-list-group-item class="text-secondary">
-                <b-spinner v-if="!loadFailed && isLoading" small></b-spinner>
+const counters = ref<CounterStats | null>(null)
+const loadFailed = ref(false)
 
-                <div v-if="!loadFailed && !isLoading"
-                     class="d-flex justify-content-around"
-                >
-                    <div class="counter-item" :title="$t('profile.totalChargesAmount')" v-b-tooltip.top>
-                        <b-icon-cash-stack></b-icon-cash-stack>
-                        <span>{{ counters.charges }}</span>
-                    </div>
-                    <div class="counter-item" :title="$t('profile.incomeChargesAmount')" v-b-tooltip.top>
-                        <b-icon-arrow-up variant="success"></b-icon-arrow-up>
+const chargesExpense = computed(() => {
+    if (!counters.value) return 0
+    return counters.value.charges - counters.value.chargesIncome
+})
 
-                        <span>{{ counters.chargesIncome }}</span>
-                    </div>
-                    <div class="counter-item" :title="$t('profile.expenseChargesAmount')" v-b-tooltip.top>
-                        <b-icon-arrow-down variant="danger"></b-icon-arrow-down>
-                        <span>{{ chargesExpense }}</span>
-                    </div>
-                </div>
-
-                <b-icon-exclamation-triangle-fill
-                    v-if="loadFailed && !isLoading"
-                    variant="warning"
-                ></b-icon-exclamation-triangle-fill>
-            </b-list-group-item>
-        </b-list-group>
-    </div>
-</template>
-
-<script lang="ts">
-import { Component, Vue } from 'vue-property-decorator'
-import {
-    CountersStatisticsInterface,
-    CountersStatisticsResponseInterface,
-    ProfileRepository,
-    ProfileRepositoryInterface
-} from '@/api/profile/profile';
-
-@Component
-export default class CountersStatistics extends Vue {
-    repository: ProfileRepositoryInterface = new ProfileRepository()
-
-    counters: CountersStatisticsInterface|null = null
-
-    loadFailed = false
-
-    mounted() {
-        this.load();
+onMounted(async () => {
+    try {
+        counters.value = await getCounterStats()
+    } catch {
+        loadFailed.value = true
     }
-
-    get isLoading(): boolean {
-        return this.counters === null;
-    }
-
-    get chargesExpense(): number {
-        if (this.counters === null) {
-            return 0;
-        }
-
-        return this.counters.charges - this.counters.chargesIncome;
-    }
-
-    protected load() {
-        this.loadFailed = false;
-
-        this.repository.getStatisticsCounters()
-            .then(response => {
-                this.onLoaded(response.data);
-
-                return response;
-            })
-            .catch(this.onError);
-    }
-
-    protected onLoaded(response: CountersStatisticsResponseInterface) {
-        this.counters = response.data;
-    }
-
-    protected onError() {
-        this.loadFailed = true;
-    }
-}
+})
 </script>
 
-<style lang="scss" scoped>
-.counter-item {
-    padding: 0 5px;
-    white-space: nowrap;
+<template>
+    <UCard>
+        <template #header>
+            <span class="text-sm font-semibold text-muted uppercase tracking-wide">
+                {{ t('profile.counters') }}
+            </span>
+        </template>
 
-    .b-icon {
-        margin-right: 5px;
-    }
-}
-</style>
+        <div v-if="loadFailed" class="flex justify-center py-2">
+            <UIcon name="i-lucide-triangle-alert" class="text-warning size-5" />
+        </div>
+
+        <div v-else-if="!counters" class="space-y-3">
+            <USkeleton class="h-8 rounded" />
+            <USkeleton class="h-8 rounded" />
+        </div>
+
+        <div v-else class="divide-y divide-default">
+            <!-- Wallets row -->
+            <div class="grid grid-cols-2 gap-x-3 py-3">
+                <UTooltip :text="t('profile.totalWalletsAmount')" :arrow="true">
+                    <div class="flex flex-col items-center text-center gap-1 text-muted cursor-default">
+                        <div class="flex items-center gap-1.5">
+                            <UIcon name="i-lucide-wallet" class="size-4 shrink-0" />
+                            <span class="font-semibold">{{ counters.wallets }}</span>
+                        </div>
+                        <span class="text-xs text-muted leading-tight">{{ t('profile.totalWalletsAmount') }}</span>
+                    </div>
+                </UTooltip>
+                <UTooltip :text="t('profile.archivedWalletsAmount')" :arrow="true">
+                    <div class="flex flex-col items-center text-center gap-1 text-muted cursor-default">
+                        <div class="flex items-center gap-1.5">
+                            <UIcon name="i-lucide-archive" class="size-4 shrink-0" />
+                            <span class="font-semibold">{{ counters.walletsArchived }}</span>
+                        </div>
+                        <span class="text-xs text-muted leading-tight">{{ t('profile.archivedWalletsAmount') }}</span>
+                    </div>
+                </UTooltip>
+            </div>
+
+            <!-- Charges row -->
+            <div class="grid grid-cols-3 gap-x-3 py-3">
+                <UTooltip :text="t('profile.totalChargesAmount')" :arrow="true">
+                    <div class="flex flex-col items-center text-center gap-1 text-muted cursor-default">
+                        <div class="flex items-center gap-1.5">
+                            <UIcon name="i-lucide-banknote" class="size-4 shrink-0" />
+                            <span class="font-semibold">{{ counters.charges }}</span>
+                        </div>
+                        <span class="text-xs text-muted leading-tight">{{ t('profile.totalChargesAmount') }}</span>
+                    </div>
+                </UTooltip>
+                <UTooltip :text="t('profile.incomeChargesAmount')" :arrow="true">
+                    <div class="flex flex-col items-center text-center gap-1 text-success cursor-default">
+                        <div class="flex items-center gap-1.5">
+                            <UIcon name="i-lucide-arrow-up" class="size-4 shrink-0" />
+                            <span class="font-semibold">{{ counters.chargesIncome }}</span>
+                        </div>
+                        <span class="text-xs text-muted leading-tight">{{ t('profile.incomeChargesAmount') }}</span>
+                    </div>
+                </UTooltip>
+                <UTooltip :text="t('profile.expenseChargesAmount')" :arrow="true">
+                    <div class="flex flex-col items-center text-center gap-1 text-error cursor-default">
+                        <div class="flex items-center gap-1.5">
+                            <UIcon name="i-lucide-arrow-down" class="size-4 shrink-0" />
+                            <span class="font-semibold">{{ chargesExpense }}</span>
+                        </div>
+                        <span class="text-xs text-muted leading-tight">{{ t('profile.expenseChargesAmount') }}</span>
+                    </div>
+                </UTooltip>
+            </div>
+        </div>
+    </UCard>
+</template>

@@ -1,59 +1,51 @@
-<template>
-    <div class="profile">
-        <b-row>
-            <b-col md="12">
-                <wallets-active-short-list class="mb-4"></wallets-active-short-list>
-            </b-col>
+<script setup lang="ts">
+import { storeToRefs } from 'pinia'
+import { useProfileStore } from '@/stores/profile'
+import ProfileAvatarBadge from '@/components/profile/ProfileAvatarBadge.vue'
+import ProfileTitle from '@/components/profile/ProfileTitle.vue'
+import CountersStatistics from '@/components/profile/CountersStatistics.vue'
+import ChargesFlowStatistics from '@/components/profile/ChargesFlowStatistics.vue'
+import LatestWallets from '@/components/profile/LatestWallets.vue'
+import CommonTags from '@/components/profile/CommonTags.vue'
 
-            <b-col md="4">
-                <profile-title></profile-title>
-
-                <hr>
-
-                <counters-statistics></counters-statistics>
-
-                <hr>
-            </b-col>
-            <b-col md="8">
-                <email-is-not-confirmed-alert></email-is-not-confirmed-alert>
-
-                <charges-flow-statistics></charges-flow-statistics>
-
-                <common-tags></common-tags>
-            </b-col>
-            <b-col md="12">
-                <latest-wallets></latest-wallets>
-            </b-col>
-        </b-row>
-    </div>
-</template>
-
-<script lang="ts">
-import { Vue, Component } from 'vue-property-decorator'
-import ProfileTitle from '@/components/profile/ProfileTitle.vue';
-import EmailIsNotConfirmedAlert from '@/components/profile/EmailIsNotConfirmedAlert.vue';
-import ChargesFlowStatistics from '@/components/profile/ChargesFlowStatistics.vue';
-import CountersStatistics from '@/components/profile/CountersStatistics.vue';
-import LatestWallets from '@/components/profile/LatestWallets.vue';
-import CommonTags from '@/components/profile/CommonTags.vue';
-import WalletsActiveShortList from '@/components/wallets/WalletsActiveShortList.vue';
-
-@Component({
-    components: {
-        WalletsActiveShortList,
-        CountersStatistics,
-        ChargesFlowStatistics,
-        ProfileTitle,
-        EmailIsNotConfirmedAlert,
-        LatestWallets,
-        CommonTags,
-    }
-})
-export default class ProfileView extends Vue {}
+const { profile } = storeToRefs(useProfileStore())
 </script>
 
-<style lang="scss" scoped>
-.profile .chapter {
-    padding-top: 20px;
-}
-</style>
+<template>
+    <UContainer class="py-6 space-y-8">
+        <!-- Profile header: avatar + title -->
+        <div v-if="profile" class="flex items-center gap-4">
+            <ProfileAvatarBadge :user="profile" />
+            <ProfileTitle :user="profile" />
+        </div>
+        <div v-else class="flex items-center gap-4">
+            <USkeleton class="size-24 rounded-full" />
+            <div class="space-y-2">
+                <USkeleton class="h-6 w-40 rounded" />
+                <USkeleton class="h-4 w-28 rounded" />
+                <USkeleton class="h-4 w-36 rounded" />
+            </div>
+        </div>
+
+        <!-- Two-column layout: counters + stats -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Left: counters -->
+            <div class="space-y-6">
+                <CountersStatistics />
+            </div>
+
+            <!-- Right: charges flow stats -->
+            <div class="md:col-span-2 space-y-4">
+                <ChargesFlowStatistics />
+            </div>
+        </div>
+
+        <!-- Common tags (full width) -->
+        <CommonTags />
+
+        <!-- Latest wallets (full width) -->
+        <div class="border-t border-default pt-6">
+            <LatestWallets />
+        </div>
+    </UContainer>
+</template>

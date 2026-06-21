@@ -1,26 +1,21 @@
-<template>
-    <span class="profile-avatar-badge">
-        <profile-avatar :user="user" class="mr-2"></profile-avatar>
-        <slot name="default">{{ user.name }}</slot>
-    </span>
-</template>
+<script setup lang="ts">
+import { computed } from 'vue'
+import { useAuthStore } from '@/stores/auth'
+import type { User } from '@/api/models/user'
+import ProfileAvatar from './ProfileAvatar.vue'
 
-<script lang="ts">
-import { Vue, Component, Prop } from 'vue-property-decorator'
-import { UserInterface } from '@/api/users';
-import ProfileAvatar from '@/components/profile/ProfileAvatar.vue';
+const props = defineProps<{ user: User }>()
 
-@Component({
-    components: {ProfileAvatar}
-})
-export default class ProfileAvatarBadge extends Vue {
-    @Prop({required: true})
-    user!: UserInterface
-}
+const auth = useAuthStore()
+const isEmailConfirmed = computed(() => auth.isEmailConfirmed)
 </script>
 
-<style lang="scss" scoped>
-    .profile-avatar-badge {
-        margin-right: 10px;
-    }
-</style>
+<template>
+    <div class="relative inline-block">
+        <ProfileAvatar :user="props.user" class="size-24 text-2xl" />
+        <span
+            class="absolute bottom-0 right-0 size-4 rounded-full border-2 border-white"
+            :class="isEmailConfirmed ? 'bg-success' : 'bg-warning'"
+        />
+    </div>
+</template>

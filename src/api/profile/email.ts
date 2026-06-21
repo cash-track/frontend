@@ -1,35 +1,39 @@
-import { AxiosResponse } from 'axios';
-import { ApiCall, Repository } from '@/api/client';
-import { MessageResponseInterface } from '@/api/responses';
+import { apiCall } from '../client'
 
-export interface EmailConfirmationRepositoryInterface {
-    get(): Promise<AxiosResponse<EmailConfirmationResponseInterface>>
-    resend(): Promise<AxiosResponse<MessageResponseInterface>>
+export interface EmailConfirmation {
+    email: string
+    createdAt: Date
+    resendTimeLimit: number
+    validTimeLimit: number
+    timeSentAgo: number
+    isThrottled: boolean
+    isValid: boolean
 }
 
-export class EmailConfirmationRepository extends Repository implements EmailConfirmationRepositoryInterface {
-
-    @ApiCall()
-    public get(): Promise<AxiosResponse<EmailConfirmationResponseInterface>> {
-        return this.client.get<EmailConfirmationResponseInterface>(`/api/auth/email/confirmation`)
-    }
-
-    @ApiCall()
-    public resend(): Promise<AxiosResponse<MessageResponseInterface>> {
-        return this.client.post<MessageResponseInterface>(`/api/auth/email/confirmation/resend`)
-    }
+export async function getEmailConfirmation(): Promise<EmailConfirmation> {
+    return apiCall(async client => {
+        const res = await client.get('/api/auth/email/confirmation')
+        const d = res.data.data as Record<string, unknown>
+        return {
+            email: typeof d.email === 'string' ? d.email : '',
+            createdAt: new Date(typeof d.createdAt === 'string' ? d.createdAt : ''),
+            resendTimeLimit: typeof d.resendTimeLimit === 'number' ? d.resendTimeLimit : 0,
+            validTimeLimit: typeof d.validTimeLimit === 'number' ? d.validTimeLimit : 0,
+            timeSentAgo: typeof d.timeSentAgo === 'number' ? d.timeSentAgo : 0,
+            isThrottled: typeof d.isThrottled === 'boolean' ? d.isThrottled : false,
+            isValid: typeof d.isValid === 'boolean' ? d.isValid : false,
+        }
+    })
 }
 
-export interface EmailConfirmationInterface {
-    email: string;
-    createdAt: string;
-    resendTimeLimit: number;
-    validTimeLimit: number;
-    timeSentAgo: number;
-    isThrottled: boolean;
-    isValid: boolean;
+export async function confirmEmail(token: string): Promise<void> {
+    return apiCall(async client => {
+        await client.get(`/api/auth/email/confirmation/confirm/${encodeURIComponent(token)}`)
+    })
 }
 
-export interface EmailConfirmationResponseInterface {
-    data: EmailConfirmationInterface;
+export async function resendEmailConfirmation(): Promise<void> {
+    return apiCall(async client => {
+        await client.post('/api/auth/email/confirmation/resend')
+    })
 }

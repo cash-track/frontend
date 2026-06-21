@@ -1,170 +1,167 @@
-<template>
-    <b-form novalidate @submit="onSubmit" class="wallet-update">
-        <b-card footer-tag="footer" header-tag="header">
-            <template v-slot:header>{{ $t('wallets.editTitle') }}</template>
+<script setup lang="ts">
+import { reactive, shallowRef, computed, onMounted, onUnmounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
+import { updateWallet, deleteWallet } from '@/api/wallets'
+import { getFeaturedCurrencies } from '@/api/currency'
+import type { Currency } from '@/api/models/currency'
+import type { Wallet } from '@/api/models/wallet'
+import { useApiErrors } from '@/composables/useApiErrors'
+import { useWalletsStore } from '@/stores/wallets'
+import ConfirmModal from '@/components/Shared/ConfirmModal.vue'
 
-            <email-is-not-confirmed-alert></email-is-not-confirmed-alert>
+const props = defineProps<{ wallet: Wallet }>()
 
-            <b-form-group
-                label-align-lg="right"
-                label-cols-lg="2"
-                label-for="name"
-                :invalid-feedback="validationMessage('name')"
-                :state="validationState('name')"
-            >
-                <template v-slot:label>{{ $t('wallets.formName') }}</template>
-                <b-form-input
-                    id="name"
-                    v-model="form.name"
-                    class="col-md-12"
-                    required
-                    type="text"
-                    :disabled="isLoading"
-                    :state="validationState('name')"
-                    @change="resetValidationMessage('name')"
-                ></b-form-input>
-            </b-form-group>
+const { t } = useI18n()
+const router = useRouter()
+const walletsStore = useWalletsStore()
+const { fieldErrors, generalError, handleError, reset } = useApiErrors()
 
-            <b-form-group
-                label-align-lg="right"
-                label-cols-lg="2"
-                label-for="defaultCurrencyCode"
-                :invalid-feedback="validationMessage('defaultCurrencyCode')"
-                :state="validationState('defaultCurrencyCode')"
-                :description="$t('wallets.formCurrencyDescription')"
-            >
-                <template v-slot:label>{{ $t('wallets.formCurrency') }}</template>
-                <b-form-select
-                    id="defaultCurrencyCode"
-                    v-model="form.defaultCurrencyCode"
-                    required
-                    type="text"
-                    :disabled="isLoading"
-                    :state="validationState('defaultCurrencyCode')"
-                    @change="resetValidationMessage('defaultCurrencyCode')"
-                >
-                    <b-form-select-option
-                        v-for="currency of currencies"
-                        v-bind:key="currency.code"
-                        :value="currency.code"
-                    >
-                        {{ currency.code }}
-                    </b-form-select-option>
-                </b-form-select>
-            </b-form-group>
-
-            <warning-message :message="message" :show="hasMessage" @dismissed="resetMessage"></warning-message>
-
-            <template v-slot:footer>
-                <div class="text-center">
-                    <b-button variant="secondary" :to="{name: 'wallets.show', params: {walletID: wallet.id.toString(), nameForTitle: wallet.name}}">
-                        {{ $t('wallets.cancel') }}
-                    </b-button>
-
-                    <b-button
-                        :disabled="!isEmailConfirmed || isLoading"
-                        type="submit"
-                        variant="primary"
-                        @click="onSubmit"
-                    >
-                        {{ $t('wallets.update') }}
-                        <b-spinner v-show="isLoading" small></b-spinner>
-                    </b-button>
-                </div>
-            </template>
-        </b-card>
-    </b-form>
-</template>
-
-<script lang="ts">
-import {Component, Mixins, Prop, Watch} from 'vue-property-decorator'
-import { AxiosResponse } from 'axios';
-import Loader from '@/shared/Loader';
-import Messager from '@/shared/Messager';
-import Validator from '@/shared/Validator';
-import {
-    WalletInterface,
-    WalletResponseInterface,
-    WalletUpdateRequestInterface,
-    WalletsRepository,
-    WalletsRepositoryInterface
-} from '@/api/wallets';
-import WarningMessage from '@/components/shared/WarningMessage.vue';
-import { CurrencyInterface, CurrenciesRepository, CurrenciesRepositoryInterface } from '@/api/currency';
-import EmailIsNotConfirmedAlert from '@/components/profile/EmailIsNotConfirmedAlert.vue';
-
-@Component({
-    components: {EmailIsNotConfirmedAlert, WarningMessage}
+const form = reactive({
+    name: props.wallet.name,
+    defaultCurrencyCode: props.wallet.defaultCurrencyCode ?? '',
 })
-export default class WalletEdit extends Mixins(Loader, Messager, Validator) {
-    @Prop({
-        required: true
-    })
-    wallet!: WalletInterface
 
-    walletsRepository: WalletsRepositoryInterface = new WalletsRepository();
-    currenciesRepository: CurrenciesRepositoryInterface = new CurrenciesRepository()
+const currencies = shallowRef<Currency[]>([])
+const loading = shallowRef(false)
+const saved = shallowRef(false)
+const deleteConfirmOpen = shallowRef(false)
+const deleting = shallowRef(false)
 
-    form: WalletUpdateRequestInterface = {
-        name: '',
-        isPublic: false,
-        defaultCurrencyCode: '',
+let redirectTimeout: ReturnType<typeof setTimeout> | null = null
+
+onUnmounted(() => {
+    if (redirectTimeout !== null) clearTimeout(redirectTimeout)
+})
+
+const currencyOptions = computed(() =>
+    currencies.value.map(c => ({ label: `${c.code} — ${c.name}`, value: c.code })),
+)
+
+watch(() => props.wallet, (wallet) => {
+    form.name = wallet.name
+    form.defaultCurrencyCode = wallet.defaultCurrencyCode ?? ''
+})
+
+onMounted(async () => {
+    try {
+        currencies.value = await getFeaturedCurrencies()
+    } catch {
+        // non-fatal
     }
+})
 
-    currencies: Array<CurrencyInterface> = []
-
-    mounted() {
-        this.loadCurrencies()
-    }
-
-    get isEmailConfirmed(): boolean {
-        return this.$store.state.isEmailConfirmed
-    }
-
-    @Watch('wallet')
-    protected onWalletLoaded() {
-        this.form = {
-            name: this.wallet.name,
-            isPublic: this.wallet.isPublic,
-            defaultCurrencyCode: this.wallet.defaultCurrencyCode
-        }
-    }
-
-    protected loadCurrencies() {
-        this.currenciesRepository.get().then(response => {
-            this.currencies = response.data.data
-        }).catch(this.dispatchError)
-    }
-
-    protected onSubmit(event: Event) {
-        event.preventDefault()
-        event.stopPropagation()
-
-        this.resetValidationMessages()
-        this.resetMessage()
-        this.setLoading()
-
-        this.walletsRepository.update(this.wallet.id, this.form)
-            .then(this.onSuccess)
-            .catch(this.dispatchError)
-            .finally(this.setLoaded)
-    }
-
-    protected onSuccess(response: AxiosResponse<WalletResponseInterface>) {
-        this.$store.dispatch('loadActiveWallets')
-        this.$router.push({
-            name: 'wallets.show',
-            params: {
-                walletID: response.data.data.id.toString(),
-                nameForTitle: this.form.name,
-            }
+async function onSubmit() {
+    reset()
+    loading.value = true
+    try {
+        await updateWallet(props.wallet.id, {
+            name: form.name,
+            defaultCurrencyCode: form.defaultCurrencyCode,
         })
+        await walletsStore.loadActive()
+        saved.value = true
+        redirectTimeout = setTimeout(() => {
+            router.push({ name: 'wallets.show', params: { walletID: props.wallet.id.toString() } })
+        }, 1000)
+    } catch (error) {
+        handleError(error)
+    } finally {
+        loading.value = false
+    }
+}
+
+async function onDelete() {
+    deleting.value = true
+    try {
+        await deleteWallet(props.wallet.id)
+        await walletsStore.loadActive()
+        router.push({ name: 'wallets' })
+    } catch (error) {
+        handleError(error)
+        deleteConfirmOpen.value = false
+    } finally {
+        deleting.value = false
     }
 }
 </script>
 
-<style lang="scss" scoped>
-.wallet-update .card-footer button {
-    margin: 0 5px;
-}
-</style>
+<template>
+    <UCard>
+        <template #header>
+            <div class="flex justify-between items-center">
+                <h2 class="font-semibold text-lg">{{ t('wallets.editTitle') }}</h2>
+                <UButton
+                    color="error"
+                    variant="ghost"
+                    icon="i-lucide-trash-2"
+                    :label="t('wallets.delete')"
+                    @click="deleteConfirmOpen = true"
+                />
+            </div>
+        </template>
+
+        <div class="space-y-4">
+            <UFormField :label="t('wallets.formName')" :error="fieldErrors.name?.[0]" required>
+                <UInput
+                    v-model="form.name"
+                    :disabled="loading"
+                    :placeholder="t('wallets.formName')"
+                    class="w-full"
+                    size="lg"
+                />
+            </UFormField>
+
+            <UFormField
+                :label="t('wallets.formCurrency')"
+                :description="t('wallets.formCurrencyDescription')"
+                :error="fieldErrors.defaultCurrencyCode?.[0]"
+                required
+            >
+                <USelect
+                    v-model="form.defaultCurrencyCode"
+                    :items="currencyOptions"
+                    :disabled="loading"
+                    class="w-full"
+                    size="lg"
+                />
+            </UFormField>
+
+            <UAlert
+                v-if="generalError"
+                color="error"
+                :description="generalError"
+                icon="i-lucide-alert-circle"
+            />
+        </div>
+
+        <template #footer>
+            <div class="flex justify-end gap-2">
+                <UButton
+                    variant="ghost"
+                    :label="t('wallets.cancel')"
+                    :to="{ name: 'wallets.show', params: { walletID: wallet.id.toString() } }"
+                    :disabled="loading"
+                />
+                <UButton
+                    :label="t('wallets.update')"
+                    :loading="loading"
+                    :icon="saved ? 'i-lucide-check' : undefined"
+                    :color="saved ? 'success' : undefined"
+                    :disabled="loading || saved || !form.name || !form.defaultCurrencyCode"
+                    @click="onSubmit"
+                />
+            </div>
+        </template>
+    </UCard>
+
+    <ConfirmModal
+        v-model:open="deleteConfirmOpen"
+        :title="t('wallets.delete')"
+        :description="t('wallets.deletingConfirm', { name: wallet.name })"
+        :confirm-label="t('wallets.delete')"
+        :cancel-label="t('wallets.cancel')"
+        :loading="deleting"
+        @confirm="onDelete"
+    />
+</template>

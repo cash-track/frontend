@@ -1,282 +1,174 @@
-<template>
-    <b-form-group
-        label-for="tags-autocomplete"
-        class="autocomplete-root"
-        :invalid-feedback="validationMessage"
-        :state="validationState"
-        v-click-outside="onInputInactive"
-    >
-        <b-spinner small class="loader" v-if="autocompleteLoading"></b-spinner>
-        <b-input
-            type="text"
-            id="tags-autocomplete"
-            required
-            :placeholder="$t('tags.tags')"
-            v-model="name"
-            :disabled="disabled"
-            :state="validationState"
-            @keyup="onAutocomplete"
-            @focusin="onInputActive"
-            autocomplete="off"
-        ></b-input>
-        <b-list-group class="autocomplete" v-show="suggestionActive">
-            <b-list-group-item v-if="autocompleteActive">
-                <span v-if="autocompleteFiltered.length" class="list-container">
-                    <tag v-for="tag of autocompleteFiltered"
-                         :tag="tag"
-                         :key="tag.id"
-                         @selected="onSelected"
-                    ></tag>
-                </span>
-                <create-tag :name="nameAutocomplete"
-                            v-if="canCreate"
-                            @selected="onSelected"
-                ></create-tag>
-                <span v-else-if="!autocompleteFiltered.length"
-                      class="text-notice text-muted"
-                >{{ $t('tags.autocompleteHint') }}</span>
-            </b-list-group-item>
-            <b-list-group-item v-if="!autocompleteActive">
-                <div v-if="suggestionsFiltered.length">
-                    <tag v-for="tag of suggestionsFiltered"
-                         :tag="tag"
-                         :key="tag.id"
-                         @selected="onSelected"
-                    ></tag>
-                </div>
-                <span v-else class="text-notice text-muted">{{ $t('tags.autocompleteHint') }}</span>
-            </b-list-group-item>
-        </b-list-group>
-    </b-form-group>
-</template>
+<script setup lang="ts">
+import { ref, computed, watch, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { getWalletTags, searchWalletTags } from '@/api/tags'
+import type { Tag } from '@/api/models/tag'
+import TagChip from '@/components/tags/Tag.vue'
 
-<script lang="ts">
-import { Vue, Component, Prop, Watch } from 'vue-property-decorator'
-import { AxiosResponse } from 'axios';
-import { WalletsRepository, WalletsRepositoryInterface } from '@/api/wallets';
-import { TagInterface, TagsResponseInterface } from '@/api/tags';
-import Tag from '@/components/tags/Tag.vue';
-import CreateTag, { parseEmoji } from '@/components/tags/CreateTag.vue';
+const props = defineProps<{
+    walletId: number
+    tags: Tag[]
+    initialTags?: Tag[]
+    disabled?: boolean
+}>()
 
-@Component({
-    components: {Tag, CreateTag}
+const emit = defineEmits<{
+    selected: [tag: Tag]
+}>()
+
+const { t } = useI18n()
+
+const query = ref('')
+const suggestions = ref<Tag[]>([])
+const searchResults = ref<Tag[]>([])
+const dropdownOpen = ref(false)
+const loading = ref(false)
+const debounceHandle = ref<ReturnType<typeof setTimeout> | null>(null)
+const lastQuery = ref('')
+const highlightedIndex = ref(-1)
+
+const addedTagIds = computed(() => new Set(props.tags.map(tag => tag.id)))
+
+const isSearchMode = computed(() => query.value.trim().length > 0)
+
+const displayedTags = computed(() => {
+    const source = isSearchMode.value ? searchResults.value : suggestions.value
+    return source.filter(tag => !addedTagIds.value.has(tag.id))
 })
-export default class TagFormInput extends Vue {
-    @Prop({
-        required: true,
-        type: Number,
-    })
-    walletId!: number
 
-    @Prop({
-        required: true,
-        type: Array,
-        default: [],
-    })
-    tags!: Array<TagInterface>
+function loadSuggestions() {
+    if (props.initialTags !== undefined) {
+        suggestions.value = props.initialTags
+        return
+    }
+    getWalletTags(props.walletId)
+        .then(tags => { suggestions.value = tags })
+        .catch(() => {})
+}
 
-    @Prop({
-        required: false,
-        type: Boolean,
-        default: false,
-    })
-    disabled!: boolean
+function onInput() {
+    const q = query.value.trim()
+    highlightedIndex.value = -1
 
-    @Prop({
-        required: false,
-        type: Boolean,
-        default: null,
-    })
-    validationState!: boolean|null
-
-    @Prop({
-        required: false,
-        type: String,
-        default: null,
-    })
-    validationMessage!: string|null
-
-    @Prop({
-        required: false,
-        type: Boolean,
-        default: false,
-    })
-    resetState!: boolean|null
-
-    walletsRepository: WalletsRepositoryInterface = new WalletsRepository()
-
-    name = ''
-
-    suggestions: Array<TagInterface> = []
-    suggestionActive = false
-
-    autocomplete: Array<TagInterface> = []
-    autocompleteActive = false
-    autocompleteLoading = false
-    autocompleteDebounceHandle: number|null = null
-    lastAutocompleteQuery = ''
-
-    get suggestionsFiltered(): Array<TagInterface> {
-        const addedTags = this.tags.map(tag => tag.name)
-
-        return this.suggestions.filter(tag => addedTags.indexOf(tag.name) === -1)
+    if (q === '') {
+        searchResults.value = []
+        dropdownOpen.value = displayedTags.value.length > 0
+        return
     }
 
-    get autocompleteFiltered(): Array<TagInterface> {
-        const addedTags = this.tags.map(tag => tag.name)
+    if (lastQuery.value === q) return
+    lastQuery.value = q
 
-        return this.autocomplete.filter(tag => addedTags.indexOf(tag.name) === -1)
+    if (debounceHandle.value !== null) {
+        clearTimeout(debounceHandle.value)
     }
 
-    get canCreate(): boolean {
-        const name = this.nameAutocomplete
+    loading.value = true
+    debounceHandle.value = setTimeout(() => {
+        debounceHandle.value = null
+        searchWalletTags(props.walletId, q)
+            .then(tags => {
+                searchResults.value = tags
+                dropdownOpen.value = displayedTags.value.length > 0
+            })
+            .catch(() => {})
+            .finally(() => { loading.value = false })
+    }, 300)
+}
 
-        if (name.trim() === '') {
-            return false
-        }
+function onSelect(tag: Tag) {
+    if (addedTagIds.value.has(tag.id)) return
+    emit('selected', tag)
+    query.value = ''
+    searchResults.value = []
+    highlightedIndex.value = -1
+    dropdownOpen.value = false
+}
 
-        if (name.trim().length < 3) {
-            return false
-        }
+function onKeyDown(e: KeyboardEvent) {
+    if (!dropdownOpen.value || displayedTags.value.length === 0) return
 
-        return this.tags.map(tag => tag.name).indexOf(name.trim()) === -1
-    }
-
-    get nameAutocomplete(): string {
-        return parseEmoji(this.name)[0]
-    }
-
-    mounted() {
-        this.loadSuggestions()
-    }
-
-    @Watch('walletId')
-    protected loadSuggestions() {
-        if (this.walletId === undefined) {
-            return
-        }
-
-        this.walletsRepository.getTags(this.walletId).then(response => {
-            this.suggestions = response.data.data
-        }).catch(error => {
-            console.error('Unable to load tags suggestions')
-            console.debug(error)
-        })
-    }
-
-    protected onAutocomplete() {
-        const query = this.nameAutocomplete
-
-        if (query.trim() === '' || this.walletId === undefined) {
-            this.autocompleteActive = false
-            return
-        }
-
-        this.autocompleteActive = true
-
-        if (this.lastAutocompleteQuery === query) {
-            return
-        }
-
-        this.lastAutocompleteQuery = query
-
-        if (this.autocompleteDebounceHandle !== null) {
-            window.clearTimeout(this.autocompleteDebounceHandle)
-        }
-
-        this.autocompleteLoading = true
-
-        this.autocompleteDebounceHandle = window.setTimeout(() => {
-            this.autocompleteDebounceHandle = null
-
-            this.walletsRepository.searchTags(this.walletId, query)
-                .then(this.onTagsAutocompleteLoaded)
-                .catch(error => {
-                    console.error('Unable to load tags autocomplete for query: ' + query)
-                    console.debug(error)
-                })
-                .finally(() => {
-                    this.autocompleteLoading = false
-                })
-        }, 500)
-    }
-
-    protected onTagsAutocompleteLoaded(response: AxiosResponse<TagsResponseInterface>) {
-        this.autocomplete = response.data.data
-    }
-
-    protected onSelected(tag: TagInterface) {
-        for (const addedTag of this.tags) {
-            if (addedTag.name === tag.name) {
-                return
-            }
-        }
-
-        this.$emit('selected', tag)
-
-        this.name = ''
-
-        this.onAutocomplete()
-
-        console.log(tag)
-    }
-
-    protected onInputActive() {
-        this.suggestionActive = true
-    }
-
-    protected onInputInactive() {
-        this.suggestionActive = false
-    }
-
-    @Watch('resetState')
-    protected onReset() {
-        this.name = ''
-        this.autocomplete = []
-        this.suggestionActive = false
-        this.loadSuggestions()
+    if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        highlightedIndex.value = Math.min(highlightedIndex.value + 1, displayedTags.value.length - 1)
+    } else if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        highlightedIndex.value = Math.max(highlightedIndex.value - 1, 0)
+    } else if (e.key === 'Enter' && highlightedIndex.value >= 0) {
+        e.preventDefault()
+        onSelect(displayedTags.value[highlightedIndex.value])
+    } else if (e.key === 'Escape') {
+        dropdownOpen.value = false
     }
 }
+
+function onFocus() {
+    dropdownOpen.value = displayedTags.value.length > 0
+}
+
+function onBlur() {
+    setTimeout(() => { dropdownOpen.value = false }, 200)
+}
+
+function reset() {
+    query.value = ''
+    searchResults.value = []
+    dropdownOpen.value = false
+    highlightedIndex.value = -1
+    loadSuggestions()
+}
+
+watch(query, (val) => {
+    if (val === '') {
+        searchResults.value = []
+        highlightedIndex.value = -1
+        dropdownOpen.value = displayedTags.value.length > 0
+        return
+    }
+    onInput()
+})
+
+watch(() => props.walletId, () => loadSuggestions())
+watch(() => props.initialTags, (tags) => {
+    if (tags !== undefined) suggestions.value = tags
+}, { deep: true })
+
+onMounted(() => loadSuggestions())
+
+defineExpose({ reset })
 </script>
 
-<style lang="scss" scoped>
-.autocomplete-root {
-    position: relative;
-
-    .loader {
-        color: #495057;
-        position: absolute;
-        top: 10px;
-        right: 12px;
-        font-size: 14px;
-    }
-
-    .autocomplete {
-        position: absolute;
-        z-index: 3;
-        width: 100%;
-        box-shadow: rgb(238 238 238) 0 4px 4px;
-        margin-top: -3px;
-
-        .list-container {
-            margin-right: 5px;
-        }
-
-        .text-notice {
-            font-size: 14px;
-        }
-
-        .list-group-item {
-            padding: 10px 10px;
-            border-top-width: 0;
-
-            overflow: scroll;
-            white-space: pre;
-            vertical-align: top;
-            position: relative;
-            width: 100%;
-            padding-right: 28px;
-        }
-    }
-}
-</style>
+<template>
+    <div class="relative">
+        <UInput
+            v-model="query"
+            :placeholder="t('tags.tags')"
+            :disabled="disabled"
+            autocomplete="off"
+            class="w-full"
+            size="lg"
+            @focus="onFocus"
+            @blur="onBlur"
+            @keydown="onKeyDown"
+        >
+            <template #trailing>
+                <UIcon v-if="loading" name="i-lucide-loader-circle" class="animate-spin size-4 shrink-0 text-dimmed" />
+            </template>
+        </UInput>
+        <div
+            v-if="dropdownOpen && displayedTags.length > 0"
+            class="absolute z-10 -mt-1 border-t-0 rounded-t-none w-full rounded-md border border-default bg-default shadow-lg p-2 flex gap-1 overflow-x-auto"
+        >
+            <TagChip
+                v-for="(tag, index) in displayedTags"
+                :key="tag.id"
+                :tag="tag"
+                :highlighted="index === highlightedIndex"
+                @mousedown.prevent="onSelect(tag)"
+            />
+        </div>
+        <p v-if="dropdownOpen && displayedTags.length === 0 && !loading && query.trim()" class="absolute z-10 mt-1 w-full rounded-md border border-default bg-default shadow-lg p-3 text-sm text-muted">
+            {{ t('tags.autocompleteHint') }}
+        </p>
+    </div>
+</template>

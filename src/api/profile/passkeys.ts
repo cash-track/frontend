@@ -1,79 +1,42 @@
-import { AxiosResponse } from 'axios';
-import { ApiCall, Repository } from '@/api/client';
-import { PublicKeyCredentialCreationOptionsJSON } from '@simplewebauthn/types';
+import { apiCall } from '../client'
+import { Passkey } from '../models/passkey'
 
-export interface PasskeysRepositoryInterface {
-    get(): Promise<AxiosResponse<PasskeysResponseInterface>>
-    init(request: InitPasskeyRequestInterface): Promise<AxiosResponse<InitPasskeyResponseInterface>>
-    store(request: StorePasskeyRequestInterface): Promise<AxiosResponse<StorePasskeyResponseInterface>>
-    delete(passkeyId: number): Promise<AxiosResponse>
-}
-
-export class PasskeysRepository extends Repository implements PasskeysRepositoryInterface {
-
-    @ApiCall()
-    public get(): Promise<AxiosResponse<PasskeysResponseInterface>> {
-        return this.client.get<PasskeysResponseInterface>('/api/profile/passkey')
-    }
-
-    @ApiCall()
-    public init(request: InitPasskeyRequestInterface): Promise<AxiosResponse<InitPasskeyResponseInterface>> {
-        return this.client.post<InitPasskeyResponseInterface>('/api/profile/passkey/init', {
-            name: request.name,
-        }).then(res=> {
-            res.data.dataDecoded = decode<PublicKeyCredentialCreationOptionsJSON>(res.data.data)
-            return res
-        })
-    }
-
-    @ApiCall()
-    public store(request: StorePasskeyRequestInterface): Promise<AxiosResponse<StorePasskeyResponseInterface>> {
-        return this.client.post<StorePasskeyResponseInterface>('/api/profile/passkey', {
-            challenge: request.challenge,
-            data: encode(request.data),
-        })
-    }
-
-    @ApiCall()
-    public delete(passkeyId: number): Promise<AxiosResponse> {
-        return this.client.delete<AxiosResponse>(`/api/profile/passkey/${passkeyId}`)
-    }
-}
-
-export interface PasskeyInterface {
-    id: number;
-    name: string;
-    createdAt: string;
-    usedAt: null|string;
-}
-
-export interface PasskeysResponseInterface {
-    data: Array<PasskeyInterface>;
-}
-
-export interface InitPasskeyRequestInterface {
-    name: string;
-}
-
-export interface InitPasskeyResponseInterface {
+export interface InitPasskeyResponse {
     challenge: string
-    data: string;
-    dataDecoded: PublicKeyCredentialCreationOptionsJSON;
+    data: string
 }
 
-export interface StorePasskeyRequestInterface {
-    challenge: string;
-    data: object;
+export interface StorePasskeyRequest {
+    challenge: string
+    data: object
 }
 
-export interface StorePasskeyResponseInterface {
-    data: PasskeyInterface;
+export async function getPasskeys(): Promise<Passkey[]> {
+    return apiCall(async client => {
+        const res = await client.get('/api/profile/passkey')
+        return (res.data.data as unknown[]).map(Passkey.from)
+    })
 }
 
-function decode<T>(data: string): T {
-    return JSON.parse(atob(data))
+export async function initPasskey(name: string): Promise<InitPasskeyResponse> {
+    return apiCall(async client => {
+        const res = await client.post('/api/profile/passkey/init', { name })
+        return res.data as InitPasskeyResponse
+    })
 }
 
-function encode(data: object): string {
-    return btoa(JSON.stringify(data))
+export async function storePasskey(request: StorePasskeyRequest): Promise<Passkey> {
+    return apiCall(async client => {
+        const res = await client.post('/api/profile/passkey', {
+            challenge: request.challenge,
+            data: btoa(JSON.stringify(request.data)),
+        })
+        return Passkey.from(res.data.data)
+    })
+}
+
+export async function deletePasskey(passkeyId: number): Promise<void> {
+    return apiCall(async client => {
+        await client.delete(`/api/profile/passkey/${passkeyId}`)
+    })
 }

@@ -1,39 +1,26 @@
-<template>
-    <b-avatar :src="user.photoUrl" :text="text" :alt="alt" :size="size"></b-avatar>
-</template>
+<script setup lang="ts">
+import { computed } from 'vue'
+import type { User } from '@/api/models/user'
 
-<script lang="ts">
-import { Vue, Component, Prop } from 'vue-property-decorator'
-import { UserInterface } from '@/api/users';
+const props = defineProps<{
+    user: User
+    class?: string
+}>()
 
-@Component
-export default class ProfileAvatar extends Vue {
-    @Prop({required: true})
-    user!: UserInterface
-
-    @Prop()
-    size!: string
-
-    get alt(): string {
-        return `${this.user.name} ${this.user.lastName}`
-    }
-
-    get text(): string {
-        let tag = ''
-
-        if (this.user.name !== '') {
-            tag += this.user.name[0]
-        }
-
-        if (this.user.lastName !== '') {
-            tag += this.user.lastName[0]
-        }
-
-        return tag
-    }
-}
+const initials = computed(() => {
+    let text = ''
+    if (props.user.name) text += props.user.name[0].toUpperCase()
+    if (props.user.lastName) text += props.user.lastName[0].toUpperCase()
+    return text || props.user.nickName[0].toUpperCase()
+})
 </script>
 
-<style lang="scss" scoped>
-
-</style>
+<template>
+    <UAvatar
+        :src="user.photoUrl ?? undefined"
+        :alt="user.displayName"
+        :text="!user.photoUrl ? initials : undefined"
+        size="xl"
+        :class="props.class"
+    />
+</template>

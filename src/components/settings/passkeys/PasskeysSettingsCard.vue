@@ -1,30 +1,19 @@
-<template>
-    <b-form novalidate>
-        <b-card footer-tag="footer" header-tag="header">
-            <template v-slot:header>
-                <div class="text-md-center">
-                    <b-icon-shield-check></b-icon-shield-check> &nbsp;
-                    <b>{{ $t('passkeySettings.passkeys') }}</b>
-                </div>
-            </template>
+<script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+import PasskeysSettings from './PasskeysSettings.vue'
 
-            <passkeys-settings />
-        </b-card>
-    </b-form>
-</template>
-
-<script lang="ts">
-import { Vue, Component } from 'vue-property-decorator'
-import PasskeysSettings from '@/components/settings/passkeys/PasskeysSettings.vue';
-
-@Component({
-    components: {PasskeysSettings}
-})
-export default class PasskeysSettingsCard extends Vue {
-
-}
+const { t } = useI18n()
 </script>
 
-<style scoped>
+<template>
+    <UCard>
+        <template #header>
+            <div class="flex items-center gap-2">
+                <UIcon name="i-lucide-shield-check" class="size-5" />
+                <h2 class="font-semibold text-lg">{{ t('passkeySettings.passkeys') }}</h2>
+            </div>
+        </template>
 
-</style>
+        <PasskeysSettings />
+    </UCard>
+</template>

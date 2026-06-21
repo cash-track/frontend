@@ -1,0 +1,36 @@
+@import "tailwindcss";
+@import "@nuxt/ui";
+
+@import './base.css';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme static {
+  --color-green-50: #f5fbf3;
+  --color-green-100: #e4f8e2;
+  --color-green-200: #c3efc4;
+  --color-green-300: #92e2a2;
+  --color-green-400: #5ccc7f;
+  --color-green-500: #5ccc7f;
+  --color-green-600: #279066;
+  --color-green-700: #23715c;
+  --color-green-800: #205b53;
+  --color-green-900: #1c494a;
+  --color-green-950: #0a2329;
+}
+
+@utility scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+html {
+    @apply bg-gray-100 dark:bg-gray-800;
+}
+
+body {
+    @apply bg-white dark:bg-gray-700;
+}

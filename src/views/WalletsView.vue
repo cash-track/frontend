@@ -1,26 +1,39 @@
-<template>
-    <div class="wallets">
-        <b-tabs content-class="mt-3">
-            <b-tab :title="$t('wallets.activeTitle')">
-                <wallets-active-grid-list></wallets-active-grid-list>
-            </b-tab>
+<script setup lang="ts">
+import { computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useWalletsStore } from '@/stores/wallets'
+import WalletsActiveGridList from '@/components/wallets/WalletsActiveGridList.vue'
+import WalletsGridList from '@/components/wallets/WalletsGridList.vue'
 
-            <b-tab :title="$t('wallets.archivedTitle')" lazy>
-                <wallets-grid-list :by-archived="true"></wallets-grid-list>
-            </b-tab>
-        </b-tabs>
+const { t } = useI18n()
+const walletsStore = useWalletsStore()
+
+onMounted(() => walletsStore.loadActive())
+
+const tabs = computed(() => [
+    { label: t('wallets.activeTitle'), slot: 'active' as const },
+    { label: t('wallets.archivedTitle'), slot: 'archived' as const },
+])
+</script>
+
+<template>
+    <div>
+        <div class="flex justify-between items-center mb-4">
+            <h1 class="text-2xl font-semibold">{{ t('wallets.wallets') }}</h1>
+            <UButton
+                icon="i-lucide-plus"
+                :label="t('wallets.newWallet')"
+                :to="{ name: 'wallets.create' }"
+            />
+        </div>
+
+        <UTabs :items="tabs" class="mt-2">
+            <template #active>
+                <WalletsActiveGridList class="mt-3" />
+            </template>
+            <template #archived>
+                <WalletsGridList :wallets="[]" :by-archived="true" class="mt-3" />
+            </template>
+        </UTabs>
     </div>
 </template>
-
-<script lang="ts">
-import { Vue, Component } from 'vue-property-decorator'
-import WalletsGridList from '@/components/wallets/WalletsGridList.vue';
-import WalletsActiveGridList from '@/components/wallets/WalletsActiveGridList.vue';
-
-@Component({
-    components: {WalletsGridList, WalletsActiveGridList}
-})
-export default class WalletsView extends Vue {
-
-}
-</script>

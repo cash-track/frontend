@@ -1,99 +1,51 @@
-<template>
-    <b-card no-body :border-variant="isIncome ? 'success' : 'danger'" class="mb-4">
-        <b-card-body>
-            <b-card-title class="mb-0 d-flex justify-content-between align-items-center">
-                {{ isIncome ? $t('profile.income') : $t('profile.expense') }}
+<script setup lang="ts">
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+import type { ChargesFlowPeriod } from '@/api/profile'
+import type { Currency } from '@/api/models/currency'
+import MoneyAmount from '@/components/Shared/MoneyAmount.vue'
 
-                <b-icon-arrow-up variant="success" scale="1" class="d-none d-sm-inline" v-if="isIncome"></b-icon-arrow-up>
-                <b-icon-arrow-down variant="danger" scale="1" class="d-none d-sm-inline" v-if="isExpense"></b-icon-arrow-down>
-            </b-card-title>
-        </b-card-body>
+const props = defineProps<{
+    type: '+' | '-'
+    stats: ChargesFlowPeriod
+    currency: Currency | null
+}>()
 
-        <b-list-group flush>
-            <b-list-group-item class="d-flex justify-content-between align-items-center text-secondary">
-                {{ $t('profile.allTime') }}:
-                <b-spinner v-show="isLoading" small></b-spinner>
-                <span
-                    v-if="!isLoading"
-                    class="font-weight-bold"
-                    :class="{'text-success': isIncome, 'text-danger': isExpense}"
-                >
-                    {{ stats.total | money(currency) }}
-                </span>
-            </b-list-group-item>
-            <b-list-group-item class="d-flex justify-content-between align-items-center text-secondary">
-                {{ $t('profile.year') }}:
-                <b-spinner v-show="isLoading" small></b-spinner>
-                <span
-                    v-if="!isLoading"
-                    class="font-weight-bold"
-                    :class="{'text-success': isIncome, 'text-danger': isExpense}"
-                >
-                    {{ stats.lastYear | money(currency) }}
-                </span>
-            </b-list-group-item>
-            <b-list-group-item class="d-flex justify-content-between align-items-center text-secondary">
-                {{ $t('profile.quarter') }}:
-                <b-spinner v-show="isLoading" small></b-spinner>
-                <span
-                    v-if="!isLoading"
-                    class="font-weight-bold"
-                    :class="{'text-success': isIncome, 'text-danger': isExpense}"
-                >
-                    {{ stats.lastQuarter | money(currency) }}
-                </span>
-            </b-list-group-item>
-            <b-list-group-item class="d-flex justify-content-between align-items-center text-secondary">
-                {{ $t('profile.month') }}:
-                <b-spinner v-show="isLoading" small></b-spinner>
-                <span
-                    v-if="!isLoading"
-                    class="font-weight-bold"
-                    :class="{'text-success': isIncome, 'text-danger': isExpense}"
-                >
-                    {{ stats.lastMonth | money(currency) }}
-                </span>
-            </b-list-group-item>
-        </b-list-group>
-    </b-card>
-</template>
+const { t } = useI18n()
 
-<script lang="ts">
-import { Vue, Component, Prop } from 'vue-property-decorator'
-import { ChargesFlowTypeStatisticsInterface } from '@/api/profile/profile';
-import { TypeExpense, TypeIncome } from '@/api/charges';
-import { CurrencyInterface } from '@/api/currency';
+const isIncome = computed(() => props.type === '+')
 
-@Component
-export default class ChargesStatsCard extends Vue {
-    @Prop({
-        required: true,
-        validator(value: never): boolean {
-            return value === TypeIncome || value === TypeExpense;
-        }
-    })
-    type!: string;
-
-    @Prop({required: true})
-    currency!: CurrencyInterface
-
-    @Prop({required: true})
-    stats!: ChargesFlowTypeStatisticsInterface
-
-    get isLoading(): boolean {
-        return this.stats === null;
-    }
-
-    get isIncome(): boolean {
-        return this.type === TypeIncome;
-    }
-
-    get isExpense(): boolean {
-        return this.type === TypeExpense;
-    }
-}
+const rows = computed(() => [
+    { label: t('profile.allTime'), value: props.stats.total },
+    { label: t('profile.year'), value: props.stats.lastYear },
+    { label: t('profile.quarter'), value: props.stats.lastQuarter },
+    { label: t('profile.month'), value: props.stats.lastMonth },
+])
 </script>
 
-<style lang="scss" scoped>
-
-</style>
+<template>
+    <UCard :ui="{ ring: isIncome ? 'ring-success/30' : 'ring-error/30' }" class="mb-4">
+        <template #header>
+            <div class="flex items-center justify-between">
+                <span class="font-semibold">
+                    {{ isIncome ? t('profile.income') : t('profile.expense') }}
+                </span>
+                <UIcon
+                    :name="isIncome ? 'i-lucide-arrow-up' : 'i-lucide-arrow-down'"
+                    :class="isIncome ? 'text-success' : 'text-error'"
+                    class="size-4"
+                />
+            </div>
+        </template>
+        <div class="divide-y divide-default">
+            <div
+                v-for="row in rows"
+                :key="row.label"
+                class="flex justify-between items-center py-2 text-sm"
+            >
+                <span class="text-muted">{{ row.label }}</span>
+                <MoneyAmount class="font-semibold" :class="isIncome ? 'text-success' : 'text-error'" :amount="row.value" :currency="currency" />
+            </div>
+        </div>
+    </UCard>
+</template>

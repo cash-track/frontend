@@ -1,15 +1,7 @@
-<template>
-    <Bar
-        :chart-options="chartOptions"
-        :chart-data="chartData"
-        :chart-id="chartId"
-        :dataset-id-key="datasetIdKey"
-    />
-</template>
-
-<script lang="ts">
-import { Vue, Component, Prop } from 'vue-property-decorator'
-import { Bar } from 'vue-chartjs/legacy'
+<script setup lang="ts">
+import { ref, computed, watch, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { Bar } from 'vue-chartjs'
 import {
     Chart as ChartJS,
     Title,
@@ -18,258 +10,198 @@ import {
     BarElement,
     CategoryScale,
     LinearScale,
-    TimeScale,
-    ChartOptions,
-    ChartData,
-    TimeUnit,
-    ChartDataset
+    type ChartData,
+    type ChartOptions,
+    type ChartDataset,
 } from 'chart.js'
-import 'chartjs-adapter-moment';
-import { CurrencyInterface } from '@/api/currency';
-import { money } from '@/shared/numbers';
-import { AmountGraphDataEntry, GROUP_BY_DAY, GROUP_BY_MONTH, GROUP_BY_YEAR } from '@/api/graph';
-import { TypeExpense, TypeIncome } from '@/api/charges';
-import { TagInterface } from '@/api/tags';
+import { getChargesFlowByDate, type ChargesFlowDataPoint, type GetChargesFlowParams } from '@/api/graph'
+import type { Currency } from '@/api/models/currency'
+import type { Tag } from '@/api/models/tag'
+import { useMoneyFormatter } from '@/composables/useMoneyFormatter'
 
-ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale, TimeScale)
+ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale)
 
-@Component({
-    components: { Bar }
-})
-export default class ChargesFlowChart extends Vue {
-    chartId = 'bar-chart'
-    datasetIdKey = 'label'
+const props = defineProps<{
+    walletId: number
+    currency: Currency | null
+    tags?: Tag[]
+    dateFrom?: string
+    dateTo?: string
+}>()
 
-    @Prop()
-    currency!: CurrencyInterface
+const { t } = useI18n()
+const { format } = useMoneyFormatter()
 
-    @Prop()
-    dataset!: Array<AmountGraphDataEntry>
+type GroupBy = 'day' | 'month' | 'year'
 
-    @Prop()
-    group!: string
+const groupBy = ref<GroupBy>('day')
+const loading = ref(false)
+const error = ref<string | null>(null)
+const dataPoints = ref<ChargesFlowDataPoint[]>([])
+const hasLoaded = ref(false)
 
-    @Prop()
-    tags!: Array<TagInterface>
+const groupByOptions = computed(() => [
+    { label: t('wallets.groupByDay'), value: 'day' as GroupBy },
+    { label: t('wallets.groupByMonth'), value: 'month' as GroupBy },
+    { label: t('wallets.groupByYear'), value: 'year' as GroupBy },
+])
 
-    get chartData(): ChartData {
-        const datasets = new Array<ChartDataset>()
+function stableColor(key: string): string {
+    let hash = 0
+    for (const char of key) hash = (hash << 5) - hash + char.charCodeAt(0)
+    hash = hash & hash
+    const h = Math.abs(hash) % 360
+    return `hsl(${h}, 60%, 50%)`
+}
 
-        if (this.tags !== undefined && this.tags.length) {
-            for (const tag of this.tags) {
-                const tagName = tag.name
+const isTagMode = computed(() => !!props.tags?.length)
 
-                if (this.checkDatasetForTagHasValues(TypeExpense, tag)) {
-                    const label = `↓ ${tagName}`
-                    datasets.push({
-                        label: label,
-                        backgroundColor: this.tags.length === 1 ? '#dc3545' : this.randomHexColor(label),
-                        stack: 'expense',
-                        normalized: true,
-                        parsing: false,
-                        data: this.parseDatasetForTag(TypeExpense, tag),
-                    })
-                }
-
-                if (this.checkDatasetForTagHasValues(TypeIncome, tag)) {
-                    const label = `↑ ${tagName}`
-                    datasets.push({
-                        label: label,
-                        backgroundColor: this.tags.length === 1 ? '#28a745' : this.randomHexColor(label),
-                        stack: 'income',
-                        normalized: true,
-                        parsing: false,
-                        data: this.parseDatasetForTag(TypeIncome, tag),
-                    })
-                }
+const chartData = computed<ChartData<'bar'>>(() => {
+    if (isTagMode.value) {
+        const labels = dataPoints.value.map(d => d.date)
+        const datasets: ChartDataset<'bar'>[] = []
+        const multiTag = props.tags!.length > 1
+        for (const tag of props.tags!) {
+            const expenseData = dataPoints.value.map(d => d.tags?.[tag.id]?.expense ?? 0)
+            const incomeData = dataPoints.value.map(d => d.tags?.[tag.id]?.income ?? 0)
+            if (expenseData.some(v => v !== 0)) {
+                datasets.push({
+                    label: `↓ ${tag.name}`,
+                    backgroundColor: multiTag ? stableColor(`exp-${tag.id}`) : '#dc3545',
+                    stack: 'expense',
+                    data: expenseData,
+                })
             }
-        } else {
-            datasets.push({
-                label: this.$t('wallets.expense').toString(),
+            if (incomeData.some(v => v !== 0)) {
+                datasets.push({
+                    label: `↑ ${tag.name}`,
+                    backgroundColor: multiTag ? stableColor(`inc-${tag.id}`) : '#28a745',
+                    stack: 'income',
+                    data: incomeData,
+                })
+            }
+        }
+        return { labels, datasets }
+    }
+    return {
+        labels: dataPoints.value.map(d => d.date),
+        datasets: [
+            {
+                label: t('wallets.expense'),
                 backgroundColor: '#dc3545',
-                stack: 'bar',
-                normalized: true,
-                parsing: false,
-                data: this.parseDataset(TypeExpense),
-            })
-            datasets.push({
-                label: this.$t('wallets.income').toString(),
-                backgroundColor: '#28a745',
-                stack: 'bar1',
-                normalized: true,
-                parsing: false,
-                data: this.parseDataset(TypeIncome),
-            })
-        }
-
-        return {
-            datasets: datasets
-        }
-    }
-
-    get chartOptions(): ChartOptions {
-        return {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: {
-                    ticks: {
-                        callback: (value) => {
-                            if (typeof value !== 'number') {
-                                return value
-                            }
-
-                            if (this.currency === null) {
-                                return value
-                            }
-
-                            return money(value, this.currency)
-                        }
-                    }
-                },
-                x: {
-                    type: 'time',
-                    ticks: {
-                        source: 'data',
-                    },
-                    time: {
-                        tooltipFormat: this.tooltipFormat,
-                        unit: this.timeUnit,
-                    }
-                }
+                data: dataPoints.value.map(d => d.expense),
             },
-            plugins: {
-                tooltip: {
-                    callbacks: {
-                        label: context => {
-                            let label = context.dataset.label || '';
+            {
+                label: t('wallets.income'),
+                backgroundColor: '#28a745',
+                data: dataPoints.value.map(d => d.income),
+            },
+        ],
+    }
+})
 
-                            if (label) {
-                                label += ': ';
-                            }
+const hasData = computed(() =>
+    chartData.value.datasets.some(ds => (ds.data as number[]).some(v => v !== 0))
+)
 
-                            if (context.parsed.y !== null && this.currency !== null) {
-                                label += money(context.parsed.y, this.currency)
-                            }
-
-                            return label;
-                        }
+const chartOptions = computed<ChartOptions<'bar'>>(() => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+        x: isTagMode.value ? { stacked: true } : {},
+        y: {
+            // Headroom above the tallest bar so it never touches the axis ceiling
+            // (chart.js otherwise caps the axis exactly at a round data max, e.g. 120).
+            grace: '5%',
+            stacked: isTagMode.value,
+            ticks: {
+                precision: 0,
+                callback: (value) => {
+                    if (typeof value !== 'number') return value
+                    if (!props.currency) return Math.round(value)
+                    return format(value, props.currency, false)
+                },
+            },
+        },
+    },
+    plugins: {
+        tooltip: {
+            callbacks: {
+                label: (context) => {
+                    let label = context.dataset.label || ''
+                    if (label) label += ': '
+                    if (context.parsed.y !== null && props.currency) {
+                        label += format(context.parsed.y, props.currency)
                     }
-                }
-            }
+                    return label
+                },
+            },
+        },
+    },
+}))
+
+async function loadData() {
+    loading.value = true
+    error.value = null
+    try {
+        const params: GetChargesFlowParams = { 'group-by': groupBy.value }
+        if (props.tags?.length) {
+            params.tags = props.tags.map(t => t.id).join(',')
         }
-    }
-
-    get tooltipFormat(): string {
-        switch (this.group) {
-            case GROUP_BY_MONTH:
-                return 'MMM YYYY'
-            case GROUP_BY_YEAR:
-                return 'YYYY'
-            case GROUP_BY_DAY:
-            default:
-                return 'D MMM YYYY'
-        }
-    }
-
-    get timeUnit(): TimeUnit {
-        switch (this.group) {
-            case GROUP_BY_MONTH:
-                return 'month'
-            case GROUP_BY_YEAR:
-                return 'year'
-            case GROUP_BY_DAY:
-            default:
-                return 'day'
-        }
-    }
-
-    private parseDataset(type: string) {
-        if (this.dataset === null) {
-            return []
-        }
-
-        const data = []
-
-        for (const item of this.dataset) {
-            const value = type === TypeIncome ? item.income: item.expense
-
-            data.push({
-                x: item.timestamp * 1000,
-                y: value !== undefined ? value : 0,
-            })
-        }
-
-        return data
-    }
-
-    private parseDatasetForTag(type: string, tag: TagInterface) {
-        if (this.dataset === null) {
-            return []
-        }
-
-        const data = []
-
-        for (const item of this.dataset) {
-            let value = undefined
-
-            if (item.tags !== undefined && Object.prototype.hasOwnProperty.call(item.tags, tag.id)) {
-                value = type === TypeIncome ? item.tags[tag.id].income : item.tags[tag.id].expense
-            }
-
-            data.push({
-                x: item.timestamp * 1000,
-                y: value !== undefined ? value : 0,
-            })
-        }
-
-        return data
-    }
-
-    private checkDatasetForTagHasValues(type: string, tag: TagInterface): boolean {
-        if (this.dataset === null) {
-            return false
-        }
-
-        for (const item of this.dataset) {
-            let value = undefined
-
-            if (item.tags !== undefined && Object.prototype.hasOwnProperty.call(item.tags, tag.id)) {
-                value = type === TypeIncome ? item.tags[tag.id].income : item.tags[tag.id].expense
-            }
-
-            if (value !== undefined && value > 0) {
-                return true
-            }
-        }
-
-        return false
-    }
-
-    private randomHexColor(name: string): string {
-        let hash = 0
-
-        if (name.length === 0) {
-            return ''
-        }
-
-        for (let i = 0; i < name.length; i++) {
-            hash = name.charCodeAt(i) + ((hash << 5) - hash);
-            hash = hash & hash;
-        }
-
-        let color = '#';
-
-        for (let i = 0; i < 3; i++) {
-            const value = (hash >> (i * 8)) & 255;
-            color += ('00' + value.toString(16)).substr(-2);
-        }
-
-        return color;
+        if (props.dateFrom) params['date-from'] = props.dateFrom
+        if (props.dateTo) params['date-to'] = props.dateTo
+        dataPoints.value = await getChargesFlowByDate(props.walletId, params)
+        hasLoaded.value = true
+    } catch {
+        error.value = t('wallets.chartLoadingError')
+    } finally {
+        loading.value = false
     }
 }
+
+watch(groupBy, () => loadData())
+watch(() => props.tags, () => loadData(), { deep: true })
+watch(() => [props.dateFrom, props.dateTo], () => loadData())
+onMounted(() => loadData())
+
+defineExpose({ reload: loadData, chartOptions })
 </script>
 
-<style lang="scss" scoped>
+<template>
+    <div>
+        <div class="flex items-center justify-end gap-2 mb-4">
+            <span class="text-sm text-muted">{{ t('wallets.groupBy') }}</span>
+            <USelect
+                v-model="groupBy"
+                :items="groupByOptions"
+                value-key="value"
+                label-key="label"
+                size="sm"
+                class="w-32"
+            />
+        </div>
 
-</style>
+        <UAlert
+            v-if="error && !hasLoaded"
+            color="error"
+            :description="error"
+            icon="i-lucide-alert-circle"
+        />
+
+        <div v-else class="relative h-[300px]">
+            <div
+                v-if="loading"
+                class="absolute inset-0 z-10 flex items-center justify-center bg-white/75 dark:bg-gray-900/75 backdrop-blur-[2px]"
+            >
+                <UIcon name="i-lucide-loader-circle" class="size-6 animate-spin text-muted" />
+            </div>
+            <div v-if="hasData" class="relative h-full">
+                <Bar :data="chartData" :options="chartOptions" />
+            </div>
+            <div v-else-if="!loading" class="absolute inset-0 flex flex-col items-center justify-center text-muted">
+                <UIcon name="i-lucide-chart-no-axes-column" class="size-10 mb-2 opacity-30" />
+                <p class="text-sm">{{ t('wallets.chartNoData') }}</p>
+            </div>
+        </div>
+    </div>
+</template>

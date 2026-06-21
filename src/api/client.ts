@@ -1,124 +1,96 @@
-import axios, { AxiosError, AxiosInstance, AxiosResponse } from 'axios';
-import { webSiteLink } from '@/shared/links';
-import getEnv from '@/shared/env';
+import axios, { AxiosError, type AxiosInstance } from 'axios'
+import { webSiteLink } from '@/shared/links'
+import { getEnv } from '@/shared/env'
 
-export class Repository {
-    protected client: AxiosInstance;
-
-    constructor(instance: AxiosInstance|undefined = undefined) {
-        this.client = instance ?? client();
-    }
-
-    csrf() {
-        return this.client.get('/csrf')
+export class CsrfError extends Error {
+    constructor(cause: Error) {
+        super(cause.message)
+        this.name = 'CsrfError'
+        this.stack = cause.stack
     }
 }
 
-class CsrfError extends Error {
-    constructor(error: Error) {
-        super(error.message);
-        this.name = 'CsrfError';
-        this.stack = error.stack;
-    }
-}
-
-export function client(): AxiosInstance {
+export function createAxiosInstance(): AxiosInstance {
     const instance = axios.create({
-        baseURL: getEnv('VUE_APP_GATEWAY_URL'),
+        baseURL: getEnv('VITE_GATEWAY_URL'),
         withCredentials: true,
     })
 
-    // FIXME. Use events into Vue instance to handle forced logout in one place
-    instance.interceptors.response.use(response => {
-        if (response.status === 401) {
-            window.location.href = webSiteLink('/login');
-        }
+    instance.interceptors.response.use(
+        (response) => response,
+        (error: unknown) => {
+            if (error instanceof AxiosError && error.response) {
+                if (error.response.status === 401) {
+                    window.location.href = webSiteLink('/login')
+                    return new Promise(() => {}) // never resolves — navigation takes over
+                }
+                if (error.response.status === 417) {
+                    return Promise.reject(new CsrfError(error))
+                }
+            }
+            return Promise.reject(error)
+        },
+    )
 
-        return response;
-    }, function (error) {
-        if (error.response && error.response.status === 401) {
-            window.location.href = webSiteLink('/login');
-        }
-
-        if (error.response && error.response.status === 417) {
-            return Promise.reject(new CsrfError(error));
-        }
-
-        return Promise.reject(error);
-    });
-
-    return instance;
+    return instance
 }
 
-export function ApiCall() {
-    // eslint-disable-next-line
-    return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
-        const callback = descriptor.value;
-
-        // eslint-disable-next-line
-        descriptor.value = function (...args: any[]) {
-            return call((repository: Repository) => {
-                return callback.apply(repository, args);
-            })
-        }
-
-        return descriptor;
-    };
-}
-
-export async function call<T = AxiosResponse>(callback: CallableFunction): Promise<T> {
-    const instance: AxiosInstance = client();
-    const repository: Repository = new Repository(instance);
-
+async function refreshCsrfToken(instance: AxiosInstance): Promise<boolean> {
     try {
-        return await callback(repository)
+        const response = await instance.get('/csrf')
+        return response.status === 200
     } catch (error) {
-        // skip CSRF checks for non-mutable requests
-        if (error instanceof AxiosError && error.config && ['GET', 'OPTIONS'].includes(error.config.method ?? '')) {
-            return Promise.reject(error);
+        if (error instanceof AxiosError && error.response?.status === 401) {
+            return false
         }
-
-        if (! (error instanceof CsrfError)) {
-            return Promise.reject(error);
-        }
-
-        return await performCsrfRetry<T>(repository, callback);
+        return Promise.reject(error)
     }
 }
 
-async function performCsrfRetry<T = AxiosResponse>(repository: Repository, callback: CallableFunction): Promise<T> {
-    let hasTokenRefreshed = false;
+/**
+ * Wraps an API call with automatic CSRF retry on 417 responses.
+ * On first CsrfError: refreshes the CSRF token via GET /csrf and retries once.
+ * On failed refresh or second failure: redirects to login page.
+ *
+ * @param fn - receives an axios instance and returns a promise
+ * @param instanceFactory - override for testing
+ */
+export async function apiCall<T>(
+    fn: (client: AxiosInstance) => Promise<T>,
+    instanceFactory: () => AxiosInstance = createAxiosInstance,
+): Promise<T> {
+    const instance = instanceFactory()
 
     try {
-        hasTokenRefreshed = await refreshCsrfToken(repository)
-    } catch (refreshError) {
-        // in case an error have happened on refreshing CSRF token
-        // this might be a temporary issue, so page refresh should be taken
-        window.location.reload();
-
-        return Promise.reject(refreshError);
-    }
-
-    if (hasTokenRefreshed) {
-        // retry original request
-        return await callback(repository);
-    }
-
-    // if refresh CSRF token is not successful, most likely authentication got expired
-    // so user should be redirected to a login page
-    window.location.href = webSiteLink('/login');
-
-    return Promise.reject();
-}
-
-async function refreshCsrfToken(repository: Repository) {
-    try {
-        const response = await repository.csrf()
-        return Promise.resolve<boolean>(response.status === 200)
+        return await fn(instance)
     } catch (error) {
-        if (error instanceof AxiosError && error.response && error.response.status === 401) {
-            return Promise.resolve<boolean>(false);
+        // Do not attempt CSRF retry for safe methods
+        if (
+            error instanceof AxiosError &&
+            ['GET', 'OPTIONS'].includes(error.config?.method?.toUpperCase() ?? '')
+        ) {
+            return Promise.reject(error)
         }
-        return Promise.reject(error);
+
+        if (!(error instanceof CsrfError)) {
+            return Promise.reject(error)
+        }
+
+        // Attempt CSRF token refresh then retry
+        let refreshed: boolean
+        try {
+            refreshed = await refreshCsrfToken(instance)
+        } catch (refreshError) {
+            window.location.reload()
+            return Promise.reject(refreshError)
+        }
+
+        if (refreshed) {
+            return fn(instance)
+        }
+
+        // Refresh returned false (401) — auth expired
+        window.location.href = webSiteLink('/login')
+        return Promise.reject(new Error('CSRF refresh failed — redirecting to login'))
     }
 }

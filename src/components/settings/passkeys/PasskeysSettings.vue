@@ -1,198 +1,141 @@
-<template>
-    <div>
-        <b-form-group
-            v-if="passkeysSupported"
-            label-align-lg="right"
-            label-cols-lg="4"
-            label-for="key_name"
-            :invalid-feedback="validationMessage('name')"
-            :state="validationState('name')"
-            :description="$t('passkeySettings.keyNameDescription')"
-        >
-            <template v-slot:label>{{ $t('passkeySettings.keyName') }}</template>
-            <b-input-group>
-                <b-form-input
-                    id="key_name"
-                    v-model="form.name"
-                    required
-                    type="text"
-                    :disabled="isLoadingFor(actionAdd)"
-                    :state="validationState('name')"
-                    @change="resetValidationMessage('name')"
-                >
-                </b-form-input>
-                <b-input-group-append>
-                    <b-button
-                        variant="primary"
-                        :disabled="isLoadingFor(actionAdd)"
-                        v-if="passkeysSupported"
-                        @click="onAddPassKey">
-                        {{ $t('passkeySettings.addPasskey') }}
-                        <b-spinner v-show="isLoadingFor(actionAdd)" small></b-spinner>
-                    </b-button>
-                </b-input-group-append>
-            </b-input-group>
-        </b-form-group>
+<script setup lang="ts">
+import { shallowRef, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { browserSupportsWebAuthn, startRegistration, WebAuthnError } from '@simplewebauthn/browser'
+import type { Passkey } from '@/api/models/passkey'
+import { getPasskeys, initPasskey, storePasskey } from '@/api/profile/passkeys'
+import PasskeyItem from './PasskeyItem.vue'
 
-        <b-form-group label-align-lg="right" label-cols-lg="4">
-            <h6>
-                {{ $t('passkeySettings.yourPasskeys') }}
-                <b-spinner v-show="isLoading" small></b-spinner>
-            </h6>
-        </b-form-group>
+const { t } = useI18n()
 
-        <div class="passkeys-list mb-4">
-            <warning-message :message="getMessage()" :show="hasMessage"></warning-message>
+const passkeys = shallowRef<Passkey[]>([])
+const passkeysSupported = shallowRef(false)
+const loading = shallowRef(false)
+const addLoading = shallowRef(false)
+const keyName = shallowRef('')
+const addError = shallowRef<string | null>(null)
+let clientExceptionCounter = 2
 
-            <passkey-item v-for="key of keys" :passkey="key" :key="key.id" @deleted="load"></passkey-item>
-        </div>
-
-        <b-alert fade show v-if="passkeysSupported">
-            {{ $t('passkeySettings.featureSupports') }}
-            <a href="https://www.passkeys.com/">
-                {{ $t('passkeySettings.featureSupportsPasskeys') }}
-                <b-icon-box-arrow-up-right></b-icon-box-arrow-up-right>
-            </a>
-            {{ $t('passkeySettings.featureSupportsIdentity') }}.
-            {{ $t('passkeySettings.featureSupportsInfo') }}
-        </b-alert>
-
-        <b-alert fade show v-if="!passkeysSupported">
-            {{ $t('passkeySettings.infoNotSupported') }}
-            {{ $t('passkeySettings.infoNotSupportedSee') }}
-            <a href="https://passkeys.dev/device-support/">
-                {{ $t('passkeySettings.infoNotSupportedDeviceSupport') }}
-                <b-icon-box-arrow-up-right></b-icon-box-arrow-up-right>
-            </a>
-            {{ $t('passkeySettings.infoNotSupportedMoreInfo') }}.
-        </b-alert>
-    </div>
-</template>
-
-<script lang="ts">
-import { Mixins, Component } from 'vue-property-decorator'
-import { browserSupportsWebAuthn, startRegistration, WebAuthnError } from '@simplewebauthn/browser';
-import Loader from '@/shared/Loader';
-import Messager from '@/shared/Messager';
-import Validator from '@/shared/Validator';
-import {
-    PasskeyInterface,
-    PasskeysRepository,
-    PasskeysRepositoryInterface
-} from '@/api/profile/passkeys';
-import PasskeyItem from '@/components/settings/passkeys/PasskeyItem.vue';
-import WarningMessage from '@/components/shared/WarningMessage.vue';
-
-const ACTION_ADD = 'add'
-
-@Component({
-    components: {WarningMessage, PasskeyItem}
+onMounted(async () => {
+    passkeysSupported.value = browserSupportsWebAuthn()
+    await loadPasskeys()
 })
-export default class PasskeysSecuritySettings extends Mixins(Loader, Messager, Validator) {
-    repository: PasskeysRepositoryInterface = new PasskeysRepository()
 
-    // eslint-disable-next-line @typescript-eslint/ban-types
-    unsubscribeFromStore: Function|null = null
-
-    passkeysSupported = false
-
-    form = {
-        name: ''
+async function loadPasskeys() {
+    loading.value = true
+    try {
+        passkeys.value = await getPasskeys()
+    } catch {
+        // non-fatal
+    } finally {
+        loading.value = false
     }
+}
 
-    keys: Array<PasskeyInterface> = []
+async function onAddPasskey() {
+    if (!keyName.value.trim()) return
 
-    clientExceptionCounter = 2
+    addLoading.value = true
+    addError.value = null
 
-    mounted() {
-        if (this.$store.state.isLogged) {
-            this.initPassKey()
-        } else {
-            this.unsubscribeFromStore = this.$store.subscribe(this.initPassKey)
-        }
-
-        this.load()
-    }
-
-    get actionAdd(): string {
-        return ACTION_ADD
-    }
-
-    protected initPassKey() {
-        if (typeof this.unsubscribeFromStore === 'function') {
-            this.unsubscribeFromStore()
-        }
-
-        this.passkeysSupported = browserSupportsWebAuthn()
-
-        console.info("Passkeys supported: ", this.passkeysSupported)
-    }
-
-    public async load() {
-        this.setLoading();
-
-        try {
-            const response = await this.repository.get()
-            this.keys = response.data.data
-        } catch (exception) {
-            this.dispatchException(exception)
-        }
-
-        this.setLoaded();
-    }
-
-    public async onAddPassKey() {
-        this.setLoadingFor(ACTION_ADD);
-        this.resetMessage()
-        this.resetValidationMessages()
-
-        try {
-            const init = await this.repository.init({
-                name: this.form.name,
-            })
-
-            console.info('Creating passkey using request data', init.data)
-
-            const keyCredentials = await startRegistration(init.data.dataDecoded)
-
-            console.info('Passkey created on the device', keyCredentials.id)
-
-            const storeResponse = await this.repository.store({
-                challenge: init.data.challenge,
-                data: keyCredentials,
-            })
-
-            console.info('Passkey stored on the backend', storeResponse.data)
-
-            this.keys.push(storeResponse.data.data)
-
-            this.form.name = ''
-        } catch (exception) {
-            if (exception instanceof WebAuthnError) {
-                this.onWebAuthnError(exception)
+    try {
+        const init = await initPasskey(keyName.value.trim())
+        const options = JSON.parse(atob(init.data))
+        const credentials = await startRegistration({ optionsJSON: options })
+        const stored = await storePasskey({ challenge: init.challenge, data: credentials })
+        passkeys.value = [...passkeys.value, stored]
+        keyName.value = ''
+    } catch (error) {
+        if (error instanceof WebAuthnError) {
+            if (clientExceptionCounter === 0) {
+                addError.value = t('passkeySettings.addClientErrorAgain')
             } else {
-                this.dispatchException(exception)
+                clientExceptionCounter--
+                addError.value = t('passkeySettings.addClientError')
             }
+        } else {
+            addError.value = t('passkeySettings.addClientError')
         }
-
-        this.setLoadedFor(ACTION_ADD)
+    } finally {
+        addLoading.value = false
     }
+}
 
-    protected onWebAuthnError(error: WebAuthnError) {
-        if (this.clientExceptionCounter === 0) {
-            console.error(error)
-            this.setMessage(this.$t('passkeySettings.addClientErrorAgain').toString())
-            return
-        }
-
-        this.clientExceptionCounter--
-        this.setMessage(this.$t('passkeySettings.addClientError').toString())
-    }
-
-
+function onPasskeyDeleted(id: number) {
+    passkeys.value = passkeys.value.filter(p => p.id !== id)
 }
 </script>
 
-<style scoped>
+<template>
+    <div class="space-y-4">
+        <div v-if="passkeysSupported" class="flex gap-2">
+            <UInput
+                v-model="keyName"
+                :placeholder="t('passkeySettings.keyName')"
+                :disabled="addLoading"
+                class="flex-1"
+            />
+            <UButton
+                :label="t('passkeySettings.addPasskey')"
+                :loading="addLoading"
+                :disabled="!keyName.trim()"
+                @click="onAddPasskey"
+            />
+        </div>
 
-</style>
+        <UAlert
+            v-if="addError"
+            color="error"
+            :description="addError"
+            icon="i-lucide-alert-circle"
+        />
+
+        <div v-if="loading" class="flex justify-center py-4">
+            <UIcon name="i-lucide-loader-circle" class="size-5 animate-spin text-muted" />
+        </div>
+
+        <div v-else-if="passkeys.length === 0" class="text-sm text-muted py-2">
+            {{ t('passkeySettings.yourPasskeys') }}: —
+        </div>
+
+        <div v-else>
+            <PasskeyItem
+                v-for="pk in passkeys"
+                :key="pk.id"
+                :passkey="pk"
+                @deleted="onPasskeyDeleted(pk.id)"
+            />
+        </div>
+
+        <UAlert
+            v-if="passkeysSupported"
+            color="info"
+            variant="subtle"
+            icon="i-lucide-info"
+        >
+            <template #description>
+                {{ t('passkeySettings.featureSupports') }}
+                <a href="https://www.passkeys.com/" class="underline" target="_blank" rel="noopener">
+                    {{ t('passkeySettings.featureSupportsPasskeys') }}
+                </a>
+                {{ t('passkeySettings.featureSupportsIdentity') }}
+                {{ t('passkeySettings.featureSupportsInfo') }}
+            </template>
+        </UAlert>
+
+        <UAlert
+            v-else
+            color="warning"
+            icon="i-lucide-triangle-alert"
+        >
+            <template #description>
+                {{ t('passkeySettings.infoNotSupported') }}
+                {{ t('passkeySettings.infoNotSupportedSee') }}
+                <a href="https://passkeys.dev/device-support/" class="underline" target="_blank" rel="noopener">
+                    {{ t('passkeySettings.infoNotSupportedDeviceSupport') }}
+                </a>
+                {{ t('passkeySettings.infoNotSupportedMoreInfo') }}.
+            </template>
+        </UAlert>
+    </div>
+</template>

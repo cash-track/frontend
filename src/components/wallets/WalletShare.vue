@@ -1,258 +1,205 @@
-<template>
-    <b-card footer-tag="footer" header-tag="header" class="wallet-share">
-        <template v-slot:header v-if="isWalletLoaded">
-            <b-button-close @click="onClose"></b-button-close>
-            {{ $t('wallets.shareTitle') }} <b>{{ wallet.name }}</b>
-        </template>
+<script setup lang="ts">
+import { shallowRef, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
+import { getWalletUsers, shareWallet } from '@/api/wallets'
+import { findUserByEmail, findUsersByCommonWallets } from '@/api/users'
+import type { Wallet } from '@/api/models/wallet'
+import type { User } from '@/api/models/user'
+import { useApiErrors } from '@/composables/useApiErrors'
+import { useNotifications } from '@/composables/useNotifications'
+import WalletSharedMember from './WalletSharedMember.vue'
 
-        <email-is-not-confirmed-alert></email-is-not-confirmed-alert>
+const props = defineProps<{ wallet: Wallet }>()
 
-        <warning-message :message="$t('wallets.shareMembersLoadingError')" :show="loadUsersFailed"></warning-message>
+const { t } = useI18n()
+const router = useRouter()
+const { fieldErrors, handleError, reset } = useApiErrors()
+const { notifyError } = useNotifications()
 
-        <div class="wallet-owners">
-            <b-list-group>
-                <b-list-group-item v-for="user of users" v-bind:key="user.id">
-                    <wallet-shared-member :wallet="wallet" :user="user" @deleted="onDeleted" :is-allowed-to-remove="users.length > 1"></wallet-shared-member>
-                </b-list-group-item>
-            </b-list-group>
-        </div>
+const members = shallowRef<User[]>([])
+const commonUsers = shallowRef<User[]>([])
+const loadFailed = shallowRef(false)
 
-        <hr v-if="commonUsersFiltered.length">
+const searchEmail = shallowRef('')
+const foundUser = shallowRef<User | null>(null)
+const searching = shallowRef(false)
+const inviting = shallowRef(false)
 
-        <div class="wallet-owners" v-if="commonUsersFiltered.length">
-            <small class="form-text text-muted mb-2">{{ $t('wallets.shareCommonUsers') }}</small>
-            <b-list-group>
-                <b-list-group-item v-for="user of commonUsersFiltered" v-bind:key="user.id">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <profile-avatar-badge :user="user">
-                            {{ user.name }} {{ user.lastName }} ({{ user.email }})
-                        </profile-avatar-badge>
-                        <b-button variant="primary" :disabled="!isEmailConfirmed || isLoading" @click="onSelect(user)">
-                            {{ $t('wallets.shareSelect') }}
-                        </b-button>
-                    </div>
-                </b-list-group-item>
-            </b-list-group>
-        </div>
+const memberIds = computed(() => new Set(members.value.map(u => u.id)))
 
-        <hr>
+const filteredCommonUsers = computed(() =>
+    commonUsers.value.filter(u => !memberIds.value.has(u.id) && u.id !== foundUser.value?.id),
+)
 
-        <warning-message :message="message" :show="hasMessage" @dismissed="resetMessage"></warning-message>
-
-        <b-form @submit="onSearch" v-if="inviteUser === null">
-            <b-form-group
-                label-for="email"
-                :invalid-feedback="validationMessage('email')"
-                :state="validationState('email')"
-                :description="$t('wallets.shareEmailHint')"
-            >
-                <b-input-group>
-                    <b-form-input
-                        id="email"
-                        v-model="inviteUserEmail"
-                        class="col-md-12"
-                        required
-                        type="text"
-                        :disabled="isLoading"
-                        :state="validationState('email')"
-                        @change="resetValidationMessage('email')"
-                    ></b-form-input>
-                    <b-input-group-append>
-                        <b-button variant="primary" :disabled="!isEmailConfirmed || isLoading" @click="onSearch">
-                            <b-spinner v-show="isLoading" small></b-spinner>
-                            {{ $t('wallets.shareSearch') }}
-                        </b-button>
-                    </b-input-group-append>
-                </b-input-group>
-            </b-form-group>
-        </b-form>
-
-        <b-list-group v-if="inviteUser !== null">
-            <b-list-group-item class="d-flex justify-content-between">
-                <profile-avatar-badge :user="inviteUser">{{ inviteUser.name }} {{ inviteUser.lastName }} ({{ inviteUser.email }})</profile-avatar-badge>
-                <b-button variant="primary" :disabled="!isEmailConfirmed || isLoading" @click="onInvite">
-                    <b-spinner v-show="isLoading" small></b-spinner>
-                    {{ $t('wallets.shareInvite') }}
-                </b-button>
-            </b-list-group-item>
-        </b-list-group>
-    </b-card>
-</template>
-
-<script lang="ts">
-import { Component, Mixins, Prop, Watch } from 'vue-property-decorator'
-import Loader from '@/shared/Loader';
-import Messager from '@/shared/Messager';
-import Validator from '@/shared/Validator';
-import {
-    WalletInterface,
-    WalletsRepositoryInterface,
-    WalletsRepository
-} from '@/api/wallets';
-import {
-    UserInterface,
-    UsersRepositoryInterface,
-    UsersRepository
-} from '@/api/users'
-import WarningMessage from '@/components/shared/WarningMessage.vue';
-import ProfileAvatarBadge from '@/components/profile/ProfileAvatarBadge.vue';
-import WalletSharedMember, { WalletSharedMemberDeletedEvent } from '@/components/wallets/WalletSharedMember.vue';
-import EmailIsNotConfirmedAlert from '@/components/profile/EmailIsNotConfirmedAlert.vue';
-
-@Component({
-    components: {EmailIsNotConfirmedAlert, WalletSharedMember, ProfileAvatarBadge, WarningMessage}
+onMounted(async () => {
+    try {
+        const [walletUsers, common] = await Promise.all([
+            getWalletUsers(props.wallet.id),
+            findUsersByCommonWallets(),
+        ])
+        members.value = walletUsers
+        commonUsers.value = common
+    } catch {
+        loadFailed.value = true
+    }
 })
-export default class WalletShare extends Mixins(Loader, Messager, Validator) {
-    @Prop({
-        required: true
+
+async function onSearch() {
+    reset()
+    searching.value = true
+    foundUser.value = null
+    try {
+        foundUser.value = await findUserByEmail(searchEmail.value)
+    } catch {
+        fieldErrors.value = { email: [t('wallets.shareSearchError')] }
+    } finally {
+        searching.value = false
+    }
+}
+
+async function onInvite(user: User) {
+    inviting.value = true
+    try {
+        await shareWallet(props.wallet.id, user.id)
+        members.value = [...members.value, user]
+        foundUser.value = null
+        searchEmail.value = ''
+    } catch (error) {
+        handleError(error)
+        notifyError(t('wallets.shareInviteError'))
+    } finally {
+        inviting.value = false
+    }
+}
+
+function onMemberDeleted(userId: number) {
+    members.value = members.value.filter(u => u.id !== userId)
+}
+
+function onClose() {
+    router.push({
+        name: 'wallets.show',
+        params: { walletID: props.wallet.id.toString(), nameForTitle: props.wallet.name },
     })
-    wallet!: WalletInterface
-    isWalletLoaded = false
-
-    walletsRepository: WalletsRepositoryInterface = new WalletsRepository()
-    usersRepository: UsersRepositoryInterface = new UsersRepository()
-
-    users: Array<UserInterface> = []
-    loadUsersFailed = false
-
-    inviteUserEmail = ''
-    inviteUser: UserInterface|null = null
-
-    commonUsers: Array<UserInterface> = []
-
-    mounted() {
-        this.onWalletLoaded()
-    }
-
-    get isEmailConfirmed(): boolean {
-        return this.$store.state.isEmailConfirmed
-    }
-
-    get commonUsersFiltered() {
-        const list = new Array<UserInterface>()
-        const ignored = []
-
-        ignored.push(...this.users.map(user => user.id))
-
-        if (this.inviteUser !== null) {
-            ignored.push(this.inviteUser.id)
-        }
-
-        for (const user of this.commonUsers) {
-            if (ignored.indexOf(user.id) !== -1) {
-                continue
-            }
-
-            list.push(user)
-        }
-
-        return list
-    }
-
-    @Watch('wallet')
-    protected onWalletLoaded() {
-        this.isWalletLoaded = this.wallet !== null && this.wallet.id !== 0
-
-        if (this.isWalletLoaded) {
-            this.loadUsers()
-            this.loadCommonUsers()
-        }
-    }
-
-    protected loadUsers() {
-        this.loadUsersFailed = false
-
-        this.walletsRepository.getUsers(this.wallet.id).then(response => {
-            this.users = response.data.data
-        }).catch(() => {
-            this.loadUsersFailed = true;
-        })
-    }
-
-    protected loadCommonUsers() {
-        this.usersRepository.findByCommonWallets().then(response => {
-            this.commonUsers = response.data.data
-        }).catch(() => {
-            //
-        })
-    }
-
-    protected onSearch(event: Event) {
-        event.preventDefault()
-        event.stopPropagation()
-
-        this.resetValidationMessages()
-        this.resetMessage()
-        this.setLoading()
-
-        this.usersRepository.findByEmail(this.inviteUserEmail).then(response => {
-            this.inviteUser = response.data.data
-        }).catch(() => {
-            this.setValidationMessage('email', this.$t('wallets.shareSearchError').toString())
-        }).finally(this.setLoaded)
-    }
-
-    protected onSelect(user: UserInterface) {
-        this.inviteUser = user;
-    }
-
-    protected onInvite(event: Event) {
-        event.preventDefault()
-        event.stopPropagation()
-
-        if (this.inviteUser === null) {
-            return
-        }
-
-        const user: UserInterface = this.inviteUser
-
-        this.resetValidationMessages()
-        this.resetMessage()
-        this.setLoading()
-
-        this.walletsRepository.addUser(this.wallet.id, this.inviteUser).then(() => {
-            this.$store.dispatch('loadActiveWallets')
-            this.users.push(user)
-            this.inviteUser = null
-            this.inviteUserEmail = ''
-        }).catch(this.dispatchError).finally(this.setLoaded)
-    }
-
-    protected onDeleted(event: WalletSharedMemberDeletedEvent) {
-        const index = this.users.findIndex(user => user.id === event.id)
-
-        if (index === -1) {
-            console.log('Unable to find deleted wallet member. User ID:', event.id)
-            return
-        }
-
-        this.users.splice(index, 1)
-    }
-
-    protected onClose() {
-        this.$router.push({
-            name: 'wallets.show',
-            params: {
-                walletID: this.wallet.id.toString(),
-                nameForTitle: this.wallet.name,
-            }
-        })
-    }
 }
 </script>
 
-<style lang="scss" scoped>
-.wallet-share {
-    .card-footer button {
-        margin: 0 5px;
-    }
+<template>
+    <UCard>
+        <template #header>
+            <div class="flex items-center justify-between gap-2">
+                <h2 class="font-semibold text-lg">
+                    {{ t('wallets.shareTitle') }} <span class="font-bold">{{ wallet.name }}</span>
+                </h2>
+                <UTooltip :text="t('wallets.shareBack')" :arrow="true">
+                    <UButton
+                        icon="i-lucide-x"
+                        variant="ghost"
+                        color="neutral"
+                        size="sm"
+                        :aria-label="t('wallets.shareBack')"
+                        @click="onClose"
+                    />
+                </UTooltip>
+            </div>
+        </template>
 
-    .wallet-owners {
-        .list-group-item {
-            .close {
-                padding: 6px 10px;
-            }
-        }
-    }
-}
-</style>
+        <div class="space-y-4">
+            <UAlert
+                v-if="loadFailed"
+                color="error"
+                :description="t('wallets.shareMembersLoadingError')"
+                icon="i-lucide-alert-circle"
+            />
+
+            <!-- Current members -->
+            <div v-if="members.length > 0" class="divide-y divide-default">
+                <WalletSharedMember
+                    v-for="member in members"
+                    :key="member.id"
+                    :wallet-id="wallet.id"
+                    :wallet-name="wallet.name"
+                    :user="member"
+                    :is-allowed-to-remove="members.length > 1"
+                    @deleted="onMemberDeleted"
+                />
+            </div>
+
+            <!-- Common users suggestions -->
+            <template v-if="filteredCommonUsers.length > 0">
+                <USeparator :label="t('wallets.shareCommonUsers')" />
+                <div class="divide-y divide-default">
+                    <div
+                        v-for="user in filteredCommonUsers"
+                        :key="user.id"
+                        class="flex items-center justify-between gap-2 py-2"
+                    >
+                        <div class="flex items-center gap-2 min-w-0">
+                            <UAvatar
+                                :src="user.photoUrl ?? undefined"
+                                :alt="user.displayName"
+                                size="sm"
+                            />
+                            <span class="text-sm truncate">{{ user.displayName }}</span>
+                        </div>
+                        <UButton
+                            variant="ghost"
+                            size="xs"
+                            :label="t('wallets.shareSelect')"
+                            :loading="inviting"
+                            @click="onInvite(user)"
+                        />
+                    </div>
+                </div>
+            </template>
+
+            <USeparator />
+
+            <!-- Search by email -->
+            <div v-if="!foundUser">
+                <UFormField
+                    :label="t('wallets.shareEmailHint')"
+                    :error="fieldErrors.email?.[0]"
+                >
+                    <div class="flex gap-2">
+                        <UInput
+                            v-model="searchEmail"
+                            type="email"
+                            :placeholder="t('wallets.shareEmailHint')"
+                            class="flex-1"
+                            :disabled="searching"
+                            @keydown.enter="onSearch"
+                        />
+                        <UButton
+                            :label="t('wallets.shareSearch')"
+                            :loading="searching"
+                            :disabled="!searchEmail"
+                            @click="onSearch"
+                        />
+                    </div>
+                </UFormField>
+            </div>
+
+            <!-- Found user awaiting invite -->
+            <div
+                v-else
+                class="flex items-center justify-between gap-2 py-2 px-3 bg-elevated rounded-lg"
+            >
+                <div class="flex items-center gap-2 min-w-0">
+                    <UAvatar
+                        :src="foundUser.photoUrl ?? undefined"
+                        :alt="foundUser.displayName"
+                        size="sm"
+                    />
+                    <span class="text-sm truncate">{{ foundUser.displayName }}</span>
+                </div>
+                <UButton
+                    :label="t('wallets.shareInvite')"
+                    :loading="inviting"
+                    @click="onInvite(foundUser)"
+                />
+            </div>
+        </div>
+    </UCard>
+</template>

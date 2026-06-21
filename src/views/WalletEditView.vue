@@ -1,48 +1,40 @@
-<template>
-    <div class="row">
-        <div class="col-md-12">
-            <wallets-active-short-list class="mb-4"></wallets-active-short-list>
-        </div>
+<script setup lang="ts">
+import { shallowRef, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { getWallet } from '@/api/wallets'
+import type { Wallet } from '@/api/models/wallet'
+import WalletEdit from '@/components/wallets/WalletEdit.vue'
 
-        <div class="col-md-8 ml-md-auto mr-md-auto">
-            <warning-message :message="$t('wallets.loadingError')" :show="loadFailed"></warning-message>
-            <wallet-edit v-if="!loadFailed" :wallet="wallet"></wallet-edit>
+const props = defineProps<{ walletID: string }>()
+
+const { t } = useI18n()
+const wallet = shallowRef<Wallet | null>(null)
+const loading = shallowRef(false)
+const error = shallowRef<string | null>(null)
+
+onMounted(async () => {
+    loading.value = true
+    try {
+        wallet.value = await getWallet(Number(props.walletID))
+    } catch {
+        error.value = t('wallets.loadingError')
+    } finally {
+        loading.value = false
+    }
+})
+</script>
+
+<template>
+    <div class="max-w-lg mx-auto">
+        <div v-if="loading" class="flex justify-center py-12">
+            <UIcon name="i-lucide-loader-circle" class="size-8 animate-spin text-muted" />
         </div>
+        <UAlert
+            v-else-if="error"
+            color="error"
+            :description="error"
+            icon="i-lucide-alert-circle"
+        />
+        <WalletEdit v-else-if="wallet" :wallet="wallet" />
     </div>
 </template>
-
-<script lang="ts">
-import { Vue, Component, Prop } from 'vue-property-decorator'
-import { emptyWallet, WalletInterface, WalletsRepository, WalletsRepositoryInterface } from '@/api/wallets';
-import WalletEdit from '@/components/wallets/WalletEdit.vue';
-import WarningMessage from '@/components/shared/WarningMessage.vue';
-import WalletsActiveShortList from '@/components/wallets/WalletsActiveShortList.vue';
-
-@Component({
-    components: {WalletsActiveShortList, WalletEdit, WarningMessage}
-})
-export default class WalletEditView extends Vue {
-    @Prop()
-    walletID!: number
-
-    repository: WalletsRepositoryInterface = new WalletsRepository()
-
-    wallet: WalletInterface = emptyWallet()
-
-    loadFailed = false
-
-    mounted() {
-        this.load()
-    }
-
-    protected load() {
-        this.loadFailed = false
-
-        this.repository.get(this.walletID).then(response => {
-            this.wallet = response.data.data
-        }).catch(() => {
-            this.loadFailed = true
-        })
-    }
-}
-</script>
