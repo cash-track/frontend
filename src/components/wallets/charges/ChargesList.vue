@@ -303,7 +303,7 @@ defineExpose({ onChargeCreated })
                         <UTooltip v-if="wallet.isActive" :text="t('charges.selectGroup')" :arrow="true">
                             <button
                                 type="button"
-                                class="size-6 rounded-full border transition-colors shrink-0 cursor-pointer flex items-center justify-center"
+                                class="size-6 rounded-full border transition-colors shrink-0 cursor-pointer flex items-center justify-center ml-2"
                                 :class="[
                                     isGroupSelected(groupCharges)
                                         ? 'bg-primary border-primary text-white'
@@ -318,7 +318,7 @@ defineExpose({ onChargeCreated })
                             </button>
                         </UTooltip>
                         <!-- Decorative divider for inactive wallets -->
-                        <div v-else class="w-6 shrink-0 h-px transition-colors bg-black/10 dark:bg-white/10" />
+                        <div v-else class="w-6 shrink-0 h-px transition-colors bg-black/10 dark:bg-white/10 ml-2" />
                         <span class="text-sm text-muted">{{ group }}</span>
                         <div class="flex-1 h-px transition-colors" :class="isGroupSelected(groupCharges) ? '' : 'bg-black/10 dark:bg-white/10'" />
                     </div>

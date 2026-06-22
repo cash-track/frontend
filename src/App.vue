@@ -39,7 +39,13 @@ onMounted(() => profileStore.loadProfile())
 
 watch(loading, done => {
     if (!done && !isLogged.value) {
-        window.location.href = webSiteLink('/')
+        const websiteUrl = webSiteLink('/')
+        if (websiteUrl === '/' || websiteUrl === '') {
+            console.error('Unable to load website URL', window.__APP_CONFIG__)
+            setTimeout(() => window.location.reload(), 10000)
+            return
+        }
+        window.location.href = websiteUrl
     }
 })
 

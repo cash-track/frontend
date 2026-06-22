@@ -12,7 +12,7 @@ const mockAxios = { get: vi.fn(), post: vi.fn(), put: vi.fn(), delete: vi.fn() }
 
 import {
     getTags, createTag, updateTag, deleteTag,
-    getTagCharges, getTagTotals, getWalletTags, searchWalletTags,
+    getTagCharges, getTagTotals, getWalletTags, searchWalletTags, getTagSuggestions,
 } from '../tags'
 import { Tag } from '../models/tag'
 import { Charge, ChargeTotal } from '../models/charge'
@@ -155,6 +155,19 @@ describe('searchWalletTags', () => {
         const result = await searchWalletTags(2, 'foo bar')
 
         expect(mockAxios.get).toHaveBeenCalledWith('/api/wallets/2/tags/find/foo%20bar')
+        expect(result[0]).toBeInstanceOf(Tag)
+    })
+})
+
+describe('getTagSuggestions', () => {
+    beforeEach(() => vi.clearAllMocks())
+
+    it('calls GET /api/tags/suggestions/{query} with encoded query', async () => {
+        mockAxios.get = vi.fn().mockResolvedValue({ data: { data: [rawTag] } })
+
+        const result = await getTagSuggestions('foo bar')
+
+        expect(mockAxios.get).toHaveBeenCalledWith('/api/tags/suggestions/foo%20bar')
         expect(result[0]).toBeInstanceOf(Tag)
     })
 })

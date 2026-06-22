@@ -16,7 +16,7 @@ vi.mock('@/api/charges', () => ({
 }))
 
 vi.mock('@/api/tags', () => ({
-    searchWalletTags: vi.fn().mockResolvedValue([]),
+    getTagSuggestions: vi.fn().mockResolvedValue([]),
 }))
 
 describe('ChargeTitleFormInput', () => {
@@ -26,7 +26,7 @@ describe('ChargeTitleFormInput', () => {
 
     function mountInput(modelValue = '') {
         return shallowMount(ChargeTitleFormInput, {
-            props: { modelValue, tags: [], walletId: 1 },
+            props: { modelValue, tags: [] },
             global: {
                 stubs: {
                     // Render attrs on the stub root so we can assert them via html()
@@ -164,12 +164,12 @@ describe('ChargeTitleFormInput', () => {
             const newTitleData = [{ title: 'NewResult', count: 5 }]
 
             const { getChargeTitles } = await import('@/api/charges')
-            const { searchWalletTags } = await import('@/api/tags')
+            const { getTagSuggestions } = await import('@/api/tags')
             const mockGetChargeTitles = vi.mocked(getChargeTitles)
-            const mockSearchWalletTags = vi.mocked(searchWalletTags)
+            const mockGetTagSuggestions = vi.mocked(getTagSuggestions)
 
             // Both requests resolve tags immediately (empty); titles are deferred
-            mockSearchWalletTags.mockResolvedValue([])
+            mockGetTagSuggestions.mockResolvedValue([])
             mockGetChargeTitles
                 .mockImplementationOnce(() => new Promise(res => { resolveOldTitles = res }))
                 .mockImplementationOnce(() => new Promise(res => { resolveNewTitles = res }))
@@ -210,11 +210,11 @@ describe('ChargeTitleFormInput', () => {
             const staleTitleData = [{ title: 'Stale', count: 3 }]
 
             const { getChargeTitles } = await import('@/api/charges')
-            const { searchWalletTags } = await import('@/api/tags')
+            const { getTagSuggestions } = await import('@/api/tags')
             const mockGetChargeTitles = vi.mocked(getChargeTitles)
-            const mockSearchWalletTags = vi.mocked(searchWalletTags)
+            const mockGetTagSuggestions = vi.mocked(getTagSuggestions)
 
-            mockSearchWalletTags.mockResolvedValue([])
+            mockGetTagSuggestions.mockResolvedValue([])
             mockGetChargeTitles.mockImplementationOnce(
                 () => new Promise(res => { resolveInFlight = res }),
             )

@@ -31,6 +31,7 @@ vi.mock('@/api/charges', () => ({
 vi.mock('@/api/tags', () => ({
     getWalletTags: vi.fn().mockResolvedValue([]),
     searchWalletTags: vi.fn().mockResolvedValue([]),
+    getTagSuggestions: vi.fn().mockResolvedValue([]),
 }))
 
 const usd = new Currency({

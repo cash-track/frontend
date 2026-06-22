@@ -384,4 +384,47 @@ test.describe('S8 — Charge Create', () => {
         }
     })
 
+    // CC-11 — ChargeTitleFormInput suggests tags by the titles of charges they were
+    // previously used on (GET /api/tags/suggestions/{query}, a `%query%` match on the
+    // charge title). Regression guard: the migration once wired this to the wallet
+    // tag-name prefix search (/wallets/{id}/tags/find), which never matches a typed
+    // title, so the title-input tag suggestions silently disappeared.
+    test('CC-11 title input suggests tags from matching charge titles', async ({ request, page }) => {
+        const w = await createWalletViaApi(request, { name: `E2E CC11 ${Date.now()}` })
+        const tagSeed = await createTagViaApi(request, { name: `E2Etag${Date.now()}` })
+        // A distinctive token in the seed charge title — what we'll type to match it.
+        const titleToken = `SuggestSeed${Date.now()}`
+        try {
+            // Seed a charge whose title contains the token AND carries the tag, so the
+            // tag becomes discoverable via the charge-title suggestion search.
+            await createChargeViaApi(request, w.id, {
+                title: `${titleToken} lunch`,
+                tags: [tagSeed.id],
+            })
+
+            await page.goto(`/wallets/${w.id}`)
+            await expect(page.getByRole('heading', { level: 2 })).toBeVisible({ timeout: 10000 })
+
+            await charge.newChargeButton(page).click()
+            await expect(charge.titleInput(page)).toBeVisible({ timeout: 5000 })
+
+            // Type the token — the title input fires the debounced autocomplete.
+            await charge.titleInput(page).fill(titleToken)
+
+            // The seeded tag must surface as an option inside the title input's listbox.
+            const titleTagOption = page.locator(`#charge-title-listbox #charge-title-option-tag-${tagSeed.id}`)
+            await expect(titleTagOption).toBeVisible({ timeout: 8000 })
+            await expect(titleTagOption).toContainText(tagSeed.name)
+
+            // Selecting it promotes the tag into the selected-tags row above the input.
+            await titleTagOption.click()
+            await expect(page.getByText(tagSeed.name).first()).toBeVisible({ timeout: 5000 })
+
+            await assertNoErrorLeak(page)
+        } finally {
+            await deleteTagViaApi(request, tagSeed.id)
+            await deleteWalletViaApi(request, w.id)
+        }
+    })
+
 })
