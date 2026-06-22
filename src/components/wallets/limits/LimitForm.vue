@@ -101,8 +101,10 @@ function onCancel() {
         </div>
 
         <!-- Tag search + Operation toggle + Amount -->
-        <div class="flex gap-2">
-            <UFormField class="w-3/5" :error="fieldErrors.tags?.[0]">
+        <!-- Mobile: stacked, full width (Type+Amount on top, Tag below). Desktop: one row,
+             Tag left (3/5) + Type+Amount right (2/5). flex order swaps the visual order. -->
+        <div class="flex flex-col sm:flex-row gap-2">
+            <UFormField class="w-full sm:w-3/5 order-2 sm:order-1" :error="fieldErrors.tags?.[0]">
                 <TagFormInput
                     ref="tagInputRef"
                     :wallet-id="wallet.id"
@@ -112,7 +114,7 @@ function onCancel() {
                 />
             </UFormField>
 
-            <div class="flex items-start gap-0 w-2/5">
+            <div class="flex items-start gap-0 w-full sm:w-2/5 order-1 sm:order-2">
                 <UButton
                     icon="i-lucide-arrow-down"
                     :variant="operation === '-' ? 'solid' : 'outline'"
