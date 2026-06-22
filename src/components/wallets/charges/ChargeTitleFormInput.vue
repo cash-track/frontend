@@ -2,7 +2,7 @@
 import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { getChargeTitles } from '@/api/charges'
-import { searchWalletTags } from '@/api/tags'
+import { getTagSuggestions } from '@/api/tags'
 import type { Tag } from '@/api/models/tag'
 import type { ChargeTitleSuggestion } from '@/api/models/charge'
 import TagChip from '@/components/tags/Tag.vue'
@@ -10,7 +10,6 @@ import TagChip from '@/components/tags/Tag.vue'
 const props = defineProps<{
     modelValue: string
     tags: Tag[]
-    walletId: number
     disabled?: boolean
 }>()
 
@@ -99,7 +98,7 @@ function doAutocomplete(value: string) {
         debounceHandle.value = null
         const token = ++loadToken
         Promise.all([
-            searchWalletTags(props.walletId, q),
+            getTagSuggestions(q),
             getChargeTitles(q),
         ])
             .then(([tags, titles]) => {

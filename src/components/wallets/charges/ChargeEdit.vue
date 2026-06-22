@@ -154,7 +154,6 @@ const formDate = computed<CalendarDate | null>({
                 <ChargeTitleFormInput
                     v-model="title"
                     :tags="selectedTags"
-                    :wallet-id="wallet.id"
                     :disabled="loading"
                     @tag-selected="onTagSelected"
                 />

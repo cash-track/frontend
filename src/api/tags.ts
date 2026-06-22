@@ -100,3 +100,13 @@ export async function searchWalletTags(walletId: number, query: string): Promise
         return (res.data.data as unknown[]).map(Tag.from)
     })
 }
+
+// Charge-title autocomplete: matches tags by the titles of charges they were
+// previously used on (a `%query%` contains match), sorted by usage frequency.
+// This is distinct from searchWalletTags, which prefix-matches on the tag name.
+export async function getTagSuggestions(query: string): Promise<Tag[]> {
+    return apiCall(async client => {
+        const res = await client.get(`/api/tags/suggestions/${encodeURIComponent(query)}`)
+        return (res.data.data as unknown[]).map(Tag.from)
+    })
+}
