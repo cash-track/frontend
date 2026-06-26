@@ -39,13 +39,15 @@ describe('useProfileStore', () => {
         })
     })
 
-    it('initial state: profile null, loading false', () => {
+    it('initial state: profile null, loading false, failed false, lastError null', () => {
         const store = useProfileStore()
         expect(store.profile).toBeNull()
         expect(store.loading).toBe(false)
+        expect(store.failed).toBe(false)
+        expect(store.lastError).toBeNull()
     })
 
-    it('loadProfile() calls getProfile and commits to authStore', async () => {
+    it('loadProfile() calls getProfile and commits to authStore on success', async () => {
         mockGetProfile.mockResolvedValue(mockUser)
         const store = useProfileStore()
         const authStore = useAuthStore()
@@ -55,22 +57,40 @@ describe('useProfileStore', () => {
         expect(store.profile).toBe(mockUser)
         expect(authStore.isLogged).toBe(true)
         expect(store.loading).toBe(false)
+        expect(store.failed).toBe(false)
+        expect(store.lastError).toBeNull()
     })
 
-    it('loadProfile() calls authStore.logout() on API error', async () => {
-        mockGetProfile.mockRejectedValue(new Error('Unauthorized'))
+    it('loadProfile() sets failed and lastError on transient error, does NOT call logout, isLogged stays false', async () => {
+        const err = new Error('Network timeout')
+        mockGetProfile.mockRejectedValue(err)
         const store = useProfileStore()
         const authStore = useAuthStore()
 
-        // pre-login to verify logout is called
-        authStore.login(mockUser)
-        expect(authStore.isLogged).toBe(true)
+        // spy on logout to confirm it is NOT called
+        const logoutSpy = vi.spyOn(authStore, 'logout')
 
         await store.loadProfile()
 
-        expect(store.profile).toBeNull()
-        expect(authStore.isLogged).toBe(false)
+        expect(store.failed).toBe(true)
+        expect(store.lastError).toBe(err)
         expect(store.loading).toBe(false)
+        expect(authStore.isLogged).toBe(false)
+        expect(logoutSpy).not.toHaveBeenCalled()
+    })
+
+    it('loadProfile() resets failed and lastError on retry success', async () => {
+        const err = new Error('Transient')
+        mockGetProfile.mockRejectedValueOnce(err).mockResolvedValue(mockUser)
+        const store = useProfileStore()
+
+        await store.loadProfile()
+        expect(store.failed).toBe(true)
+
+        await store.loadProfile()
+        expect(store.failed).toBe(false)
+        expect(store.lastError).toBeNull()
+        expect(store.profile).toBe(mockUser)
     })
 
     it('updatePhotoUrl() replaces photoUrl on profile', async () => {

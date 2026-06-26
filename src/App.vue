@@ -9,13 +9,13 @@ import * as locales from '@nuxt/ui/locale'
 import AppHeader from '@/components/AppHeader.vue'
 import AppFooter from '@/components/AppFooter.vue'
 import EmailIsNotConfirmedAlert from '@/components/profile/EmailIsNotConfirmedAlert.vue'
+import LoadErrorAlert from '@/components/Shared/LoadErrorAlert.vue'
 import { useProfileStore } from '@/stores/profile'
 import { useAuthStore } from '@/stores/auth'
 import { useLocaleStore, syncLocaleWithI18n } from '@/stores/locale'
-import { webSiteLink } from '@/shared/links'
 import { setDocumentTitle } from '@/router'
 
-const { locale } = useI18n()
+const { t, locale } = useI18n()
 const router = useRouter()
 
 const lang = computed(() => locales[locale.value as keyof typeof locales].code)
@@ -32,22 +32,10 @@ syncLocaleWithI18n()
 
 const profileStore = useProfileStore()
 const authStore = useAuthStore()
-const { loading } = storeToRefs(profileStore)
+const { loading, failed, lastError } = storeToRefs(profileStore)
 const { isLogged } = storeToRefs(authStore)
 
 onMounted(() => profileStore.loadProfile())
-
-watch(loading, done => {
-    if (!done && !isLogged.value) {
-        const websiteUrl = webSiteLink('/')
-        if (websiteUrl === '/' || websiteUrl === '') {
-            console.error('Unable to load website URL', window.__APP_CONFIG__)
-            setTimeout(() => window.location.reload(), 10000)
-            return
-        }
-        window.location.href = websiteUrl
-    }
-})
 
 watch(locale, () => setDocumentTitle(router.currentRoute.value))
 </script>
@@ -67,6 +55,14 @@ watch(locale, () => setDocumentTitle(router.currentRoute.value))
                      it mounted afterwards. Don't reduce to just `isLogged` — that brings back a blank
                      content area until the profile resolves. -->
                 <RouterView v-if="loading || isLogged" />
+
+                <!-- Non-401 profile load failure — show retry instead of redirecting to website. -->
+                <LoadErrorAlert
+                    v-else-if="failed"
+                    :title="t('profile.loadError')"
+                    :error="lastError"
+                    @retry="profileStore.loadProfile()"
+                />
             </UContainer>
 
             <AppFooter />
