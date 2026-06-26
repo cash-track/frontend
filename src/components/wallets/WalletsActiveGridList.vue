@@ -6,11 +6,12 @@ import draggable from 'vuedraggable'
 import { useWalletsStore } from '@/stores/wallets'
 import { sortWallets } from '@/api/wallets'
 import type { Wallet } from '@/api/models/wallet'
+import LoadErrorAlert from '@/components/Shared/LoadErrorAlert.vue'
 import WalletCard from './WalletCard.vue'
 
 const { t } = useI18n()
 const walletsStore = useWalletsStore()
-const { activeWallets, loading, failed } = storeToRefs(walletsStore)
+const { activeWallets, loading, failed, lastError } = storeToRefs(walletsStore)
 
 const localWallets = ref<Wallet[]>([])
 
@@ -33,12 +34,11 @@ async function onDragEnd() {
             <USkeleton v-for="i in 3" :key="i" class="h-48 rounded-lg" />
         </div>
 
-        <UAlert
+        <LoadErrorAlert
             v-else-if="failed"
-            color="error"
-            variant="soft"
-            icon="i-lucide-triangle-alert"
             :title="t('wallets.listLoadingError')"
+            :error="lastError"
+            @retry="walletsStore.loadActive()"
         />
 
         <UAlert

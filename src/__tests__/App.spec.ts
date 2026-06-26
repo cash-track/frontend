@@ -41,10 +41,6 @@ vi.mock('@/router', () => ({
     setDocumentTitle: vi.fn(),
 }))
 
-vi.mock('@/shared/links', () => ({
-    webSiteLink: (p: string) => `https://cash-track.app${p}`,
-}))
-
 vi.mock('@/api/profile', () => ({
     getProfile: vi.fn().mockRejectedValue(new Error('Unauthorized')),
 }))
@@ -52,14 +48,18 @@ vi.mock('@/api/auth', () => ({
     logout: vi.fn().mockResolvedValue({}),
 }))
 
-// -- store mocks (manual so we can control loading/isLogged in each test) ------
+// -- store mocks (manual so we can control loading/isLogged/failed in each test) ---
 const mockLoading = shallowRef(true)
 const mockIsLogged = shallowRef(false)
+const mockFailed = shallowRef(false)
+const mockLastError = shallowRef<unknown>(null)
 const mockLoadProfile = vi.fn()
 
 vi.mock('@/stores/profile', () => ({
     useProfileStore: () => ({
         loading: mockLoading,
+        failed: mockFailed,
+        lastError: mockLastError,
         loadProfile: mockLoadProfile,
     }),
 }))
@@ -75,13 +75,22 @@ vi.mock('@/stores/locale', () => ({
     syncLocaleWithI18n: vi.fn(),
 }))
 
-// -- component stubs for Nuxt UI auto-imports ---------------------------------
+// -- component stubs ----------------------------------------------------------
+const loadErrorAlertStub = {
+    name: 'LoadErrorAlert',
+    props: ['title', 'error'],
+    emits: ['retry'],
+    template: '<div class="load-error-alert-stub" />',
+}
+
 const stubs = {
     UApp: { template: '<div><slot /></div>' },
     UContainer: { template: '<div><slot /></div>' },
+    Container: { template: '<div><slot /></div>' },
     AppHeader: { template: '<div />' },
     AppFooter: { template: '<div />' },
     EmailIsNotConfirmedAlert: { template: '<div class="email-alert-stub" />' },
+    LoadErrorAlert: loadErrorAlertStub,
 }
 
 // -- import App after all mocks are set up ------------------------------------
@@ -94,9 +103,11 @@ describe('App.vue', () => {
         mockLoadProfile.mockClear()
         mockLoading.value = true
         mockIsLogged.value = false
+        mockFailed.value = false
+        mockLastError.value = null
     })
 
-    it('does not redirect while loading is true', async () => {
+    it('does not set window.location.href when loading is true', async () => {
         mockLoading.value = true
         mockIsLogged.value = false
         mount(App, { global: { stubs } })
@@ -104,17 +115,36 @@ describe('App.vue', () => {
         expect(hrefSpy).not.toHaveBeenCalled()
     })
 
-    it('redirects to website home when loading completes and user is not logged in', async () => {
-        mockLoading.value = true
+    it('does not set window.location.href when loading completes with failure (shows alert instead)', async () => {
+        mockLoading.value = false
         mockIsLogged.value = false
+        mockFailed.value = true
         mount(App, { global: { stubs } })
         await nextTick()
+        expect(hrefSpy).not.toHaveBeenCalled()
+    })
 
-        // simulate loadProfile() completing without auth
+    it('renders LoadErrorAlert when failed is true', async () => {
         mockLoading.value = false
+        mockIsLogged.value = false
+        mockFailed.value = true
+        const wrapper = mount(App, { global: { stubs } })
+        await nextTick()
+        expect(wrapper.find('.load-error-alert-stub').exists()).toBe(true)
+    })
+
+    it('LoadErrorAlert retry event calls profileStore.loadProfile', async () => {
+        mockLoading.value = false
+        mockIsLogged.value = false
+        mockFailed.value = true
+        const wrapper = mount(App, { global: { stubs } })
         await nextTick()
 
-        expect(hrefSpy).toHaveBeenCalledWith('https://cash-track.app/')
+        mockLoadProfile.mockClear()  // clear the initial onMounted call
+        const alert = wrapper.findComponent(loadErrorAlertStub)
+        await alert.vm.$emit('retry')
+        await nextTick()
+        expect(mockLoadProfile).toHaveBeenCalledTimes(1)
     })
 
     it('does not redirect when loading completes and user IS logged in', async () => {
@@ -136,9 +166,9 @@ describe('App.vue', () => {
         mockIsLogged.value = false
         const wrapper = mount(App, { global: { stubs } })
         await nextTick()
-        // Shell (header+footer wrapper) renders immediately — old UX restored
+        // Shell (header+footer wrapper) renders immediately
         expect(wrapper.find('.min-h-dvh').exists()).toBe(true)
-        // No generic full-page preloader anymore
+        // No generic full-page preloader
         expect(wrapper.find('.animate-pulse').exists()).toBe(false)
         // Route is mounted during the profile-load window so each page shows its OWN skeletons
         expect(wrapper.find('.router-view-stub').exists()).toBe(true)
@@ -146,15 +176,18 @@ describe('App.vue', () => {
         expect(wrapper.find('.email-alert-stub').exists()).toBe(false)
     })
 
-    it('unmounts the route once confirmed logged-out, but keeps the shell', async () => {
+    it('does not render RouterView when loading=false, isLogged=false, failed=false', async () => {
         mockLoading.value = false
         mockIsLogged.value = false
+        mockFailed.value = false
         const wrapper = mount(App, { global: { stubs } })
         await nextTick()
-        // Shell still renders (header/footer always present)
+        // Shell still renders
         expect(wrapper.find('.min-h-dvh').exists()).toBe(true)
-        // Route is not mounted — avoids showing stale authenticated content while the redirect fires
+        // Route is not mounted
         expect(wrapper.find('.router-view-stub').exists()).toBe(false)
+        // No error alert either (not failed)
+        expect(wrapper.find('.load-error-alert-stub').exists()).toBe(false)
     })
 
     it('mounts the route and shows the email alert when logged in', async () => {
@@ -164,5 +197,14 @@ describe('App.vue', () => {
         await nextTick()
         expect(wrapper.find('.router-view-stub').exists()).toBe(true)
         expect(wrapper.find('.email-alert-stub').exists()).toBe(true)
+    })
+
+    it('does not render LoadErrorAlert when loading succeeds', async () => {
+        mockLoading.value = false
+        mockIsLogged.value = true
+        mockFailed.value = false
+        const wrapper = mount(App, { global: { stubs } })
+        await nextTick()
+        expect(wrapper.find('.load-error-alert-stub').exists()).toBe(false)
     })
 })

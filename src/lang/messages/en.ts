@@ -7,6 +7,9 @@ export default {
     common: {
         cancel: 'Cancel',
         delete: 'Delete',
+        retry: 'Try Again',
+        showDetails: 'Show Details',
+        hideDetails: 'Hide Details',
     },
     myProfile: 'My Profile',
     settings: 'Settings',
@@ -136,6 +139,8 @@ export default {
         totalChargesAmount: 'Total charges amount',
         incomeChargesAmount: 'Amount of income charges',
         expenseChargesAmount: 'Amount of expense charges',
+
+        loadError: 'Unable to load your profile. Please try again.',
     },
 
     actions: 'Actions',

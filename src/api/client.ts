@@ -10,10 +10,49 @@ export class CsrfError extends Error {
     }
 }
 
+// Per-attempt cap. Kept below the worst-case (attempts × timeout + backoff) so a
+// failing request resolves to an error in a predictable, bounded time on mobile.
+export const REQUEST_TIMEOUT_MS = 15_000
+
+export const RETRY_MAX_ATTEMPTS = 3          // 1 initial + 2 retries
+const RETRY_BASE_DELAY_MS = 400
+const RETRY_BACKOFF_FACTOR = 3               // base delays 400ms, 1200ms (±50% jitter)
+const SAFE_METHODS = new Set(['get', 'head', 'options'])
+
+function isRetryableTransportError(error: unknown): boolean {
+    if (!(error instanceof AxiosError)) return false
+    if (error.response) return false                       // got an HTTP status → not transport
+    if (error.code === 'ERR_CANCELED') return false        // user/abort cancelled
+    const method = error.config?.method?.toLowerCase() ?? ''
+    return SAFE_METHODS.has(method)
+}
+
+function backoffDelay(attempt: number): number {
+    const base = RETRY_BASE_DELAY_MS * RETRY_BACKOFF_FACTOR ** (attempt - 1)
+    return base * (0.5 + Math.random())                    // ±50% jitter
+}
+
+async function withTransportRetry<T>(operation: () => Promise<T>): Promise<T> {
+    let lastError: unknown
+    for (let attempt = 1; attempt <= RETRY_MAX_ATTEMPTS; attempt++) {
+        try {
+            return await operation()
+        } catch (error) {
+            lastError = error
+            if (attempt === RETRY_MAX_ATTEMPTS || !isRetryableTransportError(error)) {
+                throw error
+            }
+            await new Promise(resolve => setTimeout(resolve, backoffDelay(attempt)))
+        }
+    }
+    throw lastError
+}
+
 export function createAxiosInstance(): AxiosInstance {
     const instance = axios.create({
         baseURL: getEnv('VITE_GATEWAY_URL'),
         withCredentials: true,
+        timeout: REQUEST_TIMEOUT_MS,
     })
 
     instance.interceptors.response.use(
@@ -61,36 +100,38 @@ export async function apiCall<T>(
 ): Promise<T> {
     const instance = instanceFactory()
 
-    try {
-        return await fn(instance)
-    } catch (error) {
-        // Do not attempt CSRF retry for safe methods
-        if (
-            error instanceof AxiosError &&
-            ['GET', 'OPTIONS'].includes(error.config?.method?.toUpperCase() ?? '')
-        ) {
-            return Promise.reject(error)
-        }
-
-        if (!(error instanceof CsrfError)) {
-            return Promise.reject(error)
-        }
-
-        // Attempt CSRF token refresh then retry
-        let refreshed: boolean
+    return withTransportRetry(async () => {
         try {
-            refreshed = await refreshCsrfToken(instance)
-        } catch (refreshError) {
-            window.location.reload()
-            return Promise.reject(refreshError)
-        }
+            return await fn(instance)
+        } catch (error) {
+            // Do not attempt CSRF retry for safe methods
+            if (
+                error instanceof AxiosError &&
+                ['GET', 'OPTIONS'].includes(error.config?.method?.toUpperCase() ?? '')
+            ) {
+                return Promise.reject(error)
+            }
 
-        if (refreshed) {
-            return fn(instance)
-        }
+            if (!(error instanceof CsrfError)) {
+                return Promise.reject(error)
+            }
 
-        // Refresh returned false (401) — auth expired
-        window.location.href = webSiteLink('/login')
-        return Promise.reject(new Error('CSRF refresh failed — redirecting to login'))
-    }
+            // Attempt CSRF token refresh then retry
+            let refreshed: boolean
+            try {
+                refreshed = await refreshCsrfToken(instance)
+            } catch (refreshError) {
+                window.location.reload()
+                return Promise.reject(refreshError)
+            }
+
+            if (refreshed) {
+                return fn(instance)
+            }
+
+            // Refresh returned false (401) — auth expired
+            window.location.href = webSiteLink('/login')
+            return Promise.reject(new Error('CSRF refresh failed — redirecting to login'))
+        }
+    })
 }

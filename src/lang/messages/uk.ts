@@ -3,6 +3,9 @@ export default {
     common: {
         cancel: 'Скасувати',
         delete: 'Видалити',
+        retry: 'Спробувати ще раз',
+        showDetails: 'Показати деталі',
+        hideDetails: 'Сховати деталі',
     },
     flag: '🇺🇦',
     menu: 'Меню',
@@ -136,6 +139,8 @@ export default {
         totalChargesAmount: 'Кількість операцій з доходів та витрат',
         incomeChargesAmount: 'Кількість операцій з доходами',
         expenseChargesAmount: 'Кількість операцій з витратами',
+
+        loadError: 'Не вдалося завантажити профіль. Будь ласка, спробуйте ще раз.',
     },
 
     actions: 'Дії',

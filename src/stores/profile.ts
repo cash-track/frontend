@@ -8,6 +8,8 @@ import { useLocaleStore } from './locale'
 export const useProfileStore = defineStore('profile', () => {
     const profile = shallowRef<User | null>(null)
     const loading = shallowRef(false)
+    const failed = shallowRef(false)
+    const lastError = shallowRef<unknown>(null)
 
     function setProfile(user: User) {
         profile.value = user
@@ -17,10 +19,13 @@ export const useProfileStore = defineStore('profile', () => {
 
     async function loadProfile() {
         loading.value = true
+        failed.value = false
+        lastError.value = null
         try {
             setProfile(await getProfile())
-        } catch {
-            useAuthStore().logout()
+        } catch (error) {
+            failed.value = true
+            lastError.value = error
         } finally {
             loading.value = false
         }
@@ -31,5 +36,5 @@ export const useProfileStore = defineStore('profile', () => {
         profile.value = { ...profile.value, photoUrl: url } as User
     }
 
-    return { profile, loading, loadProfile, setProfile, updatePhotoUrl }
+    return { profile, loading, failed, lastError, loadProfile, setProfile, updatePhotoUrl }
 })
