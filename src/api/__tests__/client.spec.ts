@@ -281,17 +281,4 @@ describe('CsrfError', () => {
         const err = new CsrfError(new Error('x'))
         expect(err instanceof axios.AxiosError).toBe(false)
     })
-
-    it('stamps ctTraceId from the originating AxiosError response headers', () => {
-        const cause = Object.assign(new AxiosError('CSRF mismatch'), {
-            response: { status: 417, headers: { 'x-ct-trace-id': 'trace-417' } } as unknown as AxiosResponse,
-        })
-        const err = new CsrfError(cause)
-        expect(err.ctTraceId).toBe('trace-417')
-    })
-
-    it('leaves ctTraceId undefined when cause is a plain Error', () => {
-        const err = new CsrfError(new Error('cause'))
-        expect(err.ctTraceId).toBeUndefined()
-    })
 })

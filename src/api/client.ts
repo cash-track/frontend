@@ -18,15 +18,10 @@ function attachTraceId(error: unknown, traceId: string | undefined): void {
 }
 
 export class CsrfError extends Error {
-    ctTraceId?: string
-
     constructor(cause: Error) {
         super(cause.message)
         this.name = 'CsrfError'
         this.stack = cause.stack
-        if (cause instanceof AxiosError) {
-            this.ctTraceId = extractTraceId(cause.response?.headers)
-        }
     }
 }
 
