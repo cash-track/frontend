@@ -2,6 +2,21 @@ import axios, { AxiosError, type AxiosInstance } from 'axios'
 import { webSiteLink } from '@/shared/links'
 import { getEnv } from '@/shared/env'
 
+// Axios normalizes response header lookups to lowercase regardless of wire casing.
+const TRACE_ID_HEADER = 'x-ct-trace-id'
+
+function extractTraceId(headers: unknown): string | undefined {
+    if (!headers || typeof headers !== 'object') return undefined
+    const value = (headers as Record<string, unknown>)[TRACE_ID_HEADER]
+    return typeof value === 'string' && value.length > 0 ? value : undefined
+}
+
+function attachTraceId(error: unknown, traceId: string | undefined): void {
+    if (traceId && error && typeof error === 'object') {
+        Object.assign(error, { ctTraceId: traceId })
+    }
+}
+
 export class CsrfError extends Error {
     constructor(cause: Error) {
         super(cause.message)
@@ -100,38 +115,56 @@ export async function apiCall<T>(
 ): Promise<T> {
     const instance = instanceFactory()
 
-    return withTransportRetry(async () => {
-        try {
-            return await fn(instance)
-        } catch (error) {
-            // Do not attempt CSRF retry for safe methods
-            if (
-                error instanceof AxiosError &&
-                ['GET', 'OPTIONS'].includes(error.config?.method?.toUpperCase() ?? '')
-            ) {
-                return Promise.reject(error)
-            }
-
-            if (!(error instanceof CsrfError)) {
-                return Promise.reject(error)
-            }
-
-            // Attempt CSRF token refresh then retry
-            let refreshed: boolean
-            try {
-                refreshed = await refreshCsrfToken(instance)
-            } catch (refreshError) {
-                window.location.reload()
-                return Promise.reject(refreshError)
-            }
-
-            if (refreshed) {
-                return fn(instance)
-            }
-
-            // Refresh returned false (401) — auth expired
-            window.location.href = webSiteLink('/login')
-            return Promise.reject(new Error('CSRF refresh failed — redirecting to login'))
-        }
+    // Remembers the trace ID of the last successful response on this call, so it's
+    // still available if a later step (e.g. response shape parsing) throws a plain
+    // Error with no AxiosResponse attached.
+    const lastResponseTraceId: { value?: string } = {}
+    instance.interceptors.response.use((response) => {
+        lastResponseTraceId.value = extractTraceId(response.headers) ?? lastResponseTraceId.value
+        return response
     })
+
+    try {
+        return await withTransportRetry(async () => {
+            try {
+                return await fn(instance)
+            } catch (error) {
+                // Do not attempt CSRF retry for safe methods
+                if (
+                    error instanceof AxiosError &&
+                    ['GET', 'OPTIONS'].includes(error.config?.method?.toUpperCase() ?? '')
+                ) {
+                    return Promise.reject(error)
+                }
+
+                if (!(error instanceof CsrfError)) {
+                    return Promise.reject(error)
+                }
+
+                // Attempt CSRF token refresh then retry
+                let refreshed: boolean
+                try {
+                    refreshed = await refreshCsrfToken(instance)
+                } catch (refreshError) {
+                    window.location.reload()
+                    return Promise.reject(refreshError)
+                }
+
+                if (refreshed) {
+                    return fn(instance)
+                }
+
+                // Refresh returned false (401) — auth expired
+                window.location.href = webSiteLink('/login')
+                return Promise.reject(new Error('CSRF refresh failed — redirecting to login'))
+            }
+        })
+    } catch (error) {
+        const traceId =
+            error instanceof AxiosError && error.response
+                ? extractTraceId(error.response.headers)
+                : lastResponseTraceId.value
+        attachTraceId(error, traceId)
+        throw error
+    }
 }

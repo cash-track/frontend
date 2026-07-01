@@ -52,4 +52,30 @@ describe('describeError', () => {
         const result = describeError(null)
         expect(result).toContain('null')
     })
+
+    it('includes traceId line when ctTraceId is present on an AxiosError', () => {
+        const err = makeHttpAxiosError(500)
+        Object.assign(err, { ctTraceId: 'abc123trace' })
+        const result = describeError(err)
+        expect(result).toContain('traceId=abc123trace')
+    })
+
+    it('omits traceId line when ctTraceId is absent on an AxiosError', () => {
+        const err = makeHttpAxiosError(500)
+        const result = describeError(err)
+        expect(result).not.toContain('traceId=')
+    })
+
+    it('includes traceId line when ctTraceId is present on a plain Error', () => {
+        const err = new Error('parser failed')
+        Object.assign(err, { ctTraceId: 'def456trace' })
+        const result = describeError(err)
+        expect(result).toContain('traceId=def456trace')
+    })
+
+    it('omits traceId line when ctTraceId is absent on a plain Error', () => {
+        const err = new Error('parser failed')
+        const result = describeError(err)
+        expect(result).not.toContain('traceId=')
+    })
 })
