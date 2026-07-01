@@ -18,6 +18,38 @@ function mockInstance(overrides: Partial<AxiosInstance> = {}): AxiosInstance {
     } as unknown as AxiosInstance
 }
 
+// AxiosInstance mock whose interceptors.response.use actually stores fulfilled
+// handlers, so a test can simulate a real response passing through them —
+// needed to exercise apiCall's trace-id-capturing interceptor.
+function mockInstanceWithInterceptors(overrides: Partial<AxiosInstance> = {}): {
+    instance: AxiosInstance
+    emitResponse: (response: AxiosResponse) => void
+} {
+    const fulfilledHandlers: Array<(response: AxiosResponse) => AxiosResponse> = []
+    const instance = {
+        get: vi.fn(),
+        post: vi.fn(),
+        put: vi.fn(),
+        delete: vi.fn(),
+        interceptors: {
+            request: { use: vi.fn() },
+            response: {
+                use: vi.fn((onFulfilled?: (response: AxiosResponse) => AxiosResponse) => {
+                    if (onFulfilled) fulfilledHandlers.push(onFulfilled)
+                }),
+            },
+        },
+        ...overrides,
+    } as unknown as AxiosInstance
+
+    return {
+        instance,
+        emitResponse: (response: AxiosResponse) => {
+            for (const handler of fulfilledHandlers) handler(response)
+        },
+    }
+}
+
 describe('apiCall', () => {
     let originalHref: string
     let originalReload: () => void
@@ -113,6 +145,29 @@ describe('apiCall', () => {
         ).rejects.toThrow('Forbidden')
 
         expect(fn).toHaveBeenCalledTimes(1)
+    })
+
+    it('attaches ctTraceId from error.response.headers for a non-CSRF AxiosError with a response', async () => {
+        const err = Object.assign(new AxiosError('Forbidden'), {
+            config: { method: 'POST' },
+            response: { status: 403, headers: { 'x-ct-trace-id': 'trace-403' } } as unknown as AxiosResponse,
+        })
+        const fn = vi.fn().mockRejectedValue(err)
+
+        const caught = await apiCall(fn, () => mockInstance()).catch((e: unknown) => e)
+        expect((caught as Record<string, unknown>).ctTraceId).toBe('trace-403')
+    })
+
+    it('attaches ctTraceId to a plain Error thrown after a successful response (model-parser case)', async () => {
+        const { instance, emitResponse } = mockInstanceWithInterceptors()
+        const fn = vi.fn().mockImplementation(async () => {
+            emitResponse({ headers: { 'x-ct-trace-id': 'trace-parser-1' } } as unknown as AxiosResponse)
+            throw new Error('User.from: expected object')
+        })
+
+        const caught = await apiCall(fn, () => instance).catch((e: unknown) => e)
+        expect(caught).toBeInstanceOf(Error)
+        expect((caught as Record<string, unknown>).ctTraceId).toBe('trace-parser-1')
     })
 })
 
@@ -225,5 +280,18 @@ describe('CsrfError', () => {
     it('is not an instance of AxiosError', () => {
         const err = new CsrfError(new Error('x'))
         expect(err instanceof axios.AxiosError).toBe(false)
+    })
+
+    it('stamps ctTraceId from the originating AxiosError response headers', () => {
+        const cause = Object.assign(new AxiosError('CSRF mismatch'), {
+            response: { status: 417, headers: { 'x-ct-trace-id': 'trace-417' } } as unknown as AxiosResponse,
+        })
+        const err = new CsrfError(cause)
+        expect(err.ctTraceId).toBe('trace-417')
+    })
+
+    it('leaves ctTraceId undefined when cause is a plain Error', () => {
+        const err = new CsrfError(new Error('cause'))
+        expect(err.ctTraceId).toBeUndefined()
     })
 })
