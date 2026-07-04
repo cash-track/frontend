@@ -22,6 +22,8 @@ const showCreateForm = ref(false)
 const walletsWithLimits = ref<Wallet[]>([])
 const copyLoading = ref(false)
 
+const MAX_COPY_FROM_WALLETS = 10
+
 const totalExpenseAmount = computed(() =>
     limits.value
         .filter(wl => wl.limit.operation === '-')
@@ -49,7 +51,10 @@ async function loadWalletsWithLimits() {
         if (wallets.length === 0) {
             wallets = await getWalletsWithLimits(true)
         }
-        walletsWithLimits.value = wallets.filter(w => w.id !== props.wallet.id)
+        walletsWithLimits.value = wallets
+            .filter(w => w.id !== props.wallet.id)
+            .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+            .slice(0, MAX_COPY_FROM_WALLETS)
     } catch {
         // Non-fatal; just don't show the button
     }
@@ -163,6 +168,7 @@ defineExpose({ reload: loadLimits, copyDropdownItems })
                 <UDropdownMenu
                     v-if="!limits.length && walletsWithLimits.length"
                     :items="copyDropdownItems"
+                    :ui="{ content: 'max-h-60' }"
                     arrow size="md"
                 >
                     <UButton

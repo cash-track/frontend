@@ -30,14 +30,14 @@ import { getWalletsWithLimits } from '@/api/wallets'
 
 const usd = new Currency({ id: 'USD', code: 'USD', name: 'US Dollar', char: '$', rate: 1, updatedAt: new Date() })
 
-function makeWallet(id = 1, name = 'Test Wallet'): Wallet {
+function makeWallet(id = 1, name = 'Test Wallet', createdAt = new Date()): Wallet {
     return new Wallet({
         id, name,
         slug: name.toLowerCase().replace(/ /g, '-'),
         totalAmount: 1000,
         isActive: true, isPublic: false, isArchived: false,
         defaultCurrencyCode: 'USD', defaultCurrency: usd,
-        createdAt: new Date(), updatedAt: new Date(),
+        createdAt, updatedAt: new Date(),
         users: [], latestCharges: [],
     })
 }
@@ -156,5 +156,34 @@ describe('WalletLimitsTotal', () => {
         mountComponent()
         await flushPromises()
         expect(vi.mocked(getWalletsWithLimits)).not.toHaveBeenCalled()
+    })
+
+    it('caps the Copy From list at 10 wallets when more qualify', async () => {
+        const current = makeWallet(1, 'Current')
+        const others = Array.from({ length: 15 }, (_, i) =>
+            makeWallet(i + 2, `Wallet ${i + 2}`, new Date(2020, 0, i + 1)),
+        )
+        vi.mocked(getLimits).mockResolvedValue([])
+        vi.mocked(getWalletsWithLimits).mockResolvedValue(others)
+        const wrapper = mountComponent(current)
+        await flushPromises()
+        expect(getCopyItems(wrapper)).toHaveLength(10)
+    })
+
+    it('keeps only the 10 newest wallets by createdAt, newest first', async () => {
+        const current = makeWallet(1, 'Current')
+        const others = Array.from({ length: 15 }, (_, i) =>
+            makeWallet(i + 2, `Wallet ${i + 2}`, new Date(2020, 0, i + 1)),
+        )
+        vi.mocked(getLimits).mockResolvedValue([])
+        vi.mocked(getWalletsWithLimits).mockResolvedValue(others)
+        const wrapper = mountComponent(current)
+        await flushPromises()
+        const labels = getCopyItems(wrapper).map(item => item.label)
+        // Wallets 2..16 created on Jan 1..15, 2020 — newest is "Wallet 16" (Jan 15), oldest kept is "Wallet 7" (Jan 6).
+        expect(labels).toEqual([
+            'Wallet 16', 'Wallet 15', 'Wallet 14', 'Wallet 13', 'Wallet 12',
+            'Wallet 11', 'Wallet 10', 'Wallet 9', 'Wallet 8', 'Wallet 7',
+        ])
     })
 })
