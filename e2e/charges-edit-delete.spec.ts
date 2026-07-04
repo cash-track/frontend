@@ -159,6 +159,12 @@ test.describe('S12 — Charge Edit + Delete', () => {
             // Edit form should close
             await expect(editForm(page)).not.toBeVisible({ timeout: 5000 })
 
+            // Regression guard (frontend#105): the row's "..." actions dropdown must
+            // also be closed after Save, not just the edit form.
+            await expect(
+                page.getByRole('menuitem', { name: new RegExp(labelStrings('charges.edit').join('|'), 'i') }),
+            ).toBeHidden({ timeout: 5000 })
+
             await assertNoErrorLeak(page)
         } finally {
             await deleteWalletViaApi(request, w.id)
@@ -192,6 +198,12 @@ test.describe('S12 — Charge Edit + Delete', () => {
 
             // Edit form should close
             await expect(editForm(page)).not.toBeVisible({ timeout: 5000 })
+
+            // Regression guard (frontend#105): the row's "..." actions dropdown must
+            // also be closed after Cancel, not just the edit form.
+            await expect(
+                page.getByRole('menuitem', { name: new RegExp(labelStrings('charges.edit').join('|'), 'i') }),
+            ).toBeHidden({ timeout: 5000 })
 
             // Original charge title still visible
             await expect(page.getByText(c.title)).toBeVisible()

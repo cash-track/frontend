@@ -55,16 +55,19 @@ function toggleExpand() {
 function startEdit() {
     isEdit.value = true
     isExpanded.value = false
+    isDropdownOpen.value = false
 }
 
 function cancelEdit() {
     isEdit.value = false
     isExpanded.value = false
+    isDropdownOpen.value = false
 }
 
 function onUpdated(charge: Charge) {
     isEdit.value = false
     isExpanded.value = false
+    isDropdownOpen.value = false
     emit('updated', charge)
 }
 
