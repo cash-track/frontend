@@ -490,4 +490,78 @@ describe('ChargeItem', () => {
         expect(ukResult).toBe(expectedUk)
         expect(ukResult).not.toBe(enResult)
     })
+
+    it('closes the dropdown when the Edit action is selected (startEdit)', async () => {
+        const authStore = useAuthStore()
+        authStore.isEmailConfirmed = true
+
+        const charge = makeCharge({})
+        const wrapper = shallowMount(ChargeItem, {
+            props: { charge, wallet: makeWallet() },
+        })
+
+        const vm = wrapper.vm as unknown as {
+            isDropdownOpen: boolean
+            isEdit: boolean
+            actionItems: Array<Array<{ label: string; onSelect?: () => void }>>
+        }
+        // The user necessarily had the dropdown open to click "Edit"
+        vm.isDropdownOpen = true
+        await nextTick()
+
+        const editItem = vm.actionItems.flat().find(item => item.label === 'charges.edit')
+        expect(editItem?.onSelect).toBeDefined()
+        editItem!.onSelect!()
+        await nextTick()
+
+        expect(vm.isEdit).toBe(true)
+        expect(vm.isDropdownOpen).toBe(false)
+    })
+
+    it('keeps the dropdown closed after cancelling the edit form (cancelEdit)', async () => {
+        const charge = makeCharge({})
+        const wrapper = shallowMount(ChargeItem, {
+            props: { charge, wallet: makeWallet() },
+        })
+
+        const vm = wrapper.vm as unknown as {
+            isDropdownOpen: boolean
+            isEdit: boolean
+            cancelEdit: () => void
+        }
+        // Simulate edit mode having been entered while the dropdown's open flag was stale
+        vm.isEdit = true
+        vm.isDropdownOpen = true
+        await nextTick()
+
+        vm.cancelEdit()
+        await nextTick()
+
+        expect(vm.isEdit).toBe(false)
+        expect(vm.isDropdownOpen).toBe(false)
+    })
+
+    it('keeps the dropdown closed after a successful save (onUpdated)', async () => {
+        const charge = makeCharge({})
+        const wrapper = shallowMount(ChargeItem, {
+            props: { charge, wallet: makeWallet() },
+        })
+
+        const vm = wrapper.vm as unknown as {
+            isDropdownOpen: boolean
+            isEdit: boolean
+            onUpdated: (charge: Charge) => void
+        }
+        vm.isEdit = true
+        vm.isDropdownOpen = true
+        await nextTick()
+
+        vm.onUpdated(charge)
+        await nextTick()
+
+        expect(vm.isEdit).toBe(false)
+        expect(vm.isDropdownOpen).toBe(false)
+        expect(wrapper.emitted('updated')).toBeTruthy()
+        expect(wrapper.emitted('updated')![0]).toEqual([charge])
+    })
 })
