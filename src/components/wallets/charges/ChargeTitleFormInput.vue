@@ -16,6 +16,7 @@ const props = defineProps<{
 const emit = defineEmits<{
     'update:modelValue': [value: string]
     'tag-selected': [tag: Tag]
+    'dropdown-open-change': [open: boolean]
 }>()
 
 const { t } = useI18n()
@@ -174,6 +175,12 @@ function reset() {
 watch(() => props.modelValue, (val) => {
     if (val === '') reset()
     if (val !== localValue.value) localValue.value = val
+})
+
+// Lets ancestors (e.g. a UCollapsible with overflow-hidden) temporarily allow
+// overflow while the suggestions listbox is open, so it isn't clipped.
+watch(dropdownOpen, (open) => {
+    emit('dropdown-open-change', open)
 })
 
 defineExpose({ reset })

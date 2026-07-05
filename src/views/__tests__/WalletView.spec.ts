@@ -96,11 +96,11 @@ const makeGlobal = (walletID = '1') => ({
             USkeleton: { template: '<div />', props: ['class'] },
             UCollapsible: {
                 template: '<div><slot name="content" /></div>',
-                props: ['open', 'unmountOnHide'],
+                props: ['open', 'unmountOnHide', 'ui'],
             },
             Collapsible: {
                 template: '<div><slot name="content" /></div>',
-                props: ['open', 'unmountOnHide'],
+                props: ['open', 'unmountOnHide', 'ui'],
             },
         },
     },
@@ -181,6 +181,87 @@ describe('WalletView.vue', () => {
         // WalletHeader is inside v-else-if="wallet" — must NOT be present
         const { WalletHeader } = makeGlobal().global.stubs as Record<string, unknown>
         expect(wrapper.findComponent(WalletHeader as Parameters<typeof wrapper.findComponent>[0]).exists()).toBe(false)
+    })
+
+    describe('charge title autocomplete overflow override (issue #110)', () => {
+        // WalletView.vue's <UCollapsible> tags resolve at runtime to the global
+        // stub keyed 'Collapsible' (not 'UCollapsible') — verified empirically:
+        // matching against the 'UCollapsible' stub (by name or by reference)
+        // finds nothing, while the 'Collapsible' stub reference finds all 5.
+        function findCreateFormCollapsible(
+            wrapper: ReturnType<typeof mount>,
+            options: ReturnType<typeof makeGlobal>,
+        ) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const chargeCreate = wrapper.findComponent(options.global.stubs.ChargeCreate as any)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const collapsibles = wrapper.findAllComponents(options.global.stubs.Collapsible as any)
+            const createCollapsible = collapsibles.find(c => c.element.contains(chargeCreate.element))
+            return { chargeCreate, createCollapsible, allCollapsibles: collapsibles }
+        }
+
+        it("sets titleAutocompleteOpen from ChargeCreate's relayed dropdown-open-change and binds only the create-form UCollapsible's :ui override", async () => {
+            const options = makeGlobal()
+            const wrapper = mount(WalletView, options)
+            await flushAll()
+
+            const vm = wrapper.vm as unknown as { showCreateForm: boolean; titleAutocompleteOpen: boolean }
+            vm.showCreateForm = true
+            await nextTick()
+
+            const { chargeCreate, createCollapsible, allCollapsibles } = findCreateFormCollapsible(wrapper, options)
+            expect(chargeCreate.exists()).toBe(true)
+            expect(createCollapsible).toBeTruthy()
+
+            // Closed by default: falls back to the theme's default (no override).
+            expect(vm.titleAutocompleteOpen).toBe(false)
+            expect(createCollapsible!.props('ui')).toEqual({ content: '' })
+
+            // The other UCollapsible instances (limits, tags, graph, filters) must never
+            // receive an overflow override — only the one wrapping ChargeCreate does.
+            expect(allCollapsibles.length).toBeGreaterThan(1)
+            const untouched = allCollapsibles.filter(c => c.element !== createCollapsible!.element)
+            expect(untouched.length).toBe(allCollapsibles.length - 1)
+            for (const c of untouched) {
+                expect(c.props('ui')).toBeUndefined()
+            }
+
+            chargeCreate.vm.$emit('dropdown-open-change', true)
+            await nextTick()
+            expect(vm.titleAutocompleteOpen).toBe(true)
+            expect(createCollapsible!.props('ui')).toEqual({ content: 'overflow-visible' })
+
+            chargeCreate.vm.$emit('dropdown-open-change', false)
+            await nextTick()
+            expect(vm.titleAutocompleteOpen).toBe(false)
+            expect(createCollapsible!.props('ui')).toEqual({ content: '' })
+        })
+
+        it('resets titleAutocompleteOpen when the create form closes, even if the dropdown never explicitly emitted false', async () => {
+            // Regression guard for a race: ChargeTitleFormInput's own blur timeout and
+            // the collapsible's exit-animation-driven unmount both fire around 200ms.
+            // If the unmount wins, the child is torn down before its watcher ever emits
+            // the final `false`. WalletView must not depend on receiving that event —
+            // closing the form has to deterministically reset the flag on its own.
+            const options = makeGlobal()
+            const wrapper = mount(WalletView, options)
+            await flushAll()
+
+            const vm = wrapper.vm as unknown as { showCreateForm: boolean; titleAutocompleteOpen: boolean }
+            vm.showCreateForm = true
+            await nextTick()
+
+            const { chargeCreate } = findCreateFormCollapsible(wrapper, options)
+            chargeCreate.vm.$emit('dropdown-open-change', true)
+            await nextTick()
+            expect(vm.titleAutocompleteOpen).toBe(true)
+
+            // Close the form without any further dropdown-open-change event.
+            vm.showCreateForm = false
+            await nextTick()
+
+            expect(vm.titleAutocompleteOpen).toBe(false)
+        })
     })
 
     it('clears wallet on switch-to-failing wallet', async () => {

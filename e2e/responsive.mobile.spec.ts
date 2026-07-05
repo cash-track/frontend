@@ -300,4 +300,76 @@ test.describe('S21 — Responsive / Mobile', () => {
         }
     })
 
+    // RM-09 — Charge title autocomplete listbox is not clipped by the create form's
+    // ancestor UCollapsible (issue #110: the collapsible's content wrapper sets
+    // overflow-hidden unconditionally, which used to clip the absolutely-positioned
+    // suggestions listbox once it grew tall enough to extend past the card).
+    test('RM-09 charge title autocomplete listbox is not clipped inside the create-form collapsible', async ({ request, page }) => {
+        const w = await createWalletViaApi(request, { name: `E2E RM09 ${Date.now()}` })
+        const titleToken = `E2E RM09 Coffee ${Date.now()}`
+        try {
+            // Seed enough distinct titles sharing a common substring to fill the
+            // listbox past its own max-h-60 (240px) cap — the tallest the dropdown
+            // can get, and the case most likely to extend past the card's edge.
+            for (let i = 1; i <= 8; i++) {
+                await createChargeViaApi(request, w.id, { title: `${titleToken} ${i}` })
+            }
+
+            await page.goto(`/wallets/${w.id}`)
+            await expect(wallet.detailHeading(page)).toBeVisible({ timeout: 10000 })
+
+            await charge.newChargeButton(page).click()
+            await expect(charge.titleInput(page)).toBeVisible({ timeout: 5000 })
+
+            await charge.titleInput(page).fill(titleToken)
+
+            const listbox = page.locator('#charge-title-listbox')
+            await expect(listbox).toBeVisible({ timeout: 5000 })
+
+            // All 8 seeded titles share the query substring, so the listbox should
+            // be filled with every one of them (well under the API's limit of 10).
+            const optionCount = await listbox.getByRole('option').count()
+            expect(optionCount).toBe(8)
+
+            // Walk the ancestor chain looking for a clipping overflow (hidden/clip/auto/scroll —
+            // auto and scroll clip just as visually as hidden once content overflows, they just
+            // also draw a scrollbar).
+            // Bounding-box assertions alone can't catch this — getBoundingClientRect
+            // ignores ancestor clipping entirely, so a clipped element still reports
+            // its full un-clipped geometry. Screen-space hit-testing (elementFromPoint)
+            // is unreliable here too: Vite's dev-mode devtools panel overlay docks
+            // over a large chunk of the mobile viewport's bottom edge regardless of
+            // where the point lands. Checking the actual CSS relationship between the
+            // listbox and each ancestor is deterministic and immune to both problems.
+            const clipped = await page.evaluate(() => {
+                const clips = new Set(['hidden', 'clip', 'auto', 'scroll'])
+                const isClipping = (cs: CSSStyleDeclaration) => clips.has(cs.overflowX) || clips.has(cs.overflowY)
+
+                const listbox = document.getElementById('charge-title-listbox')
+                if (!listbox) return true
+                const listboxRect = listbox.getBoundingClientRect()
+
+                let el = listbox.parentElement
+                while (el && el !== document.body) {
+                    if (isClipping(getComputedStyle(el))) {
+                        const rect = el.getBoundingClientRect()
+                        const extendsPast =
+                            listboxRect.bottom > rect.bottom + 0.5 ||
+                            listboxRect.top < rect.top - 0.5 ||
+                            listboxRect.right > rect.right + 0.5 ||
+                            listboxRect.left < rect.left - 0.5
+                        if (extendsPast) return true
+                    }
+                    el = el.parentElement
+                }
+                return false
+            })
+            expect(clipped).toBe(false)
+
+            await assertNoErrorLeak(page)
+        } finally {
+            await deleteWalletViaApi(request, w.id)
+        }
+    })
+
 })

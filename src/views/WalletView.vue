@@ -42,7 +42,7 @@ const showGraph = ref(false)
 const showLimits = ref(false)
 const showTags = shallowRef(false)
 const filter = ref<FilterState>({ dateFrom: '', dateTo: '' })
-
+const titleAutocompleteOpen = ref(false)
 const chargesListRef = ref<InstanceType<typeof ChargesList> | null>(null)
 const flowChartRef = ref<InstanceType<typeof ChargesFlowChart> | null>(null)
 const totalChartRef = ref<InstanceType<typeof ChargesTotalChart> | null>(null)
@@ -219,6 +219,10 @@ watch(() => props.walletID, () => {
     loadWallet()
 })
 
+watch(showCreateForm, (open) => {
+    if (!open) titleAutocompleteOpen.value = false
+})
+
 defineExpose({ wallet, error, showCreateForm, showFilters, showGraph, showLimits, showTags })
 </script>
 
@@ -329,7 +333,11 @@ defineExpose({ wallet, error, showCreateForm, showFilters, showGraph, showLimits
                 </div>
 
                 <!-- Create form -->
-                <UCollapsible v-if="wallet.isActive" v-model:open="showCreateForm">
+                <UCollapsible
+                    v-if="wallet.isActive"
+                    v-model:open="showCreateForm"
+                    :ui="{ content: titleAutocompleteOpen ? 'overflow-visible' : '' }"
+                >
                     <template #content>
                         <div class="border border-default rounded-lg p-4 mb-4">
                             <ChargeCreate
@@ -337,6 +345,7 @@ defineExpose({ wallet, error, showCreateForm, showFilters, showGraph, showLimits
                                 :wallet-tags="walletTags"
                                 @charge-created="onChargeCreated"
                                 @cancelled="showCreateForm = false"
+                                @dropdown-open-change="titleAutocompleteOpen = $event"
                             />
                         </div>
                     </template>
