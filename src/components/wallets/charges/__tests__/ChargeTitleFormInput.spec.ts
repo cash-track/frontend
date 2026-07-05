@@ -74,6 +74,21 @@ describe('ChargeTitleFormInput', () => {
         expect(wrapper.html()).toContain('aria-expanded="true"')
     })
 
+    it('emits dropdown-open-change whenever the internal dropdownOpen ref toggles', async () => {
+        // Ancestors (e.g. a UCollapsible with overflow-hidden) rely on this event to
+        // temporarily allow overflow while the suggestions listbox is open — see
+        // WalletView.vue's titleAutocompleteOpen (issue #110).
+        const wrapper = mountInput()
+        const vm = wrapper.vm as unknown as { dropdownOpen: boolean }
+
+        vm.dropdownOpen = true
+        await nextTick()
+        vm.dropdownOpen = false
+        await nextTick()
+
+        expect(wrapper.emitted('dropdown-open-change')).toEqual([[true], [false]])
+    })
+
     it('dropdown container has role="listbox" when open', async () => {
         const wrapper = mountInput('Groc')
         const vm = wrapper.vm as unknown as { dropdownOpen: boolean }

@@ -20,6 +20,7 @@ const props = defineProps<{
 const emit = defineEmits<{
     'charge-created': [charge: Charge]
     cancelled: []
+    'dropdown-open-change': [open: boolean]
 }>()
 
 const { t } = useI18n()
@@ -183,6 +184,7 @@ const formDate = computed<CalendarDate | null>({
                     :tags="selectedTags"
                     :disabled="loading"
                     @tag-selected="onTagSelected"
+                    @dropdown-open-change="emit('dropdown-open-change', $event)"
                 />
             </UFormField>
         </div>

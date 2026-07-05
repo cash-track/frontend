@@ -7,6 +7,7 @@ import { Currency } from '@/api/models/currency'
 import { Charge } from '@/api/models/charge'
 import { useAuthStore } from '@/stores/auth'
 import ChargeCreate from '../ChargeCreate.vue'
+import ChargeTitleFormInput from '../ChargeTitleFormInput.vue'
 
 vi.mock('vue-i18n', () => ({
     useI18n: () => ({
@@ -210,6 +211,31 @@ describe('ChargeCreate', () => {
         const tip = wrapper.find('[data-tip="emailConfirmRequired"]')
         expect(tip.exists()).toBe(true)
         expect(tip.attributes('data-tip-disabled')).toBe('true')
+    })
+
+    it('relays dropdown-open-change from ChargeTitleFormInput upward unchanged', async () => {
+        const wrapper = shallowMount(ChargeCreate, {
+            props: { wallet: makeWallet() },
+            global: {
+                // ChargeTitleFormInput lives inside a UFormField's default slot. The
+                // auto-stub shallowMount generates for it doesn't render its slot
+                // content, so it must be overridden to reach the real child. Nuxt UI's
+                // <UFormField> tag resolves to a component internally named
+                // 'FormField' (the SFC's own name, not the 'U'-prefixed alias) — the
+                // stub must be keyed by that resolved name to actually apply.
+                stubs: { FormField: { template: '<div><slot /></div>' } },
+            },
+        })
+
+        const titleInput = wrapper.findComponent(ChargeTitleFormInput)
+        expect(titleInput.exists()).toBe(true)
+
+        titleInput.vm.$emit('dropdown-open-change', true)
+        await nextTick()
+        titleInput.vm.$emit('dropdown-open-change', false)
+        await nextTick()
+
+        expect(wrapper.emitted('dropdown-open-change')).toEqual([[true], [false]])
     })
 
     it('optional-field toggle buttons use create-specific i18n keys', () => {
