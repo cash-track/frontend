@@ -15,7 +15,10 @@ const props = defineProps<{ wallet: Wallet }>()
 const { t } = useI18n()
 const router = useRouter()
 const walletsStore = useWalletsStore()
-const { fieldErrors, generalError, handleError, reset } = useApiErrors()
+const { fieldErrors, generalError, handleError, reset } = useApiErrors([
+    'name',
+    'defaultCurrencyCode',
+])
 
 const form = reactive({
     name: props.wallet.name,

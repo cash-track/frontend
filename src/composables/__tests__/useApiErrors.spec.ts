@@ -171,4 +171,119 @@ describe('useApiErrors', () => {
         expect(generalError.value).toBe('unknownError')
         expect(consoleSpy).toHaveBeenCalled()
     })
+
+    describe('known/unknown field split (knownFields option)', () => {
+        it('without knownFields, behaves exactly like the legacy full-fieldErrors mode', () => {
+            const { fieldErrors, generalError, handleError } = useApiErrors()
+
+            handleError(makeAxiosError(422, {
+                errors: { name: ['Required'], somethingNotRendered: ['Unexpected'] },
+            }))
+
+            expect(fieldErrors.value).toEqual({
+                name: ['Required'],
+                somethingNotRendered: ['Unexpected'],
+            })
+            expect(generalError.value).toBeNull()
+        })
+
+        it('all errors for known fields populate fieldErrors only, generalError stays null', () => {
+            const { fieldErrors, generalError, handleError } = useApiErrors(['name', 'email'])
+
+            handleError(makeAxiosError(422, {
+                errors: { name: ['Required'], email: ['Invalid'] },
+            }))
+
+            expect(fieldErrors.value).toEqual({ name: ['Required'], email: ['Invalid'] })
+            expect(generalError.value).toBeNull()
+        })
+
+        it('errors for a field the form does not render go to generalError, not fieldErrors', () => {
+            const { fieldErrors, generalError, handleError } = useApiErrors(['name'])
+
+            handleError(makeAxiosError(422, {
+                errors: { slug: ['Slug is already taken'] },
+            }))
+
+            expect(fieldErrors.value).toEqual({})
+            expect(generalError.value).toBe('Slug is already taken')
+        })
+
+        it('joins multiple unknown-field messages into generalError', () => {
+            const { generalError, handleError } = useApiErrors(['name'])
+
+            handleError(makeAxiosError(422, {
+                errors: {
+                    slug: ['Slug is already taken'],
+                    isPublic: ['Must be a boolean'],
+                },
+            }))
+
+            expect(generalError.value).toBe('Slug is already taken Must be a boolean')
+        })
+
+        it('joins multiple messages for a single unknown field into generalError', () => {
+            const { generalError, handleError } = useApiErrors(['name'])
+
+            handleError(makeAxiosError(422, {
+                errors: { slug: ['Too short', 'Already taken'] },
+            }))
+
+            expect(generalError.value).toBe('Too short Already taken')
+        })
+
+        it('mixed known+unknown: known field -> fieldErrors, unknown field -> generalError', () => {
+            const { fieldErrors, generalError, handleError } = useApiErrors(['name'])
+
+            handleError(makeAxiosError(422, {
+                errors: {
+                    name: ['Name is required'],
+                    slug: ['Slug is already taken'],
+                },
+            }))
+
+            expect(fieldErrors.value).toEqual({ name: ['Name is required'] })
+            expect(fieldErrors.value.slug).toBeUndefined()
+            expect(generalError.value).toBe('Slug is already taken')
+        })
+
+        it('empty errors object still yields the legacy t("validationError") regardless of knownFields', () => {
+            const { fieldErrors, generalError, handleError } = useApiErrors(['name'])
+
+            handleError(makeAxiosError(422, { errors: {} }))
+
+            expect(fieldErrors.value).toEqual({})
+            expect(generalError.value).toBe('validationError')
+        })
+
+        it('unparseable 422 body still yields t("validationError") regardless of knownFields', () => {
+            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+            const { generalError, handleError } = useApiErrors(['name'])
+
+            handleError(makeAxiosError(422, null))
+
+            expect(generalError.value).toBe('validationError')
+            expect(consoleSpy).toHaveBeenCalled()
+        })
+
+        it('non-422 / non-HTTP behaviour is unaffected by knownFields', () => {
+            const { generalError, handleError } = useApiErrors(['name'])
+
+            handleError(new Error('Network failure'))
+
+            expect(generalError.value).toBe('unknownError')
+        })
+
+        it('reset() clears both fieldErrors and a knownFields-derived generalError', () => {
+            const { fieldErrors, generalError, handleError, reset } = useApiErrors(['name'])
+
+            handleError(makeAxiosError(422, { errors: { slug: ['Slug is already taken'] } }))
+            expect(generalError.value).toBe('Slug is already taken')
+
+            reset()
+
+            expect(fieldErrors.value).toEqual({})
+            expect(generalError.value).toBeNull()
+        })
+    })
 })

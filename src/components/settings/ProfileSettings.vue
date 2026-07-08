@@ -14,7 +14,12 @@ import EmailFormInput from '@/components/settings/EmailFormInput.vue'
 const { t } = useI18n()
 const profileStore = useProfileStore()
 const { profile } = storeToRefs(profileStore)
-const { fieldErrors, generalError, handleError, reset } = useApiErrors()
+const { fieldErrors, generalError, handleError, reset } = useApiErrors([
+    'name',
+    'lastName',
+    'nickName',
+    'defaultCurrencyCode',
+])
 
 const form = reactive({
     name: '',

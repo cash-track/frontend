@@ -151,6 +151,28 @@ test.describe('S3 — Wallet Create', () => {
         // skipped because the "unknown error" string is the expected output of a 500.
     })
 
+    // WC-08 — 422 error for a field the form doesn't render surfaces via the
+    // generic alert (generalError), instead of silently vanishing.
+    test('WC-08 422 error for unrendered field shows in general alert', async ({ page }) => {
+        // Navigate first, let currencies load, THEN install route intercept
+        await page.goto('/wallets/create')
+        await expect(wallet.formName(page)).toBeVisible({ timeout: 10000 })
+        await wallet.formName(page).fill('Slug Collision Wallet')
+        await waitForCreateEnabled(page)
+
+        // 'slug' has no bound UFormField in WalletCreate — this must land in the
+        // generic alert (generalError), not get dropped in an unrendered fieldErrors entry.
+        await route422(page, '**/api/wallets', { slug: ['Slug is already taken'] }, 'POST')
+
+        await wallet.formCreate(page).click()
+
+        await expect(page.getByText(/Slug is already taken/i)).toBeVisible({ timeout: 5000 })
+
+        // Still on create page — no redirect
+        await expect(page).toHaveURL(/\/wallets\/create/)
+        await assertNoErrorLeak(page)
+    })
+
     // WC-06 — Cancel link navigates back to /wallets
     test('WC-06 Cancel link goes back to /wallets', async ({ page }) => {
         await page.goto('/wallets/create')

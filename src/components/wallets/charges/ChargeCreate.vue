@@ -24,7 +24,14 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const { fieldErrors, generalError, reset: resetErrors, handleError } = useApiErrors()
+const { fieldErrors, generalError, reset: resetErrors, handleError } = useApiErrors([
+    'amount',
+    'type',
+    'title',
+    'tags',
+    'description',
+    'dateTime',
+])
 const authStore = useAuthStore()
 
 const titleInputRef = ref<InstanceType<typeof ChargeTitleFormInput> | null>(null)
