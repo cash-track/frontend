@@ -292,7 +292,6 @@ export default {
         otherTags: 'Other {0} tags'
     },
 
-    retry: 'Retry',
     emailConfirmRequired: 'Confirm your email to do this',
 
     limits: {

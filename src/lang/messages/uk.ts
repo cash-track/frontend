@@ -292,7 +292,6 @@ export default {
         otherTags: 'Інші {0} тег(ів)'
     },
 
-    retry: 'Повторити',
     emailConfirmRequired: 'Підтвердьте електронну пошту, щоб виконати цю дію',
 
     limits: {
