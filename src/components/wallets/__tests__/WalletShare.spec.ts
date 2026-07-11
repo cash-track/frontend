@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { ref } from 'vue'
-import { mount } from '@vue/test-utils'
+import { mount, flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { Wallet } from '@/api/models/wallet'
 import { User } from '@/api/models/user'
@@ -11,13 +11,11 @@ const {
     mockGetWalletUsers,
     mockFindUsersByCommonWallets,
     mockShareWallet,
-    mockNotifyError,
     mockRouterPush,
 } = vi.hoisted(() => ({
     mockGetWalletUsers: vi.fn(),
     mockFindUsersByCommonWallets: vi.fn(),
     mockShareWallet: vi.fn(),
-    mockNotifyError: vi.fn(),
     mockRouterPush: vi.fn(),
 }))
 
@@ -44,16 +42,26 @@ vi.mock('@/api/users', () => ({
     findUsersByCommonWallets: mockFindUsersByCommonWallets,
 }))
 
-vi.mock('@/composables/useNotifications', () => ({
-    useNotifications: () => ({ notifyError: mockNotifyError }),
-}))
-
 vi.mock('@/composables/useApiErrors', () => ({
-    useApiErrors: () => ({
-        fieldErrors: ref({}),
-        handleError: vi.fn(),
-        reset: vi.fn(),
-    }),
+    useApiErrors: () => {
+        const fieldErrors = ref({})
+        const generalError = ref<string | null>(null)
+        const generalErrorRaw = ref<unknown>(null)
+        return {
+            fieldErrors,
+            generalError,
+            generalErrorRaw,
+            handleError: vi.fn((err: unknown) => {
+                generalError.value = 'unknownError'
+                generalErrorRaw.value = err
+            }),
+            reset: vi.fn(() => {
+                fieldErrors.value = {}
+                generalError.value = null
+                generalErrorRaw.value = null
+            }),
+        }
+    },
 }))
 
 const usd = new Currency({
@@ -116,7 +124,7 @@ describe('WalletShare', () => {
         mockFindUsersByCommonWallets.mockResolvedValue([])
     })
 
-    it('onInvite shows shareInviteError toast on failure', async () => {
+    it('onInvite failure shows a single, specific non-retryable LoadErrorAlert (no toast)', async () => {
         mockShareWallet.mockRejectedValue(new Error('fail'))
 
         const wrapper = mount(WalletShare, {
@@ -126,12 +134,16 @@ describe('WalletShare', () => {
 
         const vm = wrapper.vm as unknown as { onInvite: (user: User) => Promise<void> }
         await vm.onInvite(makeUser())
+        await wrapper.vm.$nextTick()
 
-        expect(mockNotifyError).toHaveBeenCalledWith('wallets.shareInviteError')
-        expect(mockNotifyError).not.toHaveBeenCalledWith('wallets.shareMembersLoadingError')
+        // Specific invite-error message, not the generic unknownError fallback
+        const alert = wrapper.findComponent({ name: 'LoadErrorAlert' })
+        expect(alert.exists()).toBe(true)
+        expect(alert.props('title')).toBe('wallets.shareInviteError')
+        expect(alert.props('retryable')).toBeFalsy()
     })
 
-    it('onInvite does not show error toast on success', async () => {
+    it('onInvite does not show any general-error alert on success', async () => {
         mockShareWallet.mockResolvedValue(undefined)
 
         const wrapper = mount(WalletShare, {
@@ -141,8 +153,55 @@ describe('WalletShare', () => {
 
         const vm = wrapper.vm as unknown as { onInvite: (user: User) => Promise<void> }
         await vm.onInvite(makeUser())
+        await wrapper.vm.$nextTick()
 
-        expect(mockNotifyError).not.toHaveBeenCalled()
+        expect(wrapper.findComponent({ name: 'LoadErrorAlert' }).exists()).toBe(false)
+    })
+
+    it('clears a stale invite-error alert once a later invite on the same instance succeeds', async () => {
+        mockShareWallet.mockRejectedValueOnce(new Error('fail'))
+
+        const wrapper = mount(WalletShare, {
+            props: { wallet: makeWallet() },
+            ...globalStubs,
+        })
+
+        const vm = wrapper.vm as unknown as { onInvite: (user: User) => Promise<void> }
+        await vm.onInvite(makeUser())
+        await wrapper.vm.$nextTick()
+
+        // Alert renders after the failure
+        expect(wrapper.findComponent({ name: 'LoadErrorAlert' }).exists()).toBe(true)
+
+        // Retry the invite — this time it succeeds
+        mockShareWallet.mockResolvedValueOnce(undefined)
+        await vm.onInvite(makeUser())
+        await wrapper.vm.$nextTick()
+
+        // Stale alert must not survive a subsequent successful invite
+        expect(wrapper.findComponent({ name: 'LoadErrorAlert' }).exists()).toBe(false)
+    })
+
+    it('shows a retryable LoadErrorAlert when loading members fails, and reloads on retry', async () => {
+        mockGetWalletUsers.mockReset()
+        mockGetWalletUsers.mockRejectedValueOnce(new Error('load fail'))
+        mockGetWalletUsers.mockResolvedValue([])
+
+        const wrapper = mount(WalletShare, {
+            props: { wallet: makeWallet() },
+            ...globalStubs,
+        })
+        await flushPromises()
+
+        const alerts = wrapper.findAllComponents({ name: 'LoadErrorAlert' })
+        const loadAlert = alerts.find(a => a.props('retryable'))
+        expect(loadAlert).toBeTruthy()
+
+        await loadAlert!.vm.$emit('retry')
+        await flushPromises()
+
+        expect(mockGetWalletUsers).toHaveBeenCalledTimes(2)
+        expect(wrapper.findAllComponents({ name: 'LoadErrorAlert' }).some(a => a.props('retryable'))).toBe(false)
     })
 
     it('close button navigates back to wallets.show', async () => {

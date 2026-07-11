@@ -11,6 +11,7 @@ import ChargeItem from './ChargeItem.vue'
 import { useWalletsStore } from '@/stores/wallets'
 import { useMoneyFormatter } from '@/composables/useMoneyFormatter'
 import { useChargesGrouping } from '@/composables/useChargesGrouping'
+import LoadErrorAlert from '@/components/Shared/LoadErrorAlert.vue'
 
 const props = defineProps<{
     wallet: Wallet
@@ -37,6 +38,7 @@ const pagination = ref<Pagination | null>(null)
 const loading = ref(false)
 const loadingMore = ref(false)
 const error = ref<string | null>(null)
+const lastError = ref<unknown>(null)
 const currentPage = ref(1)
 const sentinelRef = ref<HTMLElement | null>(null)
 let observer: IntersectionObserver | null = null
@@ -117,6 +119,7 @@ async function loadCharges(page = 1, append = false) {
         loading.value = true
     }
     error.value = null
+    lastError.value = null
 
     const params: GetChargesParams = { page }
     if (props.filter?.dateFrom) params['date-from'] = props.filter.dateFrom
@@ -133,9 +136,10 @@ async function loadCharges(page = 1, append = false) {
         }
         pagination.value = result.pagination
         currentPage.value = page
-    } catch {
+    } catch (err) {
         if (token !== loadToken) return
         error.value = append ? t('charges.loadingMoreError') : t('charges.loadingError')
+        lastError.value = err
         if (!append) charges.value = []
     } finally {
         if (token === loadToken) {
@@ -230,23 +234,14 @@ defineExpose({ onChargeCreated })
         </div>
 
         <!-- Error -->
-        <UAlert
+        <LoadErrorAlert
             v-if="error && !loading"
-            color="error"
-            :description="error"
-            icon="i-lucide-alert-circle"
+            :title="error"
+            :error="lastError"
+            retryable
             class="my-3"
+            @retry="loadCharges(1)"
         />
-        <div v-if="error && !loading" class="flex justify-center mb-3">
-            <UButton
-                variant="outline"
-                color="neutral"
-                size="md"
-                @click="loadCharges(1)"
-            >
-                {{ t('retry') }}
-            </UButton>
-        </div>
 
         <!-- Charges list -->
         <div v-if="!error">

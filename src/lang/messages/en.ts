@@ -70,6 +70,7 @@ export default {
     passkeySettings: {
         passkeys: 'Passkeys',
         yourPasskeys: 'Your Passkeys',
+        loadingError: 'Unable to load your passkeys. Please try again later.',
 
         featureSupports: 'Cash Track supports',
         featureSupportsPasskeys: 'Passkeys',
@@ -295,6 +296,7 @@ export default {
     emailConfirmRequired: 'Confirm your email to do this',
 
     limits: {
+        loadingError: 'Unable to load limits. Please try again later.',
         createLimit: 'Create Limit',
         copyFrom: 'Copy From',
         amount: 'Amount',

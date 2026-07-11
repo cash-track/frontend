@@ -81,8 +81,12 @@ test.describe('S9 — Tags List', () => {
 
         await expect(tagsErrorText(page)).toBeVisible({ timeout: 10000 })
 
-        const retryBtn = page.getByRole('button', { name: label('retry') })
+        // Both actions must be present on a GET-load failure: Retry AND Show details
+        const retryBtn = page.getByRole('button', { name: label('common.retry') })
         await expect(retryBtn).toBeVisible()
+        await expect(
+            page.getByRole('button', { name: label('common.showDetails') }),
+        ).toBeVisible()
 
         // Clicking retry should refetch and show the page (or the list / empty state)
         await retryBtn.click()
@@ -211,6 +215,47 @@ test.describe('S9 — Tags List', () => {
         // Field error should appear (rendered by UFormField :error)
         await expect(page.getByText(/Name already taken/i)).toBeVisible({ timeout: 8000 })
         await assertNoErrorLeak(page)
+    })
+
+    // TG-08b — Server 500 (non-422) on POST /api/tags → TagForm renders LoadErrorAlert:
+    // "Show details" toggle present, no Retry button (form submissions are never retryable).
+    // Intentional error test — skip assertNoErrorLeak
+    test('TG-08b server 500 on create shows Show details and no Retry', async ({ page }) => {
+        // Method-filtered: only the create POST fails — the initial GET /api/tags list
+        // load must still succeed so the CreateTag/TagForm UI actually renders.
+        await page.route('**/api/tags', route => {
+            if (route.request().method() === 'POST') {
+                return route.fulfill({
+                    status: 500,
+                    contentType: 'application/json',
+                    body: '{"message":"E2E forced error"}',
+                })
+            }
+            return route.continue()
+        })
+
+        await page.goto('/tags')
+        await expect(tag.nameInput(page)).toBeVisible({ timeout: 10000 })
+
+        await tag.nameInput(page).fill('abc')
+        await expect(tag.createButton(page)).toBeEnabled({ timeout: 5000 })
+        await tag.createButton(page).click()
+
+        // General (non-422) error → LoadErrorAlert, message rendered via :title
+        await expect(
+            page.locator('[data-slot="title"]').filter({ hasText: /error|помилка/i }).first(),
+        ).toBeVisible({ timeout: 8000 })
+
+        // Show details toggle must be present
+        const showDetailsBtn = page.getByRole('button', { name: label('common.showDetails') })
+        await expect(showDetailsBtn).toBeVisible()
+
+        // Retry must NOT be present — this is a mutating submission, not a load
+        await expect(page.getByRole('button', { name: label('common.retry') })).toHaveCount(0)
+
+        // Clicking Show details reveals the raw error text
+        await showDetailsBtn.click()
+        await expect(page.getByRole('button', { name: label('common.hideDetails') })).toBeVisible()
     })
 
     // TG-09 — Chip → Popover → View navigates to /tags/{id} @smoke

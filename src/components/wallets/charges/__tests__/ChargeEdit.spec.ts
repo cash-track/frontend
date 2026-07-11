@@ -23,8 +23,9 @@ vi.mock('vue-router', () => ({
     useRoute: () => ({ params: {} }),
 }))
 
+const mockUpdateCharge = vi.fn()
 vi.mock('@/api/charges', () => ({
-    updateCharge: vi.fn(),
+    updateCharge: (...args: unknown[]) => mockUpdateCharge(...args),
     getChargeTitles: vi.fn().mockResolvedValue([]),
 }))
 
@@ -87,6 +88,25 @@ const tooltipStub = {
 describe('ChargeEdit', () => {
     beforeEach(() => {
         setActivePinia(createPinia())
+        mockUpdateCharge.mockReset()
+    })
+
+    it('shows LoadErrorAlert (no retry) and no plain UAlert for a non-422 updateCharge failure', async () => {
+        mockUpdateCharge.mockRejectedValue(new Error('network error'))
+
+        const wrapper = shallowMount(ChargeEdit, {
+            props: { wallet: makeWallet(), charge: makeCharge() },
+        })
+
+        await wrapper.find('form').trigger('submit')
+
+        await vi.waitFor(() => {
+            expect(wrapper.findComponent({ name: 'LoadErrorAlert' }).exists()).toBe(true)
+        })
+
+        const alert = wrapper.findComponent({ name: 'LoadErrorAlert' })
+        expect(alert.props('retryable')).toBeFalsy()
+        expect(wrapper.findComponent({ name: 'UAlert' }).exists()).toBe(false)
     })
 
     it('submit button tooltip is active (data-tip-disabled=false) when email is not confirmed', () => {

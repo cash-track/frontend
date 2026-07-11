@@ -11,6 +11,7 @@ import { useAuthStore } from '@/stores/auth'
 import ChargeTitleFormInput from './ChargeTitleFormInput.vue'
 import TagFormInput from '@/components/tags/TagFormInput.vue'
 import TagChip from '@/components/tags/Tag.vue'
+import LoadErrorAlert from '@/components/Shared/LoadErrorAlert.vue'
 
 const props = defineProps<{
     wallet: Wallet | WalletShort
@@ -24,7 +25,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const { fieldErrors, generalError, reset: resetErrors, handleError } = useApiErrors([
+const { fieldErrors, generalError, generalErrorRaw, reset: resetErrors, handleError } = useApiErrors([
     'amount',
     'type',
     'title',
@@ -249,8 +250,9 @@ const formDate = computed<CalendarDate | null>({
         </div>
 
         <!-- Error -->
+        <LoadErrorAlert v-if="generalErrorRaw" :title="generalError ?? t('unknownError')" :error="generalErrorRaw" />
         <UAlert
-            v-if="generalError"
+            v-else-if="generalError"
             color="error"
             :description="generalError"
             icon="i-lucide-alert-circle"

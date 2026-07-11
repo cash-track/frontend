@@ -206,6 +206,19 @@ describe('WalletEdit', () => {
         wrapper.unmount()
     })
 
+    it('shows LoadErrorAlert (no retry) and no plain UAlert for a non-422 updateWallet failure', async () => {
+        mockUpdateWallet.mockRejectedValue(new Error('network error'))
+
+        const wrapper = mount(WalletEdit, { props: { wallet: makeWallet() }, ...globalStubs })
+        const vm = wrapper.vm as unknown as { onSubmit: () => Promise<void> }
+        await vm.onSubmit()
+        await wrapper.vm.$nextTick()
+
+        const alert = wrapper.findComponent({ name: 'LoadErrorAlert' })
+        expect(alert.exists()).toBe(true)
+        expect(alert.props('retryable')).toBeFalsy()
+    })
+
     it('calls deleteWallet on confirmed delete', async () => {
         mockDeleteWallet.mockResolvedValue(undefined)
         mockLoadActive.mockResolvedValue(undefined)

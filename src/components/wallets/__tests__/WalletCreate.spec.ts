@@ -228,6 +228,26 @@ describe('WalletCreate', () => {
         expect(vm.generalError).toBe('Slug is already taken')
     })
 
+    it('shows LoadErrorAlert (no retry) and no plain UAlert for a non-422 createWallet failure', async () => {
+        mockCreateWallet.mockRejectedValue(new Error('network error'))
+
+        const wrapper = mount(WalletCreate, globalStubs)
+        const vm = wrapper.vm as unknown as {
+            form: { name: string; defaultCurrencyCode: string }
+            onSubmit: () => Promise<void>
+        }
+        vm.form.name = 'Test Wallet'
+        vm.form.defaultCurrencyCode = 'USD'
+        await wrapper.vm.$nextTick()
+
+        await vm.onSubmit()
+        await wrapper.vm.$nextTick()
+
+        const alert = wrapper.findComponent({ name: 'LoadErrorAlert' })
+        expect(alert.exists()).toBe(true)
+        expect(alert.props('retryable')).toBeFalsy()
+    })
+
     it('keeps a mixed known+unknown 422 split between fieldErrors and generalError', async () => {
         const axiosError = new AxiosError('Validation failed')
         axiosError.response = {

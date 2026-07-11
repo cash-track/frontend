@@ -303,9 +303,9 @@ test.describe('S8 — Charge Create', () => {
             await charge.titleInput(page).fill('test error')
             await charge.createButton(page).click()
 
-            // generalError alert via UAlert description slot
+            // generalError is non-422 → ChargeCreate renders LoadErrorAlert via :title
             await expect(
-                page.locator('[data-slot="description"]').first(),
+                page.locator('[data-slot="title"]').first(),
             ).toBeVisible({ timeout: 5000 })
             // intentional error test — no assertNoErrorLeak
         } finally {

@@ -21,6 +21,7 @@ import ChargesTotalChart from '@/components/wallets/charges/ChargesTotalChart.vu
 import WalletLimitsTotal from '@/components/wallets/limits/WalletLimitsTotal.vue'
 import WalletsActiveShortList from '@/components/wallets/WalletsActiveShortList.vue'
 import MoneyAmount from '@/components/Shared/MoneyAmount.vue'
+import LoadErrorAlert from '@/components/Shared/LoadErrorAlert.vue'
 
 const props = defineProps<{ walletID: string }>()
 
@@ -35,6 +36,7 @@ const walletTags = ref<Tag[]>([])
 const selectedTags = ref<Tag[]>([])
 const loading = ref(false)
 const error = ref<string | null>(null)
+const lastError = ref<unknown>(null)
 
 const showCreateForm = ref(false)
 const showFilters = ref(false)
@@ -51,6 +53,7 @@ const limitsRef = ref<InstanceType<typeof WalletLimitsTotal> | null>(null)
 async function loadWallet() {
     loading.value = true
     error.value = null
+    lastError.value = null
 
     try {
         const walletId = Number(props.walletID)
@@ -64,8 +67,9 @@ async function loadWallet() {
         totals.value = tot
         users.value = u
         walletTags.value = tags
-    } catch {
+    } catch (err) {
         error.value = t('wallets.loadingError')
+        lastError.value = err
         wallet.value = null
         totals.value = null
         users.value = []
@@ -250,11 +254,12 @@ defineExpose({ wallet, error, showCreateForm, showFilters, showGraph, showLimits
         </div>
 
         <!-- Error with no previous content to fall back to -->
-        <UAlert
+        <LoadErrorAlert
             v-else-if="error && !wallet"
-            color="error"
-            :description="error"
-            icon="i-lucide-alert-circle"
+            :title="error"
+            :error="lastError"
+            retryable
+            @retry="loadWallet()"
         />
 
         <!-- Content: kept mounted while switching wallets so it never collapses -->

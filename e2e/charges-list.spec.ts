@@ -18,9 +18,9 @@ const chargesLoadingOverlay = (page: import('@playwright/test').Page) =>
 const chargesEmpty = (page: import('@playwright/test').Page) =>
     page.getByText(new RegExp(labelStrings('charges.empty').join('|'), 'i'))
 
-// Error alert (UAlert has no role=alert — match by description text)
+// Error alert — LoadErrorAlert has no role=alert and renders the message via :title
 const chargesLoadingErrorAlert = (page: import('@playwright/test').Page) =>
-    page.locator('[data-slot="description"]').filter({
+    page.locator('[data-slot="title"]').filter({
         hasText: new RegExp(labelStrings('charges.loadingError').join('|'), 'i'),
     })
 
@@ -28,9 +28,9 @@ const chargesLoadingErrorAlert = (page: import('@playwright/test').Page) =>
 const todayHeader = (page: import('@playwright/test').Page) =>
     page.getByText(new RegExp(labelStrings('charges.today').join('|'), 'i')).first()
 
-// Retry button
+// Retry button (LoadErrorAlert renders it via common.retry)
 const retryBtn = (page: import('@playwright/test').Page) =>
-    page.getByRole('button', { name: label('retry') })
+    page.getByRole('button', { name: label('common.retry') })
 
 // Charge row item (by title text). ChargeItem root is 'group flex items-stretch';
 // this distinguishes it from the day-group header which is 'group px-0 sm:px-4 ...'.

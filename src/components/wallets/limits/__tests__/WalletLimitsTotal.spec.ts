@@ -186,4 +186,22 @@ describe('WalletLimitsTotal', () => {
             'Wallet 11', 'Wallet 10', 'Wallet 9', 'Wallet 8', 'Wallet 7',
         ])
     })
+
+    it('shows a retryable LoadErrorAlert when loading limits fails, and reloads on retry', async () => {
+        vi.mocked(getLimits).mockRejectedValueOnce(new Error('network error'))
+        vi.mocked(getLimits).mockResolvedValue([makeWalletLimit()])
+
+        const wrapper = mountComponent()
+        await flushPromises()
+
+        const alert = wrapper.findComponent({ name: 'LoadErrorAlert' })
+        expect(alert.exists()).toBe(true)
+        expect(alert.props('retryable')).toBe(true)
+
+        await alert.vm.$emit('retry')
+        await flushPromises()
+
+        expect(getLimits).toHaveBeenCalledTimes(2)
+        expect(wrapper.findComponent({ name: 'LoadErrorAlert' }).exists()).toBe(false)
+    })
 })

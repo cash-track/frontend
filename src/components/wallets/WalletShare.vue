@@ -7,19 +7,19 @@ import { findUserByEmail, findUsersByCommonWallets } from '@/api/users'
 import type { Wallet } from '@/api/models/wallet'
 import type { User } from '@/api/models/user'
 import { useApiErrors } from '@/composables/useApiErrors'
-import { useNotifications } from '@/composables/useNotifications'
 import WalletSharedMember from './WalletSharedMember.vue'
+import LoadErrorAlert from '@/components/Shared/LoadErrorAlert.vue'
 
 const props = defineProps<{ wallet: Wallet }>()
 
 const { t } = useI18n()
 const router = useRouter()
-const { fieldErrors, handleError, reset } = useApiErrors(['email'])
-const { notifyError } = useNotifications()
+const { fieldErrors, generalError, generalErrorRaw, handleError, reset } = useApiErrors(['email'])
 
 const members = shallowRef<User[]>([])
 const commonUsers = shallowRef<User[]>([])
 const loadFailed = shallowRef(false)
+const loadLastError = shallowRef<unknown>(null)
 
 const searchEmail = shallowRef('')
 const foundUser = shallowRef<User | null>(null)
@@ -32,7 +32,9 @@ const filteredCommonUsers = computed(() =>
     commonUsers.value.filter(u => !memberIds.value.has(u.id) && u.id !== foundUser.value?.id),
 )
 
-onMounted(async () => {
+async function load() {
+    loadFailed.value = false
+    loadLastError.value = null
     try {
         const [walletUsers, common] = await Promise.all([
             getWalletUsers(props.wallet.id),
@@ -40,10 +42,13 @@ onMounted(async () => {
         ])
         members.value = walletUsers
         commonUsers.value = common
-    } catch {
+    } catch (error) {
         loadFailed.value = true
+        loadLastError.value = error
     }
-})
+}
+
+onMounted(load)
 
 async function onSearch() {
     reset()
@@ -59,6 +64,7 @@ async function onSearch() {
 }
 
 async function onInvite(user: User) {
+    reset()
     inviting.value = true
     try {
         await shareWallet(props.wallet.id, user.id)
@@ -67,7 +73,6 @@ async function onInvite(user: User) {
         searchEmail.value = ''
     } catch (error) {
         handleError(error)
-        notifyError(t('wallets.shareInviteError'))
     } finally {
         inviting.value = false
     }
@@ -106,10 +111,26 @@ function onClose() {
         </template>
 
         <div class="space-y-4">
-            <UAlert
+            <LoadErrorAlert
                 v-if="loadFailed"
+                :title="t('wallets.shareMembersLoadingError')"
+                :error="loadLastError"
+                retryable
+                @retry="load()"
+            />
+
+            <!-- generalErrorRaw is only ever set by onInvite's non-422 catch, so the specific
+                 shareInviteError message is always the right title here (never the generic
+                 unknownError fallback) -->
+            <LoadErrorAlert
+                v-if="generalErrorRaw"
+                :title="t('wallets.shareInviteError')"
+                :error="generalErrorRaw"
+            />
+            <UAlert
+                v-else-if="generalError"
                 color="error"
-                :description="t('wallets.shareMembersLoadingError')"
+                :description="generalError"
                 icon="i-lucide-alert-circle"
             />
 

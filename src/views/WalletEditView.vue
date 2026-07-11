@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { getWallet } from '@/api/wallets'
 import type { Wallet } from '@/api/models/wallet'
 import WalletEdit from '@/components/wallets/WalletEdit.vue'
+import LoadErrorAlert from '@/components/Shared/LoadErrorAlert.vue'
 
 const props = defineProps<{ walletID: string }>()
 
@@ -11,17 +12,23 @@ const { t } = useI18n()
 const wallet = shallowRef<Wallet | null>(null)
 const loading = shallowRef(false)
 const error = shallowRef<string | null>(null)
+const lastError = shallowRef<unknown>(null)
 
-onMounted(async () => {
+async function load() {
     loading.value = true
+    error.value = null
+    lastError.value = null
     try {
         wallet.value = await getWallet(Number(props.walletID))
-    } catch {
+    } catch (err) {
         error.value = t('wallets.loadingError')
+        lastError.value = err
     } finally {
         loading.value = false
     }
-})
+}
+
+onMounted(load)
 </script>
 
 <template>
@@ -29,11 +36,12 @@ onMounted(async () => {
         <div v-if="loading" class="flex justify-center py-12">
             <UIcon name="i-lucide-loader-circle" class="size-8 animate-spin text-muted" />
         </div>
-        <UAlert
+        <LoadErrorAlert
             v-else-if="error"
-            color="error"
-            :description="error"
-            icon="i-lucide-alert-circle"
+            :title="error"
+            :error="lastError"
+            retryable
+            @retry="load()"
         />
         <WalletEdit v-else-if="wallet" :wallet="wallet" />
     </div>

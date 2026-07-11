@@ -38,9 +38,10 @@ const inviteBtn = (page: import('@playwright/test').Page) =>
 const searchError = (page: import('@playwright/test').Page) =>
     page.getByText(new RegExp(labelStrings('wallets.shareSearchError').join('|'), 'i')).first()
 
-// Invite error toast
-const inviteErrorToast = (page: import('@playwright/test').Page) =>
-    page.getByRole('alert').filter({
+// Invite error — non-422 general error, rendered by LoadErrorAlert via :title (no toast:
+// WalletShare shows a single specific inline message rather than a duplicate toast)
+const inviteErrorAlert = (page: import('@playwright/test').Page) =>
+    page.locator('[data-slot="title"]').filter({
         hasText: new RegExp(labelStrings('wallets.shareInviteError').join('|'), 'i'),
     }).first()
 
@@ -234,8 +235,12 @@ test.describe('S7 — Wallet Share', () => {
         }
     })
 
-    // SH-07 — Invite error → notifyError shareInviteError toast
-    test('SH-07 invite API error shows shareInviteError notification', async ({ request, page }) => {
+    // SH-07 — Invite error (non-422) → single specific inline LoadErrorAlert: Show details,
+    // no Retry (mutating action). No toast — the inline alert is the sole error surface.
+    test('SH-07 invite API error shows a specific alert with Show details and no Retry', async ({
+        request,
+        page,
+    }) => {
         const w = await createWalletViaApi(request, { name: `E2E SH07 ${Date.now()}` })
         try {
             const foundUser = mockUser(8004, 'Error User SH07')
@@ -263,8 +268,22 @@ test.describe('S7 — Wallet Share', () => {
             await expect(inviteBtn(page)).toBeVisible({ timeout: 5000 })
             await inviteBtn(page).click()
 
-            // Expect the invite error notification
-            await expect(inviteErrorToast(page)).toBeVisible({ timeout: 10000 })
+            // The specific invite-error message appears in the inline alert (never the
+            // generic "Unknown error" fallback, so assertNoErrorLeak stays meaningful below)
+            await expect(inviteErrorAlert(page)).toBeVisible({ timeout: 10000 })
+
+            // Show details toggle present and functional
+            const showDetailsBtn = page.getByRole('button', { name: label('common.showDetails') })
+            await expect(showDetailsBtn).toBeVisible()
+            await showDetailsBtn.click()
+            await expect(
+                page.getByRole('button', { name: label('common.hideDetails') }),
+            ).toBeVisible()
+
+            // No Retry — inviting is a mutating action, never retryable
+            await expect(
+                page.getByRole('button', { name: label('common.retry') }),
+            ).toHaveCount(0)
 
             await assertNoErrorLeak(page)
         } finally {

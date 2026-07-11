@@ -6,6 +6,7 @@ import type { Tag } from '@/api/models/tag'
 import { useApiErrors } from '@/composables/useApiErrors'
 import { parseTagInput } from '@/shared/strings'
 import TagChip from './Tag.vue'
+import LoadErrorAlert from '@/components/Shared/LoadErrorAlert.vue'
 
 const props = defineProps<{
     tag?: Tag | null
@@ -17,7 +18,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const { fieldErrors, generalError, reset: resetErrors, handleError } = useApiErrors([
+const { fieldErrors, generalError, generalErrorRaw, reset: resetErrors, handleError } = useApiErrors([
     'name',
     'icon',
 ])
@@ -168,8 +169,14 @@ defineExpose({ validationError })
             </p>
 
             <!-- General error -->
+            <LoadErrorAlert
+                v-if="generalErrorRaw"
+                :title="generalError ?? t('unknownError')"
+                :error="generalErrorRaw"
+                class="mt-3"
+            />
             <UAlert
-                v-if="generalError"
+                v-else-if="generalError"
                 color="error"
                 :description="generalError"
                 icon="i-lucide-alert-circle"

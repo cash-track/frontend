@@ -104,6 +104,31 @@ describe('PasskeysSettings', () => {
         expect(vm.addError).not.toBe('Unexpected token in JSON')
     })
 
+    it('shows a retryable LoadErrorAlert when loading passkeys fails, and reloads on retry', async () => {
+        mockGetPasskeys.mockReset()
+        mockGetPasskeys.mockRejectedValueOnce(new Error('network error'))
+        mockGetPasskeys.mockResolvedValue([makePasskey()])
+
+        const wrapper = mount(PasskeysSettings, globalStubs)
+        await wrapper.vm.$nextTick()
+        await wrapper.vm.$nextTick()
+
+        const alert = wrapper.findComponent({ name: 'LoadErrorAlert' })
+        expect(alert.exists()).toBe(true)
+        expect(alert.props('retryable')).toBe(true)
+
+        const vm = wrapper.vm as unknown as { failed: boolean; passkeys: Passkey[] }
+        expect(vm.failed).toBe(true)
+
+        await alert.vm.$emit('retry')
+        await wrapper.vm.$nextTick()
+        await wrapper.vm.$nextTick()
+
+        expect(mockGetPasskeys).toHaveBeenCalledTimes(2)
+        expect(vm.failed).toBe(false)
+        expect(vm.passkeys).toHaveLength(1)
+    })
+
     it('appends stored passkey to list on success', async () => {
         const stored = makePasskey()
         mockInitPasskey.mockResolvedValue({ data: btoa(JSON.stringify({})), challenge: 'ch' })

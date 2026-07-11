@@ -56,6 +56,23 @@ const popoverStub = {
 
 const tagChipStub = { template: '<button data-testid="tag-chip"></button>', props: ['tag', 'navigable'] }
 
+// LoadErrorAlert stub that emits retry on button click
+const loadErrorAlertStub = {
+    name: 'LoadErrorAlert',
+    props: {
+        title: {},
+        error: {},
+        retryable: { type: Boolean, default: false },
+    },
+    emits: ['retry'],
+    template: `
+        <div class="load-error-alert-stub">
+            <span class="load-error-title">{{ title }}</span>
+            <button v-if="retryable" class="load-error-retry" @click="$emit('retry')">retry</button>
+        </div>
+    `,
+}
+
 const makeGlobal = () => ({
     global: {
         stubs: {
@@ -73,6 +90,7 @@ const makeGlobal = () => ({
             },
             UModal: { template: '<div><slot name="body" /></div>', props: ['open', 'title'] },
             UAlert: { template: '<div />', props: ['color', 'description', 'icon', 'variant'] },
+            LoadErrorAlert: loadErrorAlertStub,
             UIcon: { template: '<span />', props: ['name', 'class'] },
             Icon: { template: '<span />', props: ['name', 'class'] },
             USkeleton: { template: '<div />', props: ['class'] },
@@ -281,20 +299,17 @@ describe('TagsView.vue', () => {
         await nextTick()
         await nextTick()
 
-        // Error state: retry button must be visible
-        const text = wrapper.text()
-        expect(text).toContain('retry')
+        // Error state: LoadErrorAlert with a retry button must be visible
+        expect(wrapper.find('.load-error-alert-stub').exists()).toBe(true)
+        const retryBtn = wrapper.find('.load-error-retry')
+        expect(retryBtn.exists()).toBe(true)
 
         // Prepare a successful response for the retry
         const tag = makeTag({ id: 1, name: 'Food' })
         vi.mocked(getTags).mockResolvedValue([tag])
 
         // Click the retry button
-        const buttons = wrapper.findAll('button')
-        const retryBtn = buttons.find(b => b.text() === 'retry')
-        expect(retryBtn).toBeDefined()
-
-        await retryBtn!.trigger('click')
+        await retryBtn.trigger('click')
         await nextTick()
         await nextTick()
 

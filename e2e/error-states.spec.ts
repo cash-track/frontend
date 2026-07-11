@@ -14,17 +14,13 @@ import {
 
 // ── Local selectors ───────────────────────────────────────────────────────────
 
-// UAlert rendered via :description (no role=alert in Nuxt UI — match data-slot="description")
-const alertDescription = (page: import('@playwright/test').Page, text: RegExp) =>
-    page.locator('[data-slot="description"]').filter({ hasText: text }).first()
-
 // Generic text match (for alerts rendered with :title — WalletsActiveGridList uses :title)
 const alertTitle = (page: import('@playwright/test').Page, text: RegExp) =>
     page.locator('[data-slot="title"]').filter({ hasText: text }).first()
 
-// Retry button (retry key)
+// Retry button (LoadErrorAlert renders it via common.retry)
 const retryBtn = (page: import('@playwright/test').Page) =>
-    page.getByRole('button', { name: label('retry') })
+    page.getByRole('button', { name: label('common.retry') })
 
 // Nav shell still intact check
 const navShellVisible = async (page: import('@playwright/test').Page) => {
@@ -77,8 +73,8 @@ test.describe('S20 — Error States', () => {
             await page.goto(`/wallets/${w.id}`)
 
             const errorText = new RegExp(labelStrings('wallets.loadingError').join('|'), 'i')
-            // WalletView renders UAlert with :description="error" when load fails
-            await expect(alertDescription(page, errorText)).toBeVisible({ timeout: 10000 })
+            // WalletView renders LoadErrorAlert with :title="error" when load fails
+            await expect(alertTitle(page, errorText)).toBeVisible({ timeout: 10000 })
 
             await navShellVisible(page)
         } finally {
@@ -109,7 +105,8 @@ test.describe('S20 — Error States', () => {
             await expect(page.getByRole('heading', { level: 2 })).toBeVisible({ timeout: 10000 })
 
             const errorText = new RegExp(labelStrings('charges.loadingError').join('|'), 'i')
-            await expect(alertDescription(page, errorText)).toBeVisible({ timeout: 10000 })
+            // ChargesList renders LoadErrorAlert with :title="error"
+            await expect(alertTitle(page, errorText)).toBeVisible({ timeout: 10000 })
 
             // Retry button must be present
             await expect(retryBtn(page)).toBeVisible()
@@ -127,8 +124,8 @@ test.describe('S20 — Error States', () => {
         await page.goto('/tags')
 
         const errorText = new RegExp(labelStrings('tags.statsLoadingError').join('|'), 'i')
-        // TagsView renders UAlert with :description="error"
-        await expect(alertDescription(page, errorText)).toBeVisible({ timeout: 10000 })
+        // TagsView renders LoadErrorAlert with :title="error"
+        await expect(alertTitle(page, errorText)).toBeVisible({ timeout: 10000 })
 
         // Retry button
         await expect(retryBtn(page)).toBeVisible()

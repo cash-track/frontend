@@ -64,6 +64,11 @@ vi.mock('@/lang', () => ({
         { code: 'en', name: '🇺🇸 English', flag: '🇺🇸' },
         { code: 'uk', name: '🇺🇦 Українська', flag: '🇺🇦' },
     ],
+    default: {
+        global: {
+            t: (key: string) => key,
+        },
+    },
 }))
 
 const globalStubs = {
@@ -289,6 +294,21 @@ describe('ProfileSettings', () => {
 
         expect(mockSetProfile).toHaveBeenCalledWith(mockUser)
         expect(vm.successMessage).toBe('profileSettings.success')
+    })
+
+    it('shows LoadErrorAlert (no retry) and no plain UAlert for a non-422 updateProfile failure', async () => {
+        mockUpdateProfile.mockRejectedValue(new Error('network error'))
+
+        const wrapper = mount(ProfileSettings, globalStubs)
+        const vm = wrapper.vm as unknown as { onSubmit: () => Promise<void> }
+        await vm.onSubmit()
+        await nextTick()
+
+        const alert = wrapper.findComponent({ name: 'LoadErrorAlert' })
+        expect(alert.exists()).toBe(true)
+        expect(alert.props('retryable')).toBeFalsy()
+        // The stubbed plain UAlert only renders for the 422 branch (generalError without generalErrorRaw)
+        expect(wrapper.text()).not.toContain('validationError')
     })
 
     it('converts empty lastName to null on submit', async () => {

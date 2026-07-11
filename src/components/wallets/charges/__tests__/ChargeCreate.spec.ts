@@ -116,6 +116,29 @@ describe('ChargeCreate', () => {
         expect(callArgs[1].type).toBe('-') // default is expense
     })
 
+    it('shows LoadErrorAlert (no retry) and no plain UAlert for a non-422 createCharge failure', async () => {
+        mockCreateCharge.mockRejectedValue(new Error('network error'))
+
+        const wrapper = shallowMount(ChargeCreate, {
+            props: { wallet: makeWallet() },
+        })
+
+        const vm = wrapper.vm as unknown as { amount: number | null; title: string }
+        vm.amount = 50
+        vm.title = 'Test charge'
+
+        await wrapper.find('form').trigger('submit')
+
+        await vi.waitFor(() => {
+            const alert = wrapper.findComponent({ name: 'LoadErrorAlert' })
+            expect(alert.exists()).toBe(true)
+        })
+
+        const alert = wrapper.findComponent({ name: 'LoadErrorAlert' })
+        expect(alert.props('retryable')).toBeFalsy()
+        expect(wrapper.findComponent({ name: 'UAlert' }).exists()).toBe(false)
+    })
+
     it('emits charge-created after successful submission', async () => {
         const charge = makeCharge(50)
         mockCreateCharge.mockResolvedValue(charge)

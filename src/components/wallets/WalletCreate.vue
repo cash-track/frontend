@@ -8,12 +8,13 @@ import type { Currency } from '@/api/models/currency'
 import { useApiErrors } from '@/composables/useApiErrors'
 import { useProfileStore } from '@/stores/profile'
 import { useWalletsStore } from '@/stores/wallets'
+import LoadErrorAlert from '@/components/Shared/LoadErrorAlert.vue'
 
 const { t } = useI18n()
 const router = useRouter()
 const profileStore = useProfileStore()
 const walletsStore = useWalletsStore()
-const { fieldErrors, generalError, handleError, reset } = useApiErrors([
+const { fieldErrors, generalError, generalErrorRaw, handleError, reset } = useApiErrors([
     'name',
     'defaultCurrencyCode',
 ])
@@ -106,8 +107,9 @@ async function onSubmit() {
                 />
             </UFormField>
 
+            <LoadErrorAlert v-if="generalErrorRaw" :title="generalError ?? t('unknownError')" :error="generalErrorRaw" />
             <UAlert
-                v-if="generalError"
+                v-else-if="generalError"
                 color="error"
                 :description="generalError"
                 icon="i-lucide-alert-circle"
