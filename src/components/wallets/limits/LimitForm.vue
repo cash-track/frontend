@@ -21,7 +21,11 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const { fieldErrors, generalError, reset: resetErrors, handleError } = useApiErrors()
+const { fieldErrors, generalError, reset: resetErrors, handleError } = useApiErrors([
+    'tags',
+    'amount',
+    'type',
+])
 
 const tagInputRef = ref<InstanceType<typeof TagFormInput> | null>(null)
 const loading = ref(false)

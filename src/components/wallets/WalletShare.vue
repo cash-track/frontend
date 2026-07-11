@@ -14,7 +14,7 @@ const props = defineProps<{ wallet: Wallet }>()
 
 const { t } = useI18n()
 const router = useRouter()
-const { fieldErrors, handleError, reset } = useApiErrors()
+const { fieldErrors, handleError, reset } = useApiErrors(['email'])
 const { notifyError } = useNotifications()
 
 const members = shallowRef<User[]>([])

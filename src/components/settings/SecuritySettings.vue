@@ -5,7 +5,11 @@ import { updatePassword } from '@/api/profile/password'
 import { useApiErrors } from '@/composables/useApiErrors'
 
 const { t } = useI18n()
-const { fieldErrors, generalError, handleError, reset } = useApiErrors()
+const { fieldErrors, generalError, handleError, reset } = useApiErrors([
+    'currentPassword',
+    'newPassword',
+    'newPasswordConfirmation',
+])
 
 const form = reactive({
     currentPassword: '',

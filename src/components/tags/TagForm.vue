@@ -17,7 +17,10 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const { fieldErrors, generalError, reset: resetErrors, handleError } = useApiErrors()
+const { fieldErrors, generalError, reset: resetErrors, handleError } = useApiErrors([
+    'name',
+    'icon',
+])
 
 const nameInput = ref('')
 const color = ref('#6366f1')

@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { ref } from 'vue'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
+import { AxiosError } from 'axios'
 import WalletCreate from '../WalletCreate.vue'
 
 const { mockCreateWallet, mockLoadActive, mockRouterPush } = vi.hoisted(() => ({
@@ -195,5 +196,69 @@ describe('WalletCreate', () => {
         // if we call onSubmit directly with empty name and no currency it won't have been called
         // because the button is disabled — here we verify the API was not called when name is blank
         expect(mockCreateWallet).not.toHaveBeenCalled()
+    })
+
+    it('routes a 422 error for a field the form does not render into generalError', async () => {
+        const axiosError = new AxiosError('Validation failed')
+        axiosError.response = {
+            status: 422,
+            data: { errors: { slug: ['Slug is already taken'] } },
+            headers: {},
+            config: {} as never,
+            statusText: 'Unprocessable Entity',
+        }
+        mockCreateWallet.mockRejectedValue(axiosError)
+
+        const wrapper = mount(WalletCreate, globalStubs)
+        const vm = wrapper.vm as unknown as {
+            form: { name: string; defaultCurrencyCode: string }
+            onSubmit: () => Promise<void>
+            fieldErrors: Record<string, string[]>
+            generalError: string | null
+        }
+        vm.form.name = 'Test Wallet'
+        vm.form.defaultCurrencyCode = 'USD'
+        await wrapper.vm.$nextTick()
+
+        await vm.onSubmit()
+
+        // 'slug' has no bound UFormField in this form — it must not vanish into an
+        // unrendered fieldErrors entry, it must surface via the generic alert instead.
+        expect(vm.fieldErrors.slug).toBeUndefined()
+        expect(vm.generalError).toBe('Slug is already taken')
+    })
+
+    it('keeps a mixed known+unknown 422 split between fieldErrors and generalError', async () => {
+        const axiosError = new AxiosError('Validation failed')
+        axiosError.response = {
+            status: 422,
+            data: {
+                errors: {
+                    name: ['Name is required'],
+                    slug: ['Slug is already taken'],
+                },
+            },
+            headers: {},
+            config: {} as never,
+            statusText: 'Unprocessable Entity',
+        }
+        mockCreateWallet.mockRejectedValue(axiosError)
+
+        const wrapper = mount(WalletCreate, globalStubs)
+        const vm = wrapper.vm as unknown as {
+            form: { name: string; defaultCurrencyCode: string }
+            onSubmit: () => Promise<void>
+            fieldErrors: Record<string, string[]>
+            generalError: string | null
+        }
+        vm.form.name = 'Test Wallet'
+        vm.form.defaultCurrencyCode = 'USD'
+        await wrapper.vm.$nextTick()
+
+        await vm.onSubmit()
+
+        expect(vm.fieldErrors.name?.[0]).toBe('Name is required')
+        expect(vm.fieldErrors.slug).toBeUndefined()
+        expect(vm.generalError).toBe('Slug is already taken')
     })
 })
