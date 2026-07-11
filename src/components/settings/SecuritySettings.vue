@@ -3,9 +3,10 @@ import { reactive, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { updatePassword } from '@/api/profile/password'
 import { useApiErrors } from '@/composables/useApiErrors'
+import LoadErrorAlert from '@/components/Shared/LoadErrorAlert.vue'
 
 const { t } = useI18n()
-const { fieldErrors, generalError, handleError, reset } = useApiErrors([
+const { fieldErrors, generalError, generalErrorRaw, handleError, reset } = useApiErrors([
     'currentPassword',
     'newPassword',
     'newPasswordConfirmation',
@@ -103,8 +104,9 @@ async function onSubmit() {
                 />
             </UFormField>
 
+            <LoadErrorAlert v-if="generalErrorRaw" :title="generalError ?? t('unknownError')" :error="generalErrorRaw" />
             <UAlert
-                v-if="generalError"
+                v-else-if="generalError"
                 color="error"
                 :description="generalError"
                 icon="i-lucide-alert-circle"

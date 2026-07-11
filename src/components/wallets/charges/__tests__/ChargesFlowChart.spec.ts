@@ -161,4 +161,27 @@ describe('ChargesFlowChart', () => {
         expect(result).toBe('1235')
         expect(String(result)).not.toMatch(/[.,]\d{2}$/)
     })
+
+    it('shows a retryable LoadErrorAlert on load failure, and reloads on retry', async () => {
+        mockGetChargesFlowByDate.mockRejectedValue(new Error('network error'))
+
+        const wrapper = shallowMount(ChargesFlowChart, {
+            props: { walletId: 1, currency: usd },
+        })
+        await new Promise(r => setTimeout(r, 0))
+        await nextTick()
+
+        const alert = wrapper.findComponent({ name: 'LoadErrorAlert' })
+        expect(alert.exists()).toBe(true)
+        expect(alert.props('retryable')).toBe(true)
+
+        mockGetChargesFlowByDate.mockResolvedValue(nonZeroData)
+
+        await alert.vm.$emit('retry')
+        await new Promise(r => setTimeout(r, 0))
+        await nextTick()
+
+        expect(wrapper.findComponent({ name: 'LoadErrorAlert' }).exists()).toBe(false)
+        expect(wrapper.findComponent({ name: 'Bar' }).exists()).toBe(true)
+    })
 })

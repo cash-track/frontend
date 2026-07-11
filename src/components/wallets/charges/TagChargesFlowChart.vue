@@ -17,6 +17,7 @@ import { getTagChargesFlow, type ChargesFlowDataPoint, type GetChargesFlowParams
 import type { Currency } from '@/api/models/currency'
 import type { FilterState } from '@/components/wallets/charges/ChargesFilter.vue'
 import { useMoneyFormatter } from '@/composables/useMoneyFormatter'
+import LoadErrorAlert from '@/components/Shared/LoadErrorAlert.vue'
 
 ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale)
 
@@ -34,6 +35,7 @@ type GroupBy = 'day' | 'month' | 'year'
 const groupBy = shallowRef<GroupBy>('day')
 const loading = shallowRef(false)
 const error = shallowRef<string | null>(null)
+const lastError = shallowRef<unknown>(null)
 const dataPoints = shallowRef<ChargesFlowDataPoint[]>([])
 const hasLoaded = shallowRef(false)
 
@@ -99,14 +101,16 @@ const chartOptions = computed<ChartOptions<'bar'>>(() => ({
 async function loadData() {
     loading.value = true
     error.value = null
+    lastError.value = null
     try {
         const params: GetChargesFlowParams = { 'group-by': groupBy.value }
         if (props.filter?.dateFrom) params['date-from'] = props.filter.dateFrom
         if (props.filter?.dateTo) params['date-to'] = props.filter.dateTo
         dataPoints.value = await getTagChargesFlow(props.tagId, params)
         hasLoaded.value = true
-    } catch {
+    } catch (err) {
         error.value = t('wallets.chartLoadingError')
+        lastError.value = err
     } finally {
         loading.value = false
     }
@@ -134,11 +138,12 @@ defineExpose({ reload: loadData, chartOptions })
             />
         </div>
 
-        <UAlert
+        <LoadErrorAlert
             v-if="error && !hasLoaded"
-            color="error"
-            :description="error"
-            icon="i-lucide-alert-circle"
+            :title="error"
+            :error="lastError"
+            retryable
+            @retry="loadData()"
         />
 
         <div v-else class="relative h-[300px]">

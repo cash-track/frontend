@@ -398,7 +398,7 @@ describe('ChargesList', () => {
         expect(vm.charges.length).toBe(0)
     })
 
-    it('shows retry button on load error and reloads charges on click', async () => {
+    it('shows LoadErrorAlert with retryable on load error and reloads charges when retry is emitted', async () => {
         mockGetCharges.mockRejectedValue(new Error('network error'))
 
         const wrapper = shallowMount(ChargesList, {
@@ -415,16 +415,16 @@ describe('ChargesList', () => {
         const vm = wrapper.vm as unknown as { error: string | null; loadCharges: (page: number) => Promise<void> }
         expect(vm.error).toBeTruthy()
 
-        // In shallowMount, UButton renders as <u-button-stub> — the wrapper div with
-        // v-if="error && !loading" must be in the DOM
-        const retryWrapper = wrapper.find('.flex.justify-center.mb-3')
-        expect(retryWrapper.exists()).toBe(true)
+        // In shallowMount, LoadErrorAlert renders as a stub — v-if="error && !loading" must be in the DOM
+        const alert = wrapper.findComponent({ name: 'LoadErrorAlert' })
+        expect(alert.exists()).toBe(true)
+        expect(alert.props('retryable')).toBe(true)
 
         // Set up a successful response for the retry
         mockGetCharges.mockResolvedValue({ data: [makeCharge()], pagination: makePagination() })
 
-        // Call loadCharges directly (equivalent to clicking the retry button)
-        await vm.loadCharges(1)
+        // Emit retry (equivalent to clicking the LoadErrorAlert's retry action)
+        await alert.vm.$emit('retry')
         await nextTick()
 
         // getCharges must have been called a second time

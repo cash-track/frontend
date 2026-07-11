@@ -70,6 +70,7 @@ export default {
     passkeySettings: {
         passkeys: 'Ключі доступу',
         yourPasskeys: 'Ваші ключі',
+        loadingError: 'Не вдалося завантажити ваші ключі доступу. Будь ласка, спробуйте пізніше.',
 
         featureSupports: 'Cash Track підтримує',
         featureSupportsPasskeys: 'Ключі доступу (Passkeys)',
@@ -291,10 +292,10 @@ export default {
         otherTags: 'Інші {0} тег(ів)'
     },
 
-    retry: 'Повторити',
     emailConfirmRequired: 'Підтвердьте електронну пошту, щоб виконати цю дію',
 
     limits: {
+        loadingError: 'Не вдалося завантажити ліміти. Будь ласка, спробуйте пізніше.',
         createLimit: 'Створити ліміт',
         copyFrom: 'Скопіювати',
         amount: 'Сума',

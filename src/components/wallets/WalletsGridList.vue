@@ -51,6 +51,7 @@ onMounted(reload)
             v-else-if="failed"
             :title="t('wallets.listLoadingError')"
             :error="lastError"
+            retryable
             @retry="reload()"
         />
 

@@ -28,11 +28,12 @@ const alertStub = {
     `,
 }
 
-function mountComponent(props: { title?: string; error?: unknown } = {}) {
+function mountComponent(props: { title?: string; error?: unknown; retryable?: boolean } = {}) {
     return mount(LoadErrorAlert, {
         props: {
             title: props.title ?? 'Test title',
             error: props.error ?? null,
+            ...(props.retryable !== undefined ? { retryable: props.retryable } : {}),
         },
         global: {
             plugins: [createPinia()],
@@ -54,14 +55,38 @@ describe('LoadErrorAlert', () => {
         expect(wrapper.text()).toContain('wallets.listLoadingError')
     })
 
-    it('shows common.retry and common.showDetails action labels', () => {
-        const wrapper = mountComponent()
+    it('shows common.retry and common.showDetails action labels when retryable', () => {
+        const wrapper = mountComponent({ retryable: true })
         expect(wrapper.text()).toContain('common.retry')
         expect(wrapper.text()).toContain('common.showDetails')
     })
 
+    it('does not show common.retry when retryable is omitted (defaults false)', () => {
+        const wrapper = mountComponent()
+        expect(wrapper.text()).not.toContain('common.retry')
+        expect(wrapper.text()).toContain('common.showDetails')
+    })
+
+    it('does not show common.retry when retryable is explicitly false', () => {
+        const wrapper = mountComponent({ retryable: false })
+        expect(wrapper.text()).not.toContain('common.retry')
+        expect(wrapper.text()).toContain('common.showDetails')
+    })
+
+    it('never emits retry and has no retry button when not retryable', async () => {
+        const wrapper = mountComponent({ error: new Error('fail'), retryable: false })
+        const retryBtn = wrapper.findAll('button.u-alert-action').find(b => b.text() === 'common.retry')
+        expect(retryBtn).toBeUndefined()
+
+        // Show Details still works normally with retryable off.
+        const detailsBtn = wrapper.findAll('button.u-alert-action').find(b => b.text() === 'common.showDetails')
+        await detailsBtn!.trigger('click')
+        expect(wrapper.find('pre').exists()).toBe(true)
+        expect(wrapper.emitted('retry')).toBeUndefined()
+    })
+
     it('emits retry and resets showDetails when Try Again is clicked', async () => {
-        const wrapper = mountComponent({ error: new Error('fail') })
+        const wrapper = mountComponent({ error: new Error('fail'), retryable: true })
 
         // open details first
         const detailsBtn = wrapper.findAll('button.u-alert-action').find(b => b.text() === 'common.showDetails')

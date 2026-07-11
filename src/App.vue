@@ -61,6 +61,7 @@ watch(locale, () => setDocumentTitle(router.currentRoute.value))
                     v-else-if="failed"
                     :title="t('profile.loadError')"
                     :error="lastError"
+                    retryable
                     @retry="profileStore.loadProfile()"
                 />
             </UContainer>

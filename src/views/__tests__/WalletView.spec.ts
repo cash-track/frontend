@@ -183,6 +183,29 @@ describe('WalletView.vue', () => {
         expect(wrapper.findComponent(WalletHeader as Parameters<typeof wrapper.findComponent>[0]).exists()).toBe(false)
     })
 
+    it('shows a retryable LoadErrorAlert on load failure, and reloads on retry', async () => {
+        vi.mocked(getWallet).mockRejectedValueOnce(new Error('network error'))
+
+        const wrapper = mount(WalletView, makeGlobal())
+        await flushAll()
+
+        const alert = wrapper.findComponent({ name: 'LoadErrorAlert' })
+        expect(alert.exists()).toBe(true)
+        expect(alert.props('retryable')).toBe(true)
+
+        vi.mocked(getWallet).mockResolvedValue(makeWallet())
+        const callsBeforeRetry = vi.mocked(getWallet).mock.calls.length
+
+        await alert.vm.$emit('retry')
+        await flushAll()
+
+        expect(vi.mocked(getWallet).mock.calls.length).toBe(callsBeforeRetry + 1)
+        expect(wrapper.findComponent({ name: 'LoadErrorAlert' }).exists()).toBe(false)
+        const vm = wrapper.vm as unknown as { wallet: Wallet | null; error: string | null }
+        expect(vm.wallet).not.toBeNull()
+        expect(vm.error).toBeNull()
+    })
+
     describe('charge title autocomplete overflow override (issue #110)', () => {
         // WalletView.vue's <UCollapsible> tags resolve at runtime to the global
         // stub keyed 'Collapsible' (not 'UCollapsible') — verified empirically:

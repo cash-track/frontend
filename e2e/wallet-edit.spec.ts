@@ -116,10 +116,9 @@ test.describe('S4 — Wallet Edit', () => {
 
             await wallet.formUpdate(page).click()
 
-            // UAlert has no role="alert"; it renders as div[data-slot="root"]
-            // The generalError description appears in [data-slot="description"]
+            // 500 is non-422 → WalletEdit renders LoadErrorAlert via :title (not :description)
             await expect(
-                page.locator('[data-slot="description"]').first(),
+                page.locator('[data-slot="title"]').first(),
             ).toBeVisible({ timeout: 5000 })
             await expect(page).toHaveURL(new RegExp(`/wallets/${seeded.id}/edit`))
             // Skip assertNoErrorLeak — 500 intentionally surfaces the unknown-error text
@@ -219,13 +218,13 @@ test.describe('S4 — Wallet Edit', () => {
 
             await overlay.confirmDelete(page).click()
 
-            // After error: modal closes, generalError displayed in the form (div[data-slot="description"])
+            // After error: modal closes, generalError displayed in the form via LoadErrorAlert
             // Also: dialog should close
             await expect(overlay.dialog(page)).not.toBeVisible({ timeout: 5000 })
 
-            // General error alert appears — UAlert renders description in [data-slot="description"]
+            // General error alert appears — 500 is non-422 → renders via :title
             await expect(
-                page.locator('[data-slot="description"]').first(),
+                page.locator('[data-slot="title"]').first(),
             ).toBeVisible({ timeout: 5000 })
 
             // Form is still on the edit page (stays usable)

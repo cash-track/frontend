@@ -392,7 +392,10 @@ test.describe('S10 — Tag Detail', () => {
             // UAlert is not role="alert" — match by text
             await expect(chargesLoadErrorText(page)).toBeVisible({ timeout: 10000 })
 
-            const retryBtn = page.getByRole('button', { name: label('retry') })
+            // Route glob also matches TagChargesFlowChart's /charges/graph endpoint, so both
+            // it and the charges list show their own LoadErrorAlert + retry button — use
+            // .first() since we only assert that at least one retry action is present.
+            const retryBtn = page.getByRole('button', { name: label('common.retry') }).first()
             await expect(retryBtn).toBeVisible()
 
             await assertNoErrorLeak(page)

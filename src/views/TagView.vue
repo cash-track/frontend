@@ -13,6 +13,7 @@ import ChargesFilter from '@/components/wallets/charges/ChargesFilter.vue'
 import ChargeItem from '@/components/wallets/charges/ChargeItem.vue'
 import TagChargesFlowChart from '@/components/wallets/charges/TagChargesFlowChart.vue'
 import WalletsActiveShortList from '@/components/wallets/WalletsActiveShortList.vue'
+import LoadErrorAlert from '@/components/Shared/LoadErrorAlert.vue'
 import { useChargesGrouping } from '@/composables/useChargesGrouping'
 
 const props = defineProps<{ tagID: string }>()
@@ -35,7 +36,9 @@ const loadingCharges = ref(true)
 const loadingCommonTags = ref(true)
 const loadingMore = ref(false)
 const errorTag = ref<string | null>(null)
+const lastErrorTag = ref<unknown>(null)
 const errorCharges = ref<string | null>(null)
+const lastErrorCharges = ref<unknown>(null)
 const currentPage = ref(1)
 const filter = ref<FilterState>({ dateFrom: '', dateTo: '' })
 const showFilters = ref(false)
@@ -47,12 +50,14 @@ const { chargesGrouped } = useChargesGrouping(charges, t, locale)
 async function loadTag() {
     loadingTag.value = true
     errorTag.value = null
+    lastErrorTag.value = null
     try {
         tag.value = await getTagById(selectedTagId.value)
         loadTotals()
         loadCharges(1)
-    } catch {
+    } catch (err) {
         errorTag.value = t('tags.statsLoadingError')
+        lastErrorTag.value = err
         loadingTotals.value = false
         loadingCharges.value = false
     } finally {
@@ -77,6 +82,7 @@ async function loadTotals() {
 async function loadCharges(page: number) {
     if (page === 1) loadingCharges.value = true
     errorCharges.value = null
+    lastErrorCharges.value = null
     try {
         const res = await getTagCharges(selectedTagId.value, {
             page,
@@ -90,7 +96,8 @@ async function loadCharges(page: number) {
         }
         pagination.value = res.pagination
         currentPage.value = page
-    } catch {
+    } catch (err) {
+        lastErrorCharges.value = err
         if (page === 1) {
             errorCharges.value = t('charges.loadingError')
             charges.value = []
@@ -229,11 +236,12 @@ onUnmounted(() => {
         </div>
 
         <!-- Tag load error -->
-        <UAlert
+        <LoadErrorAlert
             v-if="errorTag"
-            color="error"
-            :description="errorTag"
-            icon="i-lucide-alert-circle"
+            :title="errorTag"
+            :error="lastErrorTag"
+            retryable
+            @retry="loadTag()"
         />
 
         <USeparator />
@@ -288,23 +296,14 @@ onUnmounted(() => {
                 </div>
             </template>
             <template v-else>
-                <UAlert
+                <LoadErrorAlert
                     v-if="errorCharges"
-                    color="error"
-                    icon="i-lucide-alert-circle"
-                    :description="errorCharges"
+                    :title="errorCharges"
+                    :error="lastErrorCharges"
+                    retryable
                     class="mb-3"
+                    @retry="loadCharges(1)"
                 />
-                <div v-if="errorCharges" class="flex justify-center mt-2">
-                    <UButton
-                        variant="outline"
-                        color="neutral"
-                        size="md"
-                        @click="loadCharges(1)"
-                    >
-                        {{ t('retry') }}
-                    </UButton>
-                </div>
                 <template v-if="!errorCharges">
                     <template v-for="[group, groupCharges] in chargesGrouped" :key="group">
                         <!-- Day group header -->

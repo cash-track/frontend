@@ -9,13 +9,14 @@ import type { Wallet } from '@/api/models/wallet'
 import { useApiErrors } from '@/composables/useApiErrors'
 import { useWalletsStore } from '@/stores/wallets'
 import ConfirmModal from '@/components/Shared/ConfirmModal.vue'
+import LoadErrorAlert from '@/components/Shared/LoadErrorAlert.vue'
 
 const props = defineProps<{ wallet: Wallet }>()
 
 const { t } = useI18n()
 const router = useRouter()
 const walletsStore = useWalletsStore()
-const { fieldErrors, generalError, handleError, reset } = useApiErrors([
+const { fieldErrors, generalError, generalErrorRaw, handleError, reset } = useApiErrors([
     'name',
     'defaultCurrencyCode',
 ])
@@ -130,8 +131,9 @@ async function onDelete() {
                 />
             </UFormField>
 
+            <LoadErrorAlert v-if="generalErrorRaw" :title="generalError ?? t('unknownError')" :error="generalErrorRaw" />
             <UAlert
-                v-if="generalError"
+                v-else-if="generalError"
                 color="error"
                 :description="generalError"
                 icon="i-lucide-alert-circle"

@@ -44,6 +44,7 @@ onMounted(load)
             :title="t('wallets.listLoadingError')"
             :error="lastError"
             class="mb-4"
+            retryable
             @retry="load()"
         />
 

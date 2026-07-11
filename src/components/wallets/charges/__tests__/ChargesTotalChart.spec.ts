@@ -100,6 +100,35 @@ describe('ChargesTotalChart', () => {
         expect(normalColor).not.toBe('#4b5563')
     })
 
+    it('shows a retryable LoadErrorAlert on load failure, and reloads on retry', async () => {
+        const { getChargesTotalByType } = await import('@/api/graph')
+        const mockFn = getChargesTotalByType as ReturnType<typeof vi.fn>
+        mockFn.mockRejectedValue(new Error('network error'))
+
+        const wrapper = shallowMount(ChargesTotalChart, {
+            props: { walletId: 1, currency: usd },
+        })
+        await new Promise(r => setTimeout(r, 0))
+        await nextTick()
+
+        const alert = wrapper.findComponent({ name: 'LoadErrorAlert' })
+        expect(alert.exists()).toBe(true)
+        expect(alert.props('retryable')).toBe(true)
+
+        mockFn.mockImplementation((_walletId: number, params?: Record<string, string>) => {
+            if (params?.['charge-type'] === 'expense') return Promise.resolve([{ amount: 500, tags: [1] }])
+            if (params?.['charge-type'] === 'income') return Promise.resolve([{ amount: 3000, tags: [2] }])
+            return Promise.resolve([])
+        })
+
+        await alert.vm.$emit('retry')
+        await new Promise(r => setTimeout(r, 0))
+        await nextTick()
+
+        expect(wrapper.findComponent({ name: 'LoadErrorAlert' }).exists()).toBe(false)
+        expect(wrapper.findAllComponents({ name: 'Doughnut' })).toHaveLength(2)
+    })
+
     it('backgroundColor array in buildChartData uses distinct colors for tags:[] and tags:[-1]', async () => {
         const { getChargesTotalByType } = await import('@/api/graph')
         const mockFn = getChargesTotalByType as ReturnType<typeof vi.fn>

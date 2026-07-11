@@ -67,7 +67,7 @@ export const charge = {
     titleInput: (page: Page): Locator => page.getByPlaceholder(label('charges.title')).first(),
     createButton: (page: Page): Locator =>
         page.getByRole('button', { name: labelExact('charges.create') }),
-    retryButton: (page: Page): Locator => page.getByRole('button', { name: label('retry') }),
+    retryButton: (page: Page): Locator => page.getByRole('button', { name: label('common.retry') }),
     // Row actions are hover-revealed on desktop — caller must row.hover() first.
     rowActions: (row: Locator): Locator =>
         row.getByRole('button', { name: label('wallets.moreActions') }),

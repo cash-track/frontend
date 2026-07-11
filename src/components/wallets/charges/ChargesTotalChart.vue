@@ -16,6 +16,7 @@ import { getWalletTags } from '@/api/tags'
 import type { Currency } from '@/api/models/currency'
 import type { Tag } from '@/api/models/tag'
 import { useMoneyFormatter } from '@/composables/useMoneyFormatter'
+import LoadErrorAlert from '@/components/Shared/LoadErrorAlert.vue'
 
 ChartJS.register(Title, Tooltip, Legend, ArcElement)
 
@@ -33,6 +34,7 @@ const { format } = useMoneyFormatter()
 
 const loading = ref(false)
 const error = ref<string | null>(null)
+const lastError = ref<unknown>(null)
 const expenseData = ref<ChargesTotalDataPoint[]>([])
 const incomeData = ref<ChargesTotalDataPoint[]>([])
 const allWalletTags = ref<Tag[]>([])
@@ -162,6 +164,7 @@ const chartOptions = computed(() => buildChartOptions())
 async function loadData() {
     loading.value = true
     error.value = null
+    lastError.value = null
     try {
         const dateParams = {
             ...(props.dateFrom ? { 'date-from': props.dateFrom } : {}),
@@ -177,8 +180,9 @@ async function loadData() {
         incomeData.value = incomeResult
         allWalletTags.value = resolvedTags
         hasLoaded.value = true
-    } catch {
+    } catch (err) {
         error.value = t('wallets.chartLoadingError')
+        lastError.value = err
     } finally {
         loading.value = false
     }
@@ -197,11 +201,12 @@ defineExpose({ reload: loadData, sliceColor, expenseChartData, incomeChartData }
 
 <template>
     <div>
-        <UAlert
+        <LoadErrorAlert
             v-if="error && !hasLoaded"
-            color="error"
-            :description="error"
-            icon="i-lucide-alert-circle"
+            :title="error"
+            :error="lastError"
+            retryable
+            @retry="loadData()"
         />
 
         <div v-else class="relative">

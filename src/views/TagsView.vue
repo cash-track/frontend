@@ -8,6 +8,7 @@ import TagComponent from '@/components/tags/Tag.vue'
 import CreateTag from '@/components/tags/CreateTag.vue'
 import TagForm from '@/components/tags/TagForm.vue'
 import ConfirmModal from '@/components/Shared/ConfirmModal.vue'
+import LoadErrorAlert from '@/components/Shared/LoadErrorAlert.vue'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -15,6 +16,7 @@ const router = useRouter()
 const tags = ref<Tag[]>([])
 const loading = ref(false)
 const error = ref<string | null>(null)
+const lastError = ref<unknown>(null)
 
 const editingTag = ref<Tag | null>(null)
 const editModalOpen = ref(false)
@@ -27,10 +29,12 @@ const deleteError = ref<string | null>(null)
 async function loadTags() {
     loading.value = true
     error.value = null
+    lastError.value = null
     try {
         tags.value = await getTags()
-    } catch {
+    } catch (err) {
         error.value = t('tags.statsLoadingError')
+        lastError.value = err
     } finally {
         loading.value = false
     }
@@ -93,23 +97,13 @@ onMounted(loadTags)
         </div>
 
         <!-- Error -->
-        <template v-else-if="error">
-            <UAlert
-                color="error"
-                :description="error"
-                icon="i-lucide-alert-circle"
-            />
-            <div class="flex justify-center mt-2">
-                <UButton
-                    variant="outline"
-                    color="neutral"
-                    size="md"
-                    @click="loadTags()"
-                >
-                    {{ t('retry') }}
-                </UButton>
-            </div>
-        </template>
+        <LoadErrorAlert
+            v-else-if="error"
+            :title="error"
+            :error="lastError"
+            retryable
+            @retry="loadTags()"
+        />
 
         <template v-else>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">

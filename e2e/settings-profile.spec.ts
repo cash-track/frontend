@@ -14,9 +14,9 @@ const profileSuccessAlert = (page: import('@playwright/test').Page) =>
     page.locator('[data-slot="description"]')
         .filter({ hasText: new RegExp(labelStrings('profileSettings.success').join('|'), 'i') })
 
-// Alert: general error
+// Alert: general error — non-422 general errors render via LoadErrorAlert's :title
 const generalErrorAlert = (page: import('@playwright/test').Page) =>
-    page.locator('[data-slot="description"]')
+    page.locator('[data-slot="title"]')
         .filter({ hasText: /error|помилка/i })
 
 // Social section error text (profileSettings.socialLoadError — plain text, not alert)

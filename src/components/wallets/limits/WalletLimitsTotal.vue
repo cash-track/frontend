@@ -9,6 +9,7 @@ import { getWalletsWithLimits } from '@/api/wallets'
 import WalletLimitItem from './WalletLimitItem.vue'
 import LimitForm from './LimitForm.vue'
 import MoneyAmount from '@/components/Shared/MoneyAmount.vue'
+import LoadErrorAlert from '@/components/Shared/LoadErrorAlert.vue'
 
 const props = defineProps<{
     wallet: Wallet
@@ -18,6 +19,8 @@ const { t } = useI18n()
 
 const limits = ref<WalletLimit[]>([])
 const loading = ref(false)
+const failed = ref(false)
+const lastError = ref<unknown>(null)
 const showCreateForm = ref(false)
 const walletsWithLimits = ref<Wallet[]>([])
 const copyLoading = ref(false)
@@ -62,6 +65,8 @@ async function loadWalletsWithLimits() {
 
 async function loadLimits() {
     loading.value = true
+    failed.value = false
+    lastError.value = null
     try {
         limits.value = await getLimits(props.wallet.id)
         if (limits.value.length === 0) {
@@ -69,8 +74,9 @@ async function loadLimits() {
         } else {
             walletsWithLimits.value = []
         }
-    } catch {
-        // Silently fail
+    } catch (err) {
+        failed.value = true
+        lastError.value = err
     } finally {
         loading.value = false
     }
@@ -128,6 +134,15 @@ defineExpose({ reload: loadLimits, copyDropdownItems })
         <div v-if="loading" class="flex justify-center py-4">
             <UIcon name="i-lucide-loader-circle" class="size-5 animate-spin text-muted" />
         </div>
+
+        <!-- Error -->
+        <LoadErrorAlert
+            v-else-if="failed"
+            :title="t('limits.loadingError')"
+            :error="lastError"
+            retryable
+            @retry="loadLimits()"
+        />
 
         <!-- Limits list -->
         <template v-else>

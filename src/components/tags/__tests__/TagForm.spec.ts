@@ -235,6 +235,23 @@ describe('TagForm.vue', () => {
         })
     })
 
+    it('shows LoadErrorAlert (no retry) and no plain UAlert for a non-422 createTag failure', async () => {
+        mockCreateTag.mockRejectedValue(new Error('network error'))
+
+        const wrapper = mount(TagForm, makeGlobal())
+        await findNameInput(wrapper).setValue('Shopping')
+        await nextTick()
+
+        await wrapper.find('form').trigger('submit')
+
+        await vi.waitFor(() => {
+            expect(wrapper.findComponent({ name: 'LoadErrorAlert' }).exists()).toBe(true)
+        })
+
+        const alert = wrapper.findComponent({ name: 'LoadErrorAlert' })
+        expect(alert.props('retryable')).toBeFalsy()
+    })
+
     it('help text contains tags.nameRules', () => {
         const wrapper = mount(TagForm, makeGlobal())
         expect(wrapper.text()).toContain('tags.nameRules')

@@ -10,11 +10,12 @@ import { locales } from '@/lang'
 import type { Currency } from '@/api/models/currency'
 
 import EmailFormInput from '@/components/settings/EmailFormInput.vue'
+import LoadErrorAlert from '@/components/Shared/LoadErrorAlert.vue'
 
 const { t } = useI18n()
 const profileStore = useProfileStore()
 const { profile } = storeToRefs(profileStore)
-const { fieldErrors, generalError, handleError, reset } = useApiErrors([
+const { fieldErrors, generalError, generalErrorRaw, handleError, reset } = useApiErrors([
     'name',
     'lastName',
     'nickName',
@@ -204,8 +205,9 @@ async function onSubmit() {
                 />
             </UFormField>
 
+            <LoadErrorAlert v-if="generalErrorRaw" :title="generalError ?? t('unknownError')" :error="generalErrorRaw" />
             <UAlert
-                v-if="generalError"
+                v-else-if="generalError"
                 color="error"
                 :description="generalError"
                 icon="i-lucide-alert-circle"

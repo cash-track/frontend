@@ -39,9 +39,9 @@ const mismatchError = (page: import('@playwright/test').Page) =>
         new RegExp(labelStrings('securitySettings.newPasswordConfirmationDescription').join('|'), 'i'),
     ).first()
 
-// General error alert (rendered by UAlert with generalError)
+// General error alert — non-422 general errors render via LoadErrorAlert's :title
 const generalErrorAlert = (page: import('@playwright/test').Page) =>
-    page.locator('[data-slot="description"]')
+    page.locator('[data-slot="title"]')
         .filter({ hasText: /error|помилка/i })
 
 // Passkey name input (passkeySettings.keyName placeholder)

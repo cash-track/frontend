@@ -131,6 +131,26 @@ describe('SecuritySettings', () => {
         expect(vm.form.newPasswordConfirmation).toBe('')
     })
 
+    it('shows LoadErrorAlert (no retry) and no plain UAlert for a non-422 updatePassword failure', async () => {
+        mockUpdatePassword.mockRejectedValue(new Error('network error'))
+
+        const wrapper = mount(SecuritySettings, globalStubs)
+        const vm = wrapper.vm as unknown as {
+            form: { currentPassword: string; newPassword: string; newPasswordConfirmation: string }
+            onSubmit: () => Promise<void>
+        }
+
+        vm.form.currentPassword = 'oldpass'
+        vm.form.newPassword = 'newpass123'
+        vm.form.newPasswordConfirmation = 'newpass123'
+        await vm.onSubmit()
+
+        const alert = wrapper.findComponent({ name: 'LoadErrorAlert' })
+        expect(alert.exists()).toBe(true)
+        expect(alert.props('retryable')).toBeFalsy()
+        expect(wrapper.text()).not.toContain('validationError')
+    })
+
     it('shows field error when API call fails', async () => {
         const axiosError = new AxiosError('Unauthorized')
         axiosError.response = {

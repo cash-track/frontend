@@ -5,12 +5,15 @@ import { browserSupportsWebAuthn, startRegistration, WebAuthnError } from '@simp
 import type { Passkey } from '@/api/models/passkey'
 import { getPasskeys, initPasskey, storePasskey } from '@/api/profile/passkeys'
 import PasskeyItem from './PasskeyItem.vue'
+import LoadErrorAlert from '@/components/Shared/LoadErrorAlert.vue'
 
 const { t } = useI18n()
 
 const passkeys = shallowRef<Passkey[]>([])
 const passkeysSupported = shallowRef(false)
 const loading = shallowRef(false)
+const failed = shallowRef(false)
+const lastError = shallowRef<unknown>(null)
 const addLoading = shallowRef(false)
 const keyName = shallowRef('')
 const addError = shallowRef<string | null>(null)
@@ -23,10 +26,13 @@ onMounted(async () => {
 
 async function loadPasskeys() {
     loading.value = true
+    failed.value = false
+    lastError.value = null
     try {
         passkeys.value = await getPasskeys()
-    } catch {
-        // non-fatal
+    } catch (err) {
+        failed.value = true
+        lastError.value = err
     } finally {
         loading.value = false
     }
@@ -93,6 +99,14 @@ function onPasskeyDeleted(id: number) {
         <div v-if="loading" class="flex justify-center py-4">
             <UIcon name="i-lucide-loader-circle" class="size-5 animate-spin text-muted" />
         </div>
+
+        <LoadErrorAlert
+            v-else-if="failed"
+            :title="t('passkeySettings.loadingError')"
+            :error="lastError"
+            retryable
+            @retry="loadPasskeys()"
+        />
 
         <div v-else-if="passkeys.length === 0" class="text-sm text-muted py-2">
             {{ t('passkeySettings.yourPasskeys') }}: —

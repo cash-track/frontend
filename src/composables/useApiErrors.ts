@@ -15,10 +15,15 @@ export function useApiErrors(knownFields?: string[]) {
     const knownFieldSet = knownFields ? new Set(knownFields) : null
     const fieldErrors = ref<Record<string, string[]>>({})
     const generalError = ref<string | null>(null)
+    // Raw, unformatted error for non-422 failures — lets consumers (LoadErrorAlert) render a
+    // "Show details" breakdown. Stays null for every 422 branch, since those are user-facing
+    // validation messages, not failures worth a debug dump.
+    const generalErrorRaw = ref<unknown>(null)
 
     function reset(): void {
         fieldErrors.value = {}
         generalError.value = null
+        generalErrorRaw.value = null
     }
 
     function handleError(error: unknown): void {
@@ -27,6 +32,7 @@ export function useApiErrors(knownFields?: string[]) {
         if (!(error instanceof AxiosError) || !error.response) {
             console.error('[useApiErrors] non-HTTP error:', error)
             generalError.value = i18n.global.t('unknownError')
+            generalErrorRaw.value = error
             return
         }
 
@@ -69,7 +75,8 @@ export function useApiErrors(knownFields?: string[]) {
             console.error('[useApiErrors] HTTP error', status, parseError)
         }
         generalError.value = i18n.global.t('unknownError')
+        generalErrorRaw.value = error
     }
 
-    return { fieldErrors, generalError, reset, handleError }
+    return { fieldErrors, generalError, generalErrorRaw, reset, handleError }
 }

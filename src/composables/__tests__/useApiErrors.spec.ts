@@ -28,9 +28,10 @@ describe('useApiErrors', () => {
     })
 
     it('initial state: no errors', () => {
-        const { fieldErrors, generalError } = useApiErrors()
+        const { fieldErrors, generalError, generalErrorRaw } = useApiErrors()
         expect(fieldErrors.value).toEqual({})
         expect(generalError.value).toBeNull()
+        expect(generalErrorRaw.value).toBeNull()
     })
 
     it('extracts errors.name[0] from a mock 422 response', () => {
@@ -170,6 +171,86 @@ describe('useApiErrors', () => {
         expect(fieldErrors.value).toEqual({})
         expect(generalError.value).toBe('unknownError')
         expect(consoleSpy).toHaveBeenCalled()
+    })
+
+    describe('generalErrorRaw exposure', () => {
+        it('is set to the raw error for a non-HTTP error', () => {
+            vi.spyOn(console, 'error').mockImplementation(() => {})
+            const { generalErrorRaw, handleError } = useApiErrors()
+
+            const originalError = new Error('Network failure')
+            handleError(originalError)
+
+            expect(generalErrorRaw.value).toBe(originalError)
+        })
+
+        it('is set to the raw AxiosError for a non-422 HTTP failure', () => {
+            vi.spyOn(console, 'error').mockImplementation(() => {})
+            const { generalErrorRaw, handleError } = useApiErrors()
+
+            const err = makeAxiosError(400, { message: 'Bad request' })
+            handleError(err)
+
+            expect(generalErrorRaw.value).toBe(err)
+        })
+
+        it('is set to the raw AxiosError for a no-response AxiosError', () => {
+            vi.spyOn(console, 'error').mockImplementation(() => {})
+            const { generalErrorRaw, handleError } = useApiErrors()
+
+            const err = new AxiosError('Network Error')
+            handleError(err)
+
+            expect(generalErrorRaw.value).toBe(err)
+        })
+
+        it('stays null for a 422 with field errors', () => {
+            const { generalErrorRaw, handleError } = useApiErrors()
+
+            handleError(makeAxiosError(422, { errors: { name: ['Required'] } }))
+
+            expect(generalErrorRaw.value).toBeNull()
+        })
+
+        it('stays null for a 422 with an empty errors object', () => {
+            const { generalErrorRaw, handleError } = useApiErrors()
+
+            handleError(makeAxiosError(422, { errors: {} }))
+
+            expect(generalErrorRaw.value).toBeNull()
+        })
+
+        it('stays null for an unparseable 422 body', () => {
+            vi.spyOn(console, 'error').mockImplementation(() => {})
+            const { generalErrorRaw, handleError } = useApiErrors()
+
+            handleError(makeAxiosError(422, null))
+
+            expect(generalErrorRaw.value).toBeNull()
+        })
+
+        it('is cleared by reset() after a non-422 failure', () => {
+            vi.spyOn(console, 'error').mockImplementation(() => {})
+            const { generalErrorRaw, handleError, reset } = useApiErrors()
+
+            handleError(makeAxiosError(500, { message: 'Server error' }))
+            expect(generalErrorRaw.value).not.toBeNull()
+
+            reset()
+
+            expect(generalErrorRaw.value).toBeNull()
+        })
+
+        it('is reset to null when a subsequent call is a 422', () => {
+            vi.spyOn(console, 'error').mockImplementation(() => {})
+            const { generalErrorRaw, handleError } = useApiErrors()
+
+            handleError(makeAxiosError(400, { message: 'Bad request' }))
+            expect(generalErrorRaw.value).not.toBeNull()
+
+            handleError(makeAxiosError(422, { errors: { name: ['Required'] } }))
+            expect(generalErrorRaw.value).toBeNull()
+        })
     })
 
     describe('known/unknown field split (knownFields option)', () => {
