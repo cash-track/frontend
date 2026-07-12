@@ -56,6 +56,43 @@ function onLocaleChange(changed: LocaleInterface) {
     localeStore.localeChange(changed.code)
 }
 
+type ThemeChoice = 'light' | 'dark' | 'auto'
+
+const themeChoices: { value: ThemeChoice; labelKey: string; icon: string }[] = [
+    { value: 'light', labelKey: 'theme.light', icon: 'i-lucide-sun' },
+    { value: 'dark', labelKey: 'theme.dark', icon: 'i-lucide-moon' },
+    { value: 'auto', labelKey: 'theme.system', icon: 'i-lucide-monitor' },
+]
+
+const isSystemTheme = computed(() => mode.store.value === 'auto')
+
+// mode.value resolves 'auto' down to the live device scheme (light/dark) and is reactive
+// to prefers-color-scheme changes; for manual light/dark it's the same as mode.store.value.
+// Drives the trigger's main glyph — the monitor badge (below, in the template) marks the
+// auto/system case on top of it.
+const resolvedThemeIcon = computed(() => (mode.value === 'dark' ? 'i-lucide-moon' : 'i-lucide-sun'))
+
+const themeMenuItems = computed<DropdownMenuItem[][]>(() => {
+    return [
+        themeChoices.map<DropdownMenuItem>(choice => {
+            return {
+                label: t(choice.labelKey),
+                icon: choice.icon,
+                type: 'checkbox',
+                checked: mode.store.value === choice.value,
+                class: 'cursor-pointer',
+                onSelect() {
+                    onThemeChange(choice.value)
+                },
+            }
+        }),
+    ]
+})
+
+function onThemeChange(choice: ThemeChoice) {
+    mode.value = choice
+}
+
 watch(locale, (newLocale) => {
     loadLocaleAsync(newLocale)
 
@@ -178,14 +215,28 @@ function onLogout() {
                                 </ul>
                             </div>
                             <div class="flex justify-start flex-col md:justify-end md:flex-row">
-                                <UButton
-                                    :icon="mode === 'dark' ? 'i-lucide-moon' : 'i-lucide-sun'"
-                                    color="neutral"
-                                    variant="subtle"
-                                    :aria-label="t('darkMode')"
-                                    @click="mode = mode === 'dark' ? 'light' : 'dark'"
-                                    class="mr-4 ring-0 cursor-pointer"
-                                />
+                                <UDropdownMenu
+                                    class="mr-4 ring-0"
+                                    :items="themeMenuItems"
+                                    :content="{ side: 'bottom', align: 'start' }"
+                                >
+                                    <UButton
+                                        color="neutral"
+                                        variant="subtle"
+                                        :square="true"
+                                        :aria-label="t('theme.theme')"
+                                        class="cursor-pointer"
+                                    >
+                                        <span class="relative inline-flex size-5">
+                                            <UIcon :name="resolvedThemeIcon" class="size-5" />
+                                            <UIcon
+                                                v-if="isSystemTheme"
+                                                name="i-lucide-monitor"
+                                                class="absolute -right-[3px] -bottom-[3px] size-2.5 bg-gray-100 dark:bg-gray-800"
+                                            />
+                                        </span>
+                                    </UButton>
+                                </UDropdownMenu>
                                 <UDropdownMenu
                                     class="mr-4 text-xl ring-0"
                                     :items="availableLocales"

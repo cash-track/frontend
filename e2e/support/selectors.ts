@@ -3,9 +3,12 @@
 // EN|UK via label()/labelExact(), so it works in either account locale.
 //
 // Rule of thumb: role > label > test-id > CSS. Icon-only buttons carry i18n
-// aria-labels (darkMode, language, wallets.moreActions, …) — target role + label.
+// aria-labels (theme.theme, language, wallets.moreActions, …) — target role + label.
 import type { Locator, Page } from '@playwright/test'
 import { label, labelExact } from './i18n'
+
+/** Light/Dark/System, matching the values written to `mode.value` in AppHeader.vue. */
+export type ThemeChoice = 'light' | 'dark' | 'system'
 
 // ── App shell / header (AppHeader.vue) ───────────────────────────────────--
 export const shell = {
@@ -13,7 +16,10 @@ export const shell = {
     navWallets: (page: Page): Locator => page.getByRole('link', { name: label('wallets.wallets') }),
     navTags: (page: Page): Locator => page.getByRole('link', { name: label('tags.tags') }),
     navProfile: (page: Page): Locator => page.getByRole('link', { name: label('profile.profile') }),
-    darkModeToggle: (page: Page): Locator => page.getByRole('button', { name: label('darkMode') }),
+    // Opens the Light / Dark / System theme menu (see themeMenuItem below).
+    darkModeToggle: (page: Page): Locator => page.getByRole('button', { name: label('theme.theme') }),
+    themeMenuItem: (page: Page, choice: ThemeChoice): Locator =>
+        page.getByRole('menuitemcheckbox', { name: label(`theme.${choice}`) }),
     languageToggle: (page: Page): Locator => page.getByRole('button', { name: label('language') }),
     signOutItem: (page: Page): Locator => page.getByRole('menuitem', { name: label('signOut') }),
     settingsItem: (page: Page): Locator => page.getByRole('menuitem', { name: labelExact('settings') }),

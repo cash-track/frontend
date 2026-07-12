@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { ref, reactive, nextTick } from 'vue'
+import { ref, computed, reactive, nextTick } from 'vue'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import AppHeader from '../AppHeader.vue'
@@ -22,11 +22,32 @@ vi.mock('vue-router', () => ({
 // Mutable matchMedia state so tests can simulate desktop (md+) vs mobile viewports.
 const mediaState = vi.hoisted(() => ({ matches: false }))
 
+// Mutable color-mode "stored preference" (mode.store.value) plus the "resolved" device
+// scheme (mode.value when store === 'auto') so tests can simulate all 4 trigger states:
+// manual light, manual dark, auto+resolved-light, auto+resolved-dark. Mirrors VueUse's
+// real useColorMode() shape: a writable ref whose setter feeds back into `.store`, plus
+// a `.store` ref exposing the raw stored value (unlike `.value`, which VueUse resolves
+// 'auto' down to the live system light/dark).
+const colorModeState = vi.hoisted(() => ({
+    store: 'light' as 'light' | 'dark' | 'auto',
+    resolved: 'light' as 'light' | 'dark',
+}))
+
 vi.mock('@vueuse/core', async importOriginal => {
     const actual = await importOriginal<typeof import('@vueuse/core')>()
     return {
         ...actual,
-        useColorMode: () => ref('light'),
+        useColorMode: () => {
+            const store = ref(colorModeState.store)
+            const resolved = ref(colorModeState.resolved)
+            return Object.assign(
+                computed({
+                    get: () => (store.value === 'auto' ? resolved.value : store.value),
+                    set: v => { store.value = v },
+                }),
+                { store },
+            )
+        },
         useMediaQuery: () => ({ value: mediaState.matches }),
     }
 })
@@ -58,6 +79,8 @@ describe('AppHeader', () => {
         setActivePinia(createPinia())
         mockRoute.fullPath = '/'
         mediaState.matches = false
+        colorModeState.store = 'light'
+        colorModeState.resolved = 'light'
     })
 
     function mountHeader() {
@@ -142,10 +165,98 @@ describe('AppHeader', () => {
         expect(trigger.attributes('aria-controls')).toBe('app-header-menu')
     })
 
-    it('dark-mode toggle button has aria-label set to darkMode i18n key', () => {
+    it('theme toggle button has aria-label set to theme.theme i18n key', () => {
         const wrapper = mountHeader()
-        const btn = wrapper.find('[aria-label="darkMode"]')
+        const btn = wrapper.find('[aria-label="theme.theme"]')
         expect(btn.exists()).toBe(true)
+    })
+
+    it('theme trigger: stored light -> resolved icon is sun, no system badge', () => {
+        colorModeState.store = 'light'
+        const wrapper = mountHeader()
+        const vm = wrapper.vm as unknown as { resolvedThemeIcon: string; isSystemTheme: boolean }
+        expect(vm.resolvedThemeIcon).toBe('i-lucide-sun')
+        expect(vm.isSystemTheme).toBe(false)
+    })
+
+    it('theme trigger: stored dark -> resolved icon is moon, no system badge', () => {
+        colorModeState.store = 'dark'
+        const wrapper = mountHeader()
+        const vm = wrapper.vm as unknown as { resolvedThemeIcon: string; isSystemTheme: boolean }
+        expect(vm.resolvedThemeIcon).toBe('i-lucide-moon')
+        expect(vm.isSystemTheme).toBe(false)
+    })
+
+    it('theme trigger: stored auto + resolved light -> sun icon with system badge shown', () => {
+        colorModeState.store = 'auto'
+        colorModeState.resolved = 'light'
+        const wrapper = mountHeader()
+        const vm = wrapper.vm as unknown as { resolvedThemeIcon: string; isSystemTheme: boolean }
+        expect(vm.resolvedThemeIcon).toBe('i-lucide-sun')
+        expect(vm.isSystemTheme).toBe(true)
+    })
+
+    it('theme trigger: stored auto + resolved dark -> moon icon with system badge shown', () => {
+        colorModeState.store = 'auto'
+        colorModeState.resolved = 'dark'
+        const wrapper = mountHeader()
+        const vm = wrapper.vm as unknown as { resolvedThemeIcon: string; isSystemTheme: boolean }
+        expect(vm.resolvedThemeIcon).toBe('i-lucide-moon')
+        expect(vm.isSystemTheme).toBe(true)
+    })
+
+    it('theme menu exposes Light/Dark/System checkbox items with the stored one checked', () => {
+        colorModeState.store = 'dark'
+        const wrapper = mountHeader()
+        const vm = wrapper.vm as unknown as {
+            themeMenuItems: { label: string; type?: string; checked?: boolean }[][]
+        }
+        const items = vm.themeMenuItems[0]
+        expect(items.map(i => i.label)).toEqual(['theme.light', 'theme.dark', 'theme.system'])
+        expect(items.every(i => i.type === 'checkbox')).toBe(true)
+        expect(items.find(i => i.label === 'theme.dark')?.checked).toBe(true)
+        expect(items.find(i => i.label === 'theme.light')?.checked).toBe(false)
+        expect(items.find(i => i.label === 'theme.system')?.checked).toBe(false)
+    })
+
+    it('selecting System (auto) restores automatic mode and shows the system badge', async () => {
+        colorModeState.store = 'light'
+        colorModeState.resolved = 'light'
+        const wrapper = mountHeader()
+        const vm = wrapper.vm as unknown as {
+            resolvedThemeIcon: string
+            isSystemTheme: boolean
+            themeMenuItems: { label: string; checked?: boolean; onSelect?: () => void }[][]
+        }
+        expect(vm.resolvedThemeIcon).toBe('i-lucide-sun')
+        expect(vm.isSystemTheme).toBe(false)
+
+        vm.themeMenuItems[0].find(i => i.label === 'theme.system')?.onSelect?.()
+        await nextTick()
+
+        // Resolves through the mocked 'resolved' (device) scheme, still light here —
+        // only the system badge switches, per the composite icon design.
+        expect(vm.resolvedThemeIcon).toBe('i-lucide-sun')
+        expect(vm.isSystemTheme).toBe(true)
+        // The menu re-renders with System checked and Light no longer checked.
+        expect(vm.themeMenuItems[0].find(i => i.label === 'theme.system')?.checked).toBe(true)
+        expect(vm.themeMenuItems[0].find(i => i.label === 'theme.light')?.checked).toBe(false)
+    })
+
+    it('selecting Dark pins the dark preference and hides the system badge', async () => {
+        colorModeState.store = 'auto'
+        colorModeState.resolved = 'light'
+        const wrapper = mountHeader()
+        const vm = wrapper.vm as unknown as {
+            resolvedThemeIcon: string
+            isSystemTheme: boolean
+            themeMenuItems: { label: string; onSelect?: () => void }[][]
+        }
+        vm.themeMenuItems[0].find(i => i.label === 'theme.dark')?.onSelect?.()
+        await nextTick()
+
+        expect(vm.resolvedThemeIcon).toBe('i-lucide-moon')
+        expect(vm.isSystemTheme).toBe(false)
     })
 
     it('language selector button has aria-label set to language i18n key', () => {
