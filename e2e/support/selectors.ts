@@ -10,8 +10,9 @@ import { label, labelExact } from './i18n'
 /** Light/Dark/System, matching the values written to `mode.value` in AppHeader.vue. */
 export type ThemeChoice = 'light' | 'dark' | 'system'
 
-// ── App shell / header (AppHeader.vue) ───────────────────────────────────--
+// ── App shell / header (AppHeader.vue) + footer (AppFooter.vue) ──────────--
 export const shell = {
+    footer: (page: Page): Locator => page.locator('footer'),
     hamburger: (page: Page): Locator => page.locator('[aria-controls="app-header-menu"]'),
     navWallets: (page: Page): Locator => page.getByRole('link', { name: label('wallets.wallets') }),
     navTags: (page: Page): Locator => page.getByRole('link', { name: label('tags.tags') }),
