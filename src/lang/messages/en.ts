@@ -145,7 +145,12 @@ export default {
     },
 
     actions: 'Actions',
-    darkMode: 'Toggle dark mode',
+    theme: {
+        theme: 'Theme',
+        light: 'Light',
+        dark: 'Dark',
+        system: 'System',
+    },
     language: 'Select language',
 
     wallets: {

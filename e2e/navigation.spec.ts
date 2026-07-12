@@ -132,16 +132,19 @@ test.describe('S1 — Navigation & App Shell', () => {
     })
 
     // NAV-07 ──────────────────────────────────────────────────────────────────
-    test('NAV-07 dark-mode toggle flips html.dark and persists after reload', async ({ page }) => {
+    test('NAV-07 theme menu: Light/Dark selection flips html.dark and persists after reload', async ({ page }) => {
         await page.goto('/wallets')
 
         // Detect the current mode before touching anything
         const isInitiallyDark = await page.evaluate(() =>
             document.documentElement.classList.contains('dark'),
         )
+        const targetChoice: 'light' | 'dark' = isInitiallyDark ? 'light' : 'dark'
 
-        // Toggle once; VueUse colorMode updates html.dark and writes to localStorage
+        // Open the theme menu and pin the opposite mode; VueUse colorMode updates html.dark
+        // and writes to localStorage.
         await shell.darkModeToggle(page).click()
+        await shell.themeMenuItem(page, targetChoice).click()
         await expect
             .poll(
                 () => page.evaluate(() => document.documentElement.classList.contains('dark')),
@@ -161,7 +164,9 @@ test.describe('S1 — Navigation & App Shell', () => {
             .toBe(!isInitiallyDark)
 
         // Restore original mode so we don't leave the context permanently dark/light
+        const restoreChoice: 'light' | 'dark' = isInitiallyDark ? 'dark' : 'light'
         await shell.darkModeToggle(page).click()
+        await shell.themeMenuItem(page, restoreChoice).click()
         await expect
             .poll(
                 () => page.evaluate(() => document.documentElement.classList.contains('dark')),

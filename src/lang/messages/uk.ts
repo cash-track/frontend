@@ -145,7 +145,12 @@ export default {
     },
 
     actions: 'Дії',
-    darkMode: 'Перемкнути темний режим',
+    theme: {
+        theme: 'Тема',
+        light: 'Світла',
+        dark: 'Темна',
+        system: 'Системна',
+    },
     language: 'Обрати мову',
 
     wallets: {

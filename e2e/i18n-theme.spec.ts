@@ -4,8 +4,9 @@
  * IT-01  Locale switch updates in-page UI labels
  * IT-02  Locale persists after page reload (cshtrkl cookie)
  * IT-03  Switching locale calls PUT /api/profile/locale (updateLocale)
- * IT-04  Dark mode persists after reload (localStorage)
+ * IT-04  Theme menu: selecting Light/Dark pins html.dark and persists after reload (localStorage)
  * IT-05  Document titles for each route (static meta.title; namedTitle is dead code — see NAV-09)
+ * IT-06  Theme menu: selecting System follows prefers-color-scheme live and persists 'auto'
  *
  * Notes:
  * - NEVER click Sign Out (kills shared session).
@@ -16,6 +17,13 @@
  * - The app detects locale from cshtrkl cookie on mount, then overrides it from
  *   GET /api/profile response (profile.store.ts sets localeChange(user.locale)).
  *   So we detect the active locale from document.documentElement.lang, not the cookie.
+ * - The theme trigger (shell.darkModeToggle) opens a Light/Dark/System UDropdownMenu
+ *   (AppHeader.vue) — it no longer flips the mode directly on click. Pick the target
+ *   option via shell.themeMenuItem(page, choice). Its aria-label stays static
+ *   ("theme.theme") regardless of the current mode — only the icon changes.
+ * - In System mode the trigger renders a composite icon (resolved sun/moon + a small
+ *   monitor corner badge) — 2 <svg> nodes inside the trigger vs 1 for a manual pin.
+ *   IT-06 asserts this count as a cheap, stable proxy for "the badge is showing."
  */
 import { test, expect } from '@playwright/test'
 import {
@@ -240,7 +248,7 @@ test.describe('S22 — i18n, dark mode, document titles', () => {
 
     // IT-04 ───────────────────────────────────────────────────────────────────
     test(
-        'IT-04 @smoke dark mode toggle persists html.dark after reload',
+        'IT-04 @smoke theme menu: selecting Light/Dark pins html.dark and persists after reload',
         async ({ page }) => {
             await page.goto('/wallets')
 
@@ -248,9 +256,11 @@ test.describe('S22 — i18n, dark mode, document titles', () => {
             const isInitiallyDark = await page.evaluate(() =>
                 document.documentElement.classList.contains('dark'),
             )
+            const targetChoice: 'light' | 'dark' = isInitiallyDark ? 'light' : 'dark'
 
-            // Toggle once → mode flips
+            // Open the theme menu and pin the opposite mode explicitly.
             await shell.darkModeToggle(page).click()
+            await shell.themeMenuItem(page, targetChoice).click()
             await expect
                 .poll(
                     () => page.evaluate(() => document.documentElement.classList.contains('dark')),
@@ -258,8 +268,8 @@ test.describe('S22 — i18n, dark mode, document titles', () => {
                 )
                 .toBe(!isInitiallyDark)
 
-            // Reload → localStorage restores mode (VueUse colorMode). Poll: the html.dark class
-            // is reapplied on mount, which can land just after domcontentloaded.
+            // Reload → localStorage restores the pinned mode (VueUse colorMode). Poll: the
+            // html.dark class is reapplied on mount, which can land just after domcontentloaded.
             await page.reload()
             await page.waitForLoadState('domcontentloaded')
             await expect
@@ -268,9 +278,17 @@ test.describe('S22 — i18n, dark mode, document titles', () => {
                     { timeout: 5000 },
                 )
                 .toBe(!isInitiallyDark)
+            await expect
+                .poll(
+                    () => page.evaluate(() => localStorage.getItem('vueuse-color-scheme')),
+                    { timeout: 5000 },
+                )
+                .toBe(targetChoice)
 
             // Restore original mode (per-context so harmless, but good practice)
+            const restoreChoice: 'light' | 'dark' = isInitiallyDark ? 'dark' : 'light'
             await shell.darkModeToggle(page).click()
+            await shell.themeMenuItem(page, restoreChoice).click()
             await expect
                 .poll(
                     () => page.evaluate(() => document.documentElement.classList.contains('dark')),
@@ -323,6 +341,82 @@ test.describe('S22 — i18n, dark mode, document titles', () => {
             } finally {
                 await deleteWalletViaApi(request, seeded.id)
             }
+        },
+    )
+
+    // IT-06 ───────────────────────────────────────────────────────────────────
+    test(
+        'IT-06 theme menu: selecting System follows prefers-color-scheme live and persists auto',
+        async ({ page }) => {
+            // Pin the OS-level scheme so the assertions below are deterministic.
+            await page.emulateMedia({ colorScheme: 'light' })
+            await page.goto('/wallets')
+
+            await shell.darkModeToggle(page).click()
+            await shell.themeMenuItem(page, 'system').click()
+
+            // Selecting System writes 'auto' to the VueUse colorMode storage key…
+            await expect
+                .poll(
+                    () => page.evaluate(() => localStorage.getItem('vueuse-color-scheme')),
+                    { timeout: 5000 },
+                )
+                .toBe('auto')
+            // …and immediately follows the (emulated) device scheme.
+            await expect
+                .poll(
+                    () => page.evaluate(() => document.documentElement.classList.contains('dark')),
+                    { timeout: 5000 },
+                )
+                .toBe(false)
+
+            // The trigger renders a composite icon in System mode: the resolved sun/moon glyph
+            // plus a small monitor corner badge — 2 icon/svg nodes, vs 1 for a manual pin.
+            // Cheap, stable proxy for "the badge is showing" without asserting internal classes.
+            await expect
+                .poll(
+                    () => shell.darkModeToggle(page).locator('svg').count(),
+                    { timeout: 5000 },
+                )
+                .toBe(2)
+
+            // Flip the OS-level scheme without reloading — System mode must follow live.
+            await page.emulateMedia({ colorScheme: 'dark' })
+            await expect
+                .poll(
+                    () => page.evaluate(() => document.documentElement.classList.contains('dark')),
+                    { timeout: 5000 },
+                )
+                .toBe(true)
+
+            await page.emulateMedia({ colorScheme: 'light' })
+            await expect
+                .poll(
+                    () => page.evaluate(() => document.documentElement.classList.contains('dark')),
+                    { timeout: 5000 },
+                )
+                .toBe(false)
+
+            // Restore to an explicit pin (per-context so harmless, but good practice — avoids
+            // leaving the page on a mode that depends on the runner's emulated scheme).
+            await shell.darkModeToggle(page).click()
+            await shell.themeMenuItem(page, 'light').click()
+            await expect
+                .poll(
+                    () => page.evaluate(() => localStorage.getItem('vueuse-color-scheme')),
+                    { timeout: 5000 },
+                )
+                .toBe('light')
+
+            // Manual pin: back down to a single icon/svg node — no monitor badge.
+            await expect
+                .poll(
+                    () => shell.darkModeToggle(page).locator('svg').count(),
+                    { timeout: 5000 },
+                )
+                .toBe(1)
+
+            await assertNoErrorLeak(page)
         },
     )
 })
