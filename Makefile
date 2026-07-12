@@ -14,7 +14,7 @@ IMAGE_LATEST=$(REPO):latest
 .PHONY: build tag push start stop
 
 build:
-	docker build . -t $(IMAGE_DEV)
+	docker build . -t $(IMAGE_DEV) --build-arg GIT_TAG=$(RELEASE_VERSION) --build-arg GIT_COMMIT=$(shell git rev-parse HEAD)
 
 tag:
 	docker tag $(IMAGE_DEV) $(IMAGE_RELEASE)

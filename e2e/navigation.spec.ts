@@ -11,6 +11,7 @@
  * NAV-08  Language dropdown switches locale; cshtrkl cookie set; UI labels change
  * NAV-09  Title guard: router.push with nameForTitle sets namedTitle
  * NAV-10  Unknown path /nope — no crash, app shell still present
+ * NAV-11  Footer degrades gracefully when no release version/commit vars are configured
  */
 import { test, expect } from '@playwright/test'
 import {
@@ -329,6 +330,26 @@ test.describe('S1 — Navigation & App Shell', () => {
             // Title is non-empty (inherited from whatever was set before, or the default)
             const title = await page.title()
             expect(title.length).toBeGreaterThan(0)
+        },
+    )
+
+    // NAV-11 ──────────────────────────────────────────────────────────────────
+    test(
+        'NAV-11 footer degrades gracefully when no release version/commit vars are configured',
+        async ({ page }) => {
+            // The dev stack never sets VITE_APP_VERSION / VITE_APP_COMMIT (those are baked
+            // in only by the production Docker image via GIT_TAG/GIT_COMMIT build args), so
+            // this is the one state this suite can honestly exercise: plain copyright line,
+            // no "·" separator, no release/commit link. See AppFooter.spec.ts (unit) for the
+            // tag+sha / sha-only rendering, which requires injecting window.__APP_CONFIG__.
+            await page.goto('/wallets')
+
+            const footer = shell.footer(page)
+            await expect(footer).toContainText('Cash Track')
+            await expect(footer).not.toContainText('·')
+            await expect(footer.locator('a[href*="github.com/cash-track/frontend"]')).toHaveCount(0)
+
+            await assertNoErrorLeak(page)
         },
     )
 })
