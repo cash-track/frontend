@@ -10,6 +10,7 @@ import AppHeader from '@/components/AppHeader.vue'
 import AppFooter from '@/components/AppFooter.vue'
 import EmailIsNotConfirmedAlert from '@/components/profile/EmailIsNotConfirmedAlert.vue'
 import LoadErrorAlert from '@/components/Shared/LoadErrorAlert.vue'
+import AppUpdatePrompt from '@/components/Shared/AppUpdatePrompt.vue'
 import { useProfileStore } from '@/stores/profile'
 import { useAuthStore } from '@/stores/auth'
 import { useLocaleStore, syncLocaleWithI18n } from '@/stores/locale'
@@ -67,6 +68,8 @@ watch(locale, () => setDocumentTitle(router.currentRoute.value))
             </UContainer>
 
             <AppFooter />
+
+            <AppUpdatePrompt />
         </div>
     </UApp>
 </template>

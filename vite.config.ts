@@ -16,7 +16,12 @@ export default defineConfig({
         // The API is a different origin (gateway) so it is never precached;
         // navigateFallbackDenylist keeps any /api path off the SPA fallback.
         VitePWA({
-            registerType: 'autoUpdate',
+            // Prompt mode: a new service worker installs and waits; src/pwa.ts
+            // surfaces needRefresh so the UI can ask the user before activating
+            // it (updateApp() posts SKIP_WAITING). autoUpdate would activate
+            // silently, but with injectRegister: false its unconditional
+            // self.skipWaiting() is never wired in, so updates never applied.
+            registerType: 'prompt',
             injectRegister: false,        // we register manually (see src/pwa.ts)
             manifest: false,              // keep the static public/site.webmanifest
             workbox: {

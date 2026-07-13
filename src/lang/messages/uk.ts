@@ -331,4 +331,9 @@ export default {
         tagNamed: '{name}',
         tags: 'Теги',
     },
+
+    pwa: {
+        newVersion: 'Доступна нова версія',
+        reload: 'Оновити',
+    },
 };
