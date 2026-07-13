@@ -331,4 +331,9 @@ export default {
         tagNamed: '{name}',
         tags: 'Tags',
     },
+
+    pwa: {
+        newVersion: 'A new version is available',
+        reload: 'Reload',
+    },
 };

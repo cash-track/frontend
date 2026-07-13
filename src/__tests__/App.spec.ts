@@ -91,6 +91,7 @@ const stubs = {
     AppFooter: { template: '<div />' },
     EmailIsNotConfirmedAlert: { template: '<div class="email-alert-stub" />' },
     LoadErrorAlert: loadErrorAlertStub,
+    AppUpdatePrompt: { template: '<div />' },
 }
 
 // -- import App after all mocks are set up ------------------------------------
