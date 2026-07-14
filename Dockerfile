@@ -5,7 +5,9 @@ WORKDIR /app
 
 COPY package*.json ./
 
-RUN npm install
+# npm ci installs the exact locked dependency tree; a fresh `npm install` here can
+# re-resolve transitive versions the lockfile (and PR checks) never saw.
+RUN npm ci
 
 COPY . .
 
