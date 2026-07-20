@@ -181,3 +181,22 @@ export async function deleteLimitViaApi(
 ): Promise<void> {
     await send(request, 'delete', `/api/wallets/${walletId}/limits/${limitId}`)
 }
+
+// ── Passkeys ───────────────────────────────────────────────────────────────
+export interface SeededPasskey {
+    id: number
+    name: string
+}
+
+export async function listPasskeysViaApi(request: APIRequestContext): Promise<SeededPasskey[]> {
+    const res = await request.get(`${GATEWAY_URL}/api/profile/passkey`)
+    if (!res.ok()) {
+        throw new Error(`GET /api/profile/passkey -> ${res.status()}`)
+    }
+    const body = await res.json()
+    return (body.data as Array<{ id: number; name: string }>) ?? []
+}
+
+export async function deletePasskeyViaApi(request: APIRequestContext, passkeyId: number): Promise<void> {
+    await send(request, 'delete', `/api/profile/passkey/${passkeyId}`)
+}
