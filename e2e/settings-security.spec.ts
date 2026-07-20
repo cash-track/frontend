@@ -303,46 +303,33 @@ test.describe('S16 — Settings: Security tab', () => {
         await assertNoErrorLeak(page)
     })
 
-    // SS-09 — Real WebAuthn ceremony is out of scope for automation
-    // (requires a virtual authenticator / CDP WebAuthn domain)
-    test.skip('SS-09 WebAuthn ceremony — out of scope (requires virtual authenticator)', () => {
-        // Real passkey registration requires a CDP WebAuthn virtual authenticator (domain-bound)
-        // or a physical authenticator — not automatable in this Playwright suite.
-    })
+    // SS-09 — Real WebAuthn ceremony (registration via a CDP virtual authenticator) is now
+    // covered by S23 e2e/passkeys.spec.ts (PK-01: create; PK-02: authenticate/login). No stub
+    // needed here.
 
     // SS-10 — Unsupported browser: warning alert visible
-    // browserSupportsWebAuthn() checks navigator.credentials — in headless Chromium it returns
-    // true. We cannot easily force it to false from outside the app without patching the import.
-    // We skip this with an explanatory comment if we cannot intercept the flag.
+    // @simplewebauthn/browser's browserSupportsWebAuthn() checks
+    // `globalThis.PublicKeyCredential !== undefined && typeof globalThis.PublicKeyCredential ===
+    // 'function'` — NOT navigator.credentials (the previous override target, which is why this
+    // used to auto-skip). `PublicKeyCredential` is a non-optional `declare var` in lib.dom.d.ts,
+    // so a bare `delete` fails TS2790 and casting to `any` to allow it fails this repo's
+    // `@typescript-eslint/no-explicit-any: error` rule. Redefining the global to `undefined`
+    // before any page script runs satisfies the same `!== undefined` check the library makes,
+    // forcing the unsupported branch deterministically without either escape hatch.
     test('SS-10 passkeys unsupported warning shown when WebAuthn unavailable', async ({ page }) => {
         await routeJson(page, '**/api/profile/passkey', [])
 
-        // Attempt to override navigator.credentials to force unsupported state
-        // This must be done before any script runs on the page.
+        // Must run before any page script — removes the WebAuthn feature-detection global.
         await page.addInitScript(() => {
-            Object.defineProperty(navigator, 'credentials', {
-                get: () => undefined,
+            Object.defineProperty(globalThis, 'PublicKeyCredential', {
+                value: undefined,
                 configurable: true,
             })
         })
 
         await openSecurityTab(page)
 
-        // If the unsupported alert is visible, we succeed.
-        // If the supported UI renders instead, it means the override didn't work —
-        // skip rather than fail.
-        const unsupportedVisible = await passkeysUnsupportedAlert(page).isVisible()
-            .catch(() => false)
-
-        if (!unsupportedVisible) {
-            test.skip(
-                true,
-                'Cannot force browserSupportsWebAuthn=false via navigator.credentials override in this browser — test skipped.',
-            )
-            return
-        }
-
-        await expect(passkeysUnsupportedAlert(page)).toBeVisible({ timeout: 5000 })
+        await expect(passkeysUnsupportedAlert(page)).toBeVisible({ timeout: 10000 })
         // Intentional warning state — skip assertNoErrorLeak
     })
 

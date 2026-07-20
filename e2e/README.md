@@ -1,8 +1,9 @@
 # Cash-Track Frontend — E2E (Playwright)
 
-The 22 specs (S1–S22) **are** the coverage source of truth — one per surface (navigation, wallets,
-charges, tags, profile, settings, limits, error states, responsive, i18n/theme), 180 cases total.
-Shared conventions are documented below and in the `cash-track-frontend` skill.
+The 23 specs (S1–S23) **are** the coverage source of truth — one per surface (navigation, wallets,
+charges, tags, profile, settings, limits, error states, responsive, i18n/theme, passkeys), 193
+cases total (`npx playwright test --list` across both projects is the authoritative count — don't
+hand-track it). Shared conventions are documented below and in the `cash-track-frontend` skill.
 
 ## Running
 
@@ -66,3 +67,25 @@ import {
 - Nickname check = **1000ms** debounce; wallet create/edit redirect ≈ **1000ms** after success.
 - Charge submit / wallet edit are **disabled until the account email is confirmed**
   (tooltip `emailConfirmRequired`).
+
+## Passkeys (S23)
+
+`passkeys.spec.ts` drives real WebAuthn ceremonies — no app code is mocked. Each test attaches a
+Chrome DevTools Protocol virtual authenticator (`context.newCDPSession(page)` →
+`WebAuthn.enable` → `WebAuthn.addVirtualAuthenticator`, `hasResidentKey` + `isUserVerified: true`
+to satisfy the API's discoverable-credential + required-user-verification login options) before
+navigating, so `navigator.credentials.create()`/`.get()` resolve for real inside
+`@simplewebauthn/browser`.
+
+- **Never perform a UI logout.** `POST /api/auth/logout` revokes the shared refresh token in
+  `setup/.auth.json` server-side and breaks the suite for every later run (including other
+  specs). PK-02 becomes anonymous with `context.clearCookies()` only — the `request` fixture keeps
+  its own cookie jar from `storageState` and is unaffected, so cleanup still works after clearing
+  the page context.
+- **PK-02 depends on the website**, not just the SPA: it registers a passkey on
+  `my.dev-cash-track.app`, then logs in from `dev-cash-track.app/login` (website's usernameless
+  "Login with Passkey" button). The virtual authenticator is scoped to the CDP session on that one
+  page target and persists across the navigation because both hosts share the
+  `dev-cash-track.app` registrable domain (WebAuthn RP ID).
+- Not tagged `@smoke` — the website + its client-side reCAPTCHA are an extra dependency the smoke
+  subset intentionally avoids.
