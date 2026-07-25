@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { getChargeTitles } from '@/api/charges'
 import { getTagSuggestions } from '@/api/tags'
@@ -79,6 +79,18 @@ const hasResults = computed(() =>
     filteredTagSuggestions.value.length > 0 || filteredTitleSuggestions.value.length > 0,
 )
 
+// Hide only with no unselected tag suggestions left and no title options beyond
+// a single exact match — any unselected tag keeps the box open.
+const shouldAutoHide = computed(() =>
+    filteredTagSuggestions.value.length === 0
+    && (filteredTitleSuggestions.value.length === 0
+        || (filteredTitleSuggestions.value.length === 1 && filteredTitleSuggestions.value[0].selected)),
+)
+
+function applyAutoHide() {
+    dropdownOpen.value = !shouldAutoHide.value
+}
+
 function doAutocomplete(value: string) {
     const q = value.trim()
     highlightedIndex.value = -1
@@ -87,7 +99,11 @@ function doAutocomplete(value: string) {
         return
     }
 
-    if (lastQuery.value === q) return
+    if (lastQuery.value === q) {
+        // No refetch, but the suggestion lists may have changed — re-check.
+        applyAutoHide()
+        return
+    }
     lastQuery.value = q
 
     if (debounceHandle.value !== null) {
@@ -106,7 +122,7 @@ function doAutocomplete(value: string) {
                 if (token !== loadToken) return
                 tagSuggestions.value = tags
                 titleSuggestions.value = titles
-                dropdownOpen.value = hasResults.value
+                applyAutoHide()
             })
             .catch(() => {})
             .finally(() => {
@@ -118,12 +134,18 @@ function doAutocomplete(value: string) {
 function onTagSelect(tag: Tag) {
     if (addedTagIds.value.has(tag.id)) return
     emit('tag-selected', tag)
-    doAutocomplete(props.modelValue)
+    // Deferred so `props.tags` has round-tripped and the re-check sees it.
+    nextTick(() => doAutocomplete(props.modelValue))
 }
 
 function onTitleSelect(title: string) {
+    if (localValue.value === title) {
+        // Unchanged ref assignment fires no watcher — re-check explicitly.
+        doAutocomplete(title)
+        return
+    }
+    // The watcher reloads inline; closing here would flicker the box (#109).
     localValue.value = title
-    dropdownOpen.value = false
 }
 
 function onKeyDown(e: KeyboardEvent) {

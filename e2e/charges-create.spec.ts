@@ -427,4 +427,67 @@ test.describe('S8 — Charge Create', () => {
         }
     })
 
+    // CC-12 — Selecting a partial title suggestion keeps the dropdown open
+    // while it reloads inline, and it auto-hides only once a reload settles on
+    // a single exact match with no tag suggestions left (issue #109).
+    test('CC-12 selecting a partial title suggestion keeps the dropdown open and reloads inline', async ({ request, page }) => {
+        const w = await createWalletViaApi(request, { name: `E2E CC12 ${Date.now()}` })
+        const ts = Date.now()
+        // titleShopping contains titleShop, so both survive the reload.
+        const titleShop = `E2E109Shop${ts}`
+        const titleShopping = `E2E109Shop${ts}ping`
+        // Shorter than titleShop, so clicking that option really changes the
+        // typed text and fires the debounced reload (not the early return).
+        const prefixQuery = titleShop.slice(0, -1)
+        // No overlapping titles or tags — resolves to a single exact match.
+        const titleUnique = `E2E109Solo${ts}`
+        try {
+            await createChargeViaApi(request, w.id, { title: titleShop })
+            await createChargeViaApi(request, w.id, { title: titleShopping })
+            await createChargeViaApi(request, w.id, { title: titleUnique })
+
+            await page.goto(`/wallets/${w.id}`)
+            await expect(page.getByRole('heading', { level: 2 })).toBeVisible({ timeout: 10000 })
+
+            await charge.newChargeButton(page).click()
+            await expect(charge.titleInput(page)).toBeVisible({ timeout: 5000 })
+
+            await charge.titleInput(page).fill(prefixQuery)
+
+            const listbox = page.locator('#charge-title-listbox')
+            const shopOption = listbox.getByText(titleShop, { exact: true })
+            const shoppingOption = listbox.getByText(titleShopping, { exact: true })
+            await expect(shopOption).toBeVisible({ timeout: 8000 })
+            await expect(shoppingOption).toBeVisible({ timeout: 8000 })
+
+            // The listbox sits behind v-if, so a close-then-reopen destroys
+            // this node — identity survival is what a retrying toBeVisible()
+            // assertion cannot detect.
+            const listboxHandle = await listbox.elementHandle()
+
+            await shopOption.click()
+            await expect(charge.titleInput(page)).toHaveValue(titleShop)
+            // The reloaded query still matches both titles.
+            await expect(shoppingOption).toBeVisible({ timeout: 5000 })
+            await expect(shopOption).toBeVisible()
+            expect(await listboxHandle!.evaluate(el => el.isConnected)).toBe(true)
+
+            // Clicking it again matches the typed text exactly — the
+            // early-return path, no reload, box stays open.
+            await shopOption.click()
+            await expect(charge.titleInput(page)).toHaveValue(titleShop)
+            await expect(shoppingOption).toBeVisible()
+            await expect(shopOption).toBeVisible()
+            expect(await listboxHandle!.evaluate(el => el.isConnected)).toBe(true)
+
+            // Single exact match, no tag suggestions — auto-hides.
+            await charge.titleInput(page).fill(titleUnique)
+            await expect(listbox).not.toBeVisible({ timeout: 5000 })
+
+            await assertNoErrorLeak(page)
+        } finally {
+            await deleteWalletViaApi(request, w.id)
+        }
+    })
+
 })
