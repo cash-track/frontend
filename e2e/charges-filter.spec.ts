@@ -2,13 +2,13 @@
 // CF-01..CF-05: date-from/date-to inputs, calendar popover, active badges, clear, refetch params
 //
 // UInputDate renders as role="group" with role="spinbutton" segments — NOT role="textbox".
-// The UCalendar grid (role="grid") opens via UPopover on the calendar icon button.
+// The UCalendar grid ([data-slot="grid"]) opens via UPopover on the calendar icon button.
 // Date entry is most reliable via the calendar popover: click the icon, pick a gridcell.
 import { test, expect } from '@playwright/test'
 import {
     label,
     createWalletViaApi, deleteWalletViaApi, createChargeViaApi, deleteChargeViaApi,
-    wallet, assertNoErrorLeak,
+    calendar, pickFirstAvailableDate, wallet, assertNoErrorLeak,
 } from './support'
 
 // ── Local selectors ──────────────────────────────────────────────────────────
@@ -28,14 +28,6 @@ const filterFromCalendarBtn = (page: import('@playwright/test').Page) =>
 const filterToCalendarBtn = (page: import('@playwright/test').Page) =>
     page.getByRole('button', { name: label('charges.filterInputTo') })
 
-// UCalendar renders role="grid" inside the popover
-const calendarGrid = (page: import('@playwright/test').Page) =>
-    page.locator('[role="grid"]').first()
-
-// Available (non-disabled) calendar date cells
-const availableCalendarCells = (page: import('@playwright/test').Page) =>
-    page.locator('td[role="gridcell"]:not([data-disabled])')
-
 // The clear (x) button inside a badge: aria-label = wallets.clear
 const clearButtons = (page: import('@playwright/test').Page) =>
     page.getByRole('button', { name: label('wallets.clear') })
@@ -44,14 +36,16 @@ const clearButtons = (page: import('@playwright/test').Page) =>
 const filterBadges = (page: import('@playwright/test').Page) =>
     page.locator('span, div').filter({ hasText: /\d{4}-\d{2}-\d{2}/ })
 
-// Helper: open the date-from calendar popover and click the first available date
+// Helper: open a calendar popover and pick the first selectable date.
+// pickFirstAvailableDate resolves only once Reka marks the day selected, so callers can
+// assert on the badge / refetch straight away without racing the click.
 async function pickDateFromCalendar(
     page: import('@playwright/test').Page,
     calendarBtn: import('@playwright/test').Locator,
 ) {
     await calendarBtn.click()
-    await expect(calendarGrid(page)).toBeVisible({ timeout: 5000 })
-    await availableCalendarCells(page).first().click()
+    await expect(calendar.grid(page)).toBeVisible({ timeout: 5000 })
+    await pickFirstAvailableDate(page)
 }
 
 test.describe('S14 — Charges Filter', () => {
@@ -80,7 +74,7 @@ test.describe('S14 — Charges Filter', () => {
     })
 
     // CF-02 — Calendar popover opens when clicking the calendar icon
-    test('CF-02 @smoke clicking calendar icon opens UCalendar with a role=grid', async ({ request, page }) => {
+    test('CF-02 @smoke clicking calendar icon opens the UCalendar grid', async ({ request, page }) => {
         const w = await createWalletViaApi(request, { name: `E2E CF02 ${Date.now()}` })
         try {
             await page.goto(`/wallets/${w.id}`)
@@ -90,15 +84,15 @@ test.describe('S14 — Charges Filter', () => {
 
             // Click the calendar icon for date-from → UCalendar grid appears
             await filterFromCalendarBtn(page).click()
-            await expect(calendarGrid(page)).toBeVisible({ timeout: 5000 })
+            await expect(calendar.grid(page)).toBeVisible({ timeout: 5000 })
 
             // Dismiss
             await page.keyboard.press('Escape')
-            await expect(calendarGrid(page)).not.toBeVisible({ timeout: 3000 })
+            await expect(calendar.grid(page)).not.toBeVisible({ timeout: 3000 })
 
             // Repeat for date-to
             await filterToCalendarBtn(page).click()
-            await expect(calendarGrid(page)).toBeVisible({ timeout: 5000 })
+            await expect(calendar.grid(page)).toBeVisible({ timeout: 5000 })
 
             await assertNoErrorLeak(page)
         } finally {

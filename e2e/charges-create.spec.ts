@@ -5,7 +5,7 @@ import {
     label, labelStrings,
     routeError, route422, routeJson,
     createWalletViaApi, createTagViaApi, createChargeViaApi, deleteWalletViaApi, deleteTagViaApi,
-    charge, assertNoErrorLeak,
+    calendar, charge, assertNoErrorLeak,
 } from './support'
 
 // ── Local selectors ──────────────────────────────────────────────────────────
@@ -238,17 +238,26 @@ test.describe('S8 — Charge Create', () => {
                 timeout: 5000,
             })
 
-            // Calendar popover button should be visible (the leading slot)
-            const calIconBtn = page.locator('form button').filter({
-                has: page.locator('.i-lucide-calendar'),
-            }).first()
-            if (await calIconBtn.isVisible()) {
-                await calIconBtn.click()
-                // Calendar grid should appear
-                await expect(page.locator('[data-slot="calendar"]').or(
-                    page.getByRole('grid').first()
-                )).toBeVisible({ timeout: 5000 })
-            }
+            // Calendar popover button in the trailing slot. Nuxt UI renders the icon as an
+            // inline <svg>, not an `.i-lucide-calendar` class, so match the popover trigger
+            // itself — it is the only aria-haspopup="dialog" in the form, and it only exists
+            // once "Set date" has been clicked.
+            const calIconBtn = calendar.triggerInForm(page)
+            await expect(calIconBtn).toBeVisible({ timeout: 5000 })
+            await calIconBtn.click()
+
+            // Calendar grid should appear, capped at today by :max-value — every date after
+            // today is [data-disabled], so the last selectable cell is today itself. Cell
+            // triggers carry data-value="YYYY-MM-DD".
+            await expect(calendar.grid(page)).toBeVisible({ timeout: 5000 })
+            const today = new Date()
+            const todayValue = [
+                today.getFullYear(),
+                String(today.getMonth() + 1).padStart(2, '0'),
+                String(today.getDate()).padStart(2, '0'),
+            ].join('-')
+            await expect(calendar.availableCells(page).last().locator('[data-value]'))
+                .toHaveAttribute('data-value', todayValue)
 
             await assertNoErrorLeak(page)
         } finally {
