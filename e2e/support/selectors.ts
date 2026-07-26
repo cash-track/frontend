@@ -35,6 +35,30 @@ export const overlay = {
         page.getByRole('dialog').getByRole('button', { name: label('common.delete') }),
 }
 
+// ── UCalendar popover (Reka Calendar, portalled) ─────────────────────────--
+// Since Nuxt UI 4.5.1 the grid table renders as <table role="application"
+// data-slot="grid"> — there is NO role="grid" anywhere in the DOM, so match the
+// data-slot instead (structural, and stable across Reka role changes). Date cells
+// still carry role="gridcell", which is why only the grid gate ever broke.
+export const calendar = {
+    grid: (page: Page): Locator => page.locator('[data-slot="grid"]').first(),
+    // Selectable date cells: not disabled (ChargeCreate caps the calendar at today via
+    // :max-value) AND not an adjacent-month padding day. The 6-week grid pads with
+    // [data-outside-view] days, and clicking one both selects the date and NAVIGATES the
+    // grid to that month — the re-render then races whatever the test asserts next.
+    // Staying in-view keeps the click a pure selection.
+    availableCells: (page: Page): Locator =>
+        page.locator('td[role="gridcell"]:not([data-disabled]):not(:has([data-outside-view]))'),
+    // The interactive element inside a cell — the <td> is only a wrapper, the click
+    // handler lives on this div. Carries data-value="YYYY-MM-DD".
+    cellTrigger: (cell: Locator): Locator => cell.locator('[data-reka-calendar-cell-trigger]'),
+    // The UPopover trigger that opens a calendar. In ChargesFilter the buttons carry
+    // i18n aria-labels (charges.filterInputFrom/To) — prefer those; ChargeCreate's has
+    // no accessible name, so scope by form and match the popover trigger attribute.
+    triggerInForm: (page: Page): Locator =>
+        page.locator('form button[aria-haspopup="dialog"]').first(),
+}
+
 // ── Wallets list + detail ────────────────────────────────────────────────--
 export const wallet = {
     newWalletLink: (page: Page): Locator =>
@@ -116,6 +140,32 @@ export const settings = {
         page.getByLabel(label('securitySettings.newPasswordConfirmation')),
     updatePassword: (page: Page): Locator =>
         page.getByRole('button', { name: label('securitySettings.updatePassword') }),
+}
+
+/**
+ * Pick the first selectable day in an already-open UCalendar popover, and return its
+ * `YYYY-MM-DD` value. Resolves only once Reka has marked the day selected, so callers
+ * can assert on the consequences (badge, refetch) without racing the click.
+ *
+ * The click is retried until the selection sticks. Under full-suite load a click on the
+ * portalled popover is occasionally not delivered to the cell trigger: every Playwright
+ * actionability check passes, the popover stays open, and no date is set — the date-from
+ * segments still read mm/dd/yyyy. It reproduces roughly one full run in three and never
+ * in isolation (0/40 in a tight loop), and the badge is pure local state (`v-if="dateFrom"`
+ * in ChargesFilter.vue) so no API call is involved. Selecting a day is idempotent —
+ * re-clicking an already-selected day leaves it selected — so re-issuing the click is safe
+ * and makes this helper's contract ("a date is picked") actually hold.
+ */
+export async function pickFirstAvailableDate(page: Page): Promise<string> {
+    const { expect } = await import('@playwright/test')
+    const cell = calendar.availableCells(page).first()
+
+    await expect(async () => {
+        await calendar.cellTrigger(cell).click()
+        await expect(cell).toHaveAttribute('aria-selected', 'true', { timeout: 1000 })
+    }).toPass({ timeout: 10000 })
+
+    return (await calendar.cellTrigger(cell).getAttribute('data-value')) ?? ''
 }
 
 /** Body never shows a raw/unknown error — call in every page test (§3.4). */

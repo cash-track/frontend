@@ -10,7 +10,7 @@ import {
     label, labelStrings,
     routeError, routeJson,
     createWalletViaApi, deleteWalletViaApi,
-    wallet, assertNoErrorLeak,
+    calendar, pickFirstAvailableDate, wallet, assertNoErrorLeak,
 } from './support'
 
 // ── Local selectors ──────────────────────────────────────────────────────────
@@ -46,10 +46,6 @@ const incomeHeading = (page: import('@playwright/test').Page) =>
 // Calendar icon button for date-from filter
 const filterFromCalendarBtn = (page: import('@playwright/test').Page) =>
     page.getByRole('button', { name: label('charges.filterInputFrom') })
-
-// Available calendar date cells
-const availableCalendarCells = (page: import('@playwright/test').Page) =>
-    page.locator('td[role="gridcell"]:not([data-disabled])')
 
 test.describe('S18 — Charges Charts', () => {
 
@@ -189,8 +185,8 @@ test.describe('S18 — Charges Charts', () => {
 
             // Pick a date from the calendar to trigger filter-change → reload()
             await filterFromCalendarBtn(page).click()
-            await expect(page.locator('[role="grid"]').first()).toBeVisible({ timeout: 5000 })
-            await availableCalendarCells(page).first().click()
+            await expect(calendar.grid(page)).toBeVisible({ timeout: 5000 })
+            await pickFirstAvailableDate(page)
 
             // Chart reload should fire with date-from param
             const graphRequest = await graphReloadPromise
