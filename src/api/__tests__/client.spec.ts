@@ -1,6 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import axios, { AxiosError, type AxiosInstance, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios'
-import { apiCall, CsrfError, createAxiosInstance, REQUEST_TIMEOUT_MS, RETRY_MAX_ATTEMPTS } from '../client'
+import {
+    apiCall,
+    CsrfError,
+    createAxiosInstance,
+    MalformedResponseError,
+    REQUEST_TIMEOUT_MS,
+    RETRY_MAX_ATTEMPTS,
+} from '../client'
 
 vi.mock('@/shared/links', () => ({
     webSiteLink: (path: string) => `https://website.test${path}`,
@@ -267,6 +274,168 @@ describe('withTransportRetry (via apiCall)', () => {
         await vi.runAllTimersAsync()
         await assertion
         expect(fn).toHaveBeenCalledTimes(RETRY_MAX_ATTEMPTS)
+    })
+})
+
+// Swaps the adapter on a real createAxiosInstance so responses pass through axios'
+// own JSON transform before reaching the interceptors, as they do in the browser.
+function instanceWithResponses(responses: Array<Partial<AxiosResponse>>): {
+    instance: AxiosInstance
+    attempts: () => number
+} {
+    const instance = createAxiosInstance()
+    let attempts = 0
+    instance.defaults.adapter = async (config) => {
+        const spec = responses[Math.min(attempts, responses.length - 1)]
+        attempts++
+        return {
+            status: 200,
+            statusText: 'OK',
+            headers: {},
+            data: undefined,
+            ...spec,
+            config,
+        } as AxiosResponse
+    }
+    return { instance, attempts: () => attempts }
+}
+
+const JSON_HEADERS = { 'content-type': 'application/json; charset=utf-8' }
+const PROFILE_BODY = '{"data":{"id":1,"name":"Jane"}}'
+
+describe('malformed response detection', () => {
+    it('rejects a 200 JSON response whose body never arrived', async () => {
+        const { instance } = instanceWithResponses([{ headers: JSON_HEADERS, data: '' }])
+
+        const caught = await instance.get('/api/profile').catch((e: unknown) => e)
+
+        expect(caught).toBeInstanceOf(MalformedResponseError)
+        expect((caught as MalformedResponseError).message).toContain('empty body on a JSON response')
+        expect((caught as MalformedResponseError).status).toBe(200)
+        expect((caught as MalformedResponseError).method).toBe('get')
+    })
+
+    it('rejects a 200 JSON response whose body was cut short', async () => {
+        const { instance } = instanceWithResponses([{ headers: JSON_HEADERS, data: '{"data":{"id":1,' }])
+
+        const caught = await instance.get('/api/profile').catch((e: unknown) => e)
+
+        expect(caught).toBeInstanceOf(MalformedResponseError)
+        expect((caught as MalformedResponseError).message).toContain('unparseable JSON body')
+    })
+
+    it('attaches the response trace id to the error', async () => {
+        const { instance } = instanceWithResponses([
+            { headers: { ...JSON_HEADERS, 'x-ct-trace-id': 'trace-truncated' }, data: '' },
+        ])
+
+        const caught = await instance.get('/api/profile').catch((e: unknown) => e)
+
+        expect((caught as Record<string, unknown>).ctTraceId).toBe('trace-truncated')
+    })
+
+    it('accepts an empty 200 with no content type (Spiral $response->create(200))', async () => {
+        // DELETE wallet/tag/limit/charge and PATCH wallet user all answer this way.
+        const { instance } = instanceWithResponses([{ headers: {}, data: '' }])
+
+        await expect(instance.delete('/api/wallets/1')).resolves.toMatchObject({ status: 200 })
+    })
+
+    it('accepts an empty 200 with a text content type (gateway /csrf, /live)', async () => {
+        const { instance } = instanceWithResponses([
+            { headers: { 'content-type': 'text/plain; charset=utf-8' }, data: '' },
+        ])
+
+        await expect(instance.get('/csrf')).resolves.toMatchObject({ status: 200 })
+    })
+
+    it('accepts a well-formed JSON body', async () => {
+        const { instance } = instanceWithResponses([{ headers: JSON_HEADERS, data: PROFILE_BODY }])
+
+        const response = await instance.get('/api/profile')
+
+        expect(response.data).toEqual({ data: { id: 1, name: 'Jane' } })
+    })
+
+    it('leaves a non-json responseType alone even when the body is a string', async () => {
+        const { instance } = instanceWithResponses([{ headers: JSON_HEADERS, data: '' }])
+
+        await expect(instance.get('/api/export', { responseType: 'text' })).resolves.toMatchObject({ status: 200 })
+    })
+
+    it('does not flag a HEAD request, which has no body by definition', async () => {
+        const { instance } = instanceWithResponses([{ headers: JSON_HEADERS, data: '' }])
+
+        await expect(instance.head('/api/profile')).resolves.toMatchObject({ status: 200 })
+    })
+})
+
+describe('malformed response retry (via apiCall)', () => {
+    beforeEach(() => {
+        vi.useFakeTimers()
+    })
+
+    afterEach(() => {
+        vi.useRealTimers()
+        vi.clearAllMocks()
+    })
+
+    it('retries a GET whose body was lost and succeeds on the next attempt', async () => {
+        const { instance, attempts } = instanceWithResponses([
+            { headers: JSON_HEADERS, data: '' },
+            { headers: JSON_HEADERS, data: PROFILE_BODY },
+        ])
+
+        const promise = apiCall(async (client) => {
+            const res = await client.get('/api/profile')
+            return res.data.data
+        }, () => instance)
+        await vi.runAllTimersAsync()
+
+        await expect(promise).resolves.toEqual({ id: 1, name: 'Jane' })
+        expect(attempts()).toBe(2)
+    })
+
+    it('gives up after RETRY_MAX_ATTEMPTS when the body never arrives', async () => {
+        const { instance, attempts } = instanceWithResponses([{ headers: JSON_HEADERS, data: '' }])
+
+        const promise = apiCall((client) => client.get('/api/profile'), () => instance)
+        const assertion = expect(promise).rejects.toBeInstanceOf(MalformedResponseError)
+        await vi.runAllTimersAsync()
+        await assertion
+
+        expect(attempts()).toBe(RETRY_MAX_ATTEMPTS)
+    })
+
+    it('does NOT retry a POST whose body was lost — the write may have landed', async () => {
+        const { instance, attempts } = instanceWithResponses([{ headers: JSON_HEADERS, data: '' }])
+
+        const promise = apiCall((client) => client.post('/api/wallets', { name: 'Main' }), () => instance)
+        const assertion = expect(promise).rejects.toBeInstanceOf(MalformedResponseError)
+        await vi.runAllTimersAsync()
+        await assertion
+
+        expect(attempts()).toBe(1)
+    })
+
+    it('recovers the incident case: a model parser no longer sees an undefined payload', async () => {
+        // 2026-07-22: /api/profile answered 200 with a lost body, so User.from threw a
+        // plain Error on undefined and withTransportRetry refused to retry it.
+        const { instance } = instanceWithResponses([
+            { headers: JSON_HEADERS, data: '' },
+            { headers: JSON_HEADERS, data: PROFILE_BODY },
+        ])
+
+        const promise = apiCall(async (client) => {
+            const res = await client.get('/api/profile')
+            if (!res.data.data || typeof res.data.data !== 'object') {
+                throw new Error('User.from: expected object')
+            }
+            return res.data.data
+        }, () => instance)
+        await vi.runAllTimersAsync()
+
+        await expect(promise).resolves.toEqual({ id: 1, name: 'Jane' })
     })
 })
 

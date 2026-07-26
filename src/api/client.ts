@@ -1,4 +1,4 @@
-import axios, { AxiosError, type AxiosInstance } from 'axios'
+import axios, { AxiosError, type AxiosInstance, type AxiosResponse } from 'axios'
 import { webSiteLink } from '@/shared/links'
 import { getEnv } from '@/shared/env'
 
@@ -11,10 +11,11 @@ function extractTraceId(headers: unknown): string | undefined {
     return typeof value === 'string' && value.length > 0 ? value : undefined
 }
 
+// First writer wins — the failing response's own trace ID beats apiCall's last-seen fallback.
 function attachTraceId(error: unknown, traceId: string | undefined): void {
-    if (traceId && error && typeof error === 'object') {
-        Object.assign(error, { ctTraceId: traceId })
-    }
+    if (!traceId || !error || typeof error !== 'object') return
+    if ((error as { ctTraceId?: unknown }).ctTraceId) return
+    Object.assign(error, { ctTraceId: traceId })
 }
 
 export class CsrfError extends Error {
@@ -23,6 +24,48 @@ export class CsrfError extends Error {
         this.name = 'CsrfError'
         this.stack = cause.stack
     }
+}
+
+/**
+ * A 2xx response whose body was lost or cut short in transit. XHR reports that as a
+ * successful status with an empty payload rather than a network error, so it has to be
+ * detected from the body and retried like any other transport failure.
+ */
+export class MalformedResponseError extends Error {
+    readonly status: number
+    readonly method: string
+
+    constructor(message: string, response: AxiosResponse) {
+        super(message)
+        this.name = 'MalformedResponseError'
+        this.status = response.status
+        this.method = response.config?.method?.toLowerCase() ?? ''
+    }
+}
+
+const JSON_CONTENT_TYPE = /^application\/([\w.+-]+\+)?json\b/i
+
+function isJsonContentType(headers: unknown): boolean {
+    if (!headers || typeof headers !== 'object') return false
+    const value = (headers as Record<string, unknown>)['content-type']
+    return typeof value === 'string' && JSON_CONTENT_TYPE.test(value.trim())
+}
+
+/** Why a successful response is unusable, or null when it is fine. */
+function malformedBodyReason(response: AxiosResponse): string | null {
+    if (response.config?.method?.toLowerCase() === 'head') return null
+
+    const responseType = response.config?.responseType
+    if (responseType !== undefined && responseType !== 'json') return null
+
+    // Gated on the content type: endpoints that legitimately answer with an empty 200
+    // (Spiral's $response->create(200), gateway /csrf) declare no content type at all.
+    if (!isJsonContentType(response.headers)) return null
+
+    // axios leaves `data` a string only when the body was empty or JSON.parse threw.
+    if (typeof response.data !== 'string') return null
+
+    return response.data.length === 0 ? 'empty body on a JSON response' : 'unparseable JSON body'
 }
 
 // Per-attempt cap. Kept below the worst-case (attempts × timeout + backoff) so a
@@ -35,6 +78,8 @@ const RETRY_BACKOFF_FACTOR = 3               // base delays 400ms, 1200ms (±50%
 const SAFE_METHODS = new Set(['get', 'head', 'options'])
 
 function isRetryableTransportError(error: unknown): boolean {
+    // Lost body → same idempotency rule as a dropped connection
+    if (error instanceof MalformedResponseError) return SAFE_METHODS.has(error.method)
     if (!(error instanceof AxiosError)) return false
     if (error.response) return false                       // got an HTTP status → not transport
     if (error.code === 'ERR_CANCELED') return false        // user/abort cancelled
@@ -71,7 +116,18 @@ export function createAxiosInstance(): AxiosInstance {
     })
 
     instance.interceptors.response.use(
-        (response) => response,
+        (response) => {
+            const reason = malformedBodyReason(response)
+            if (reason === null) return response
+
+            const error = new MalformedResponseError(
+                `${response.config?.method?.toUpperCase() ?? 'GET'} ${response.config?.url ?? ''}`.trim() +
+                    ` returned HTTP ${response.status} with ${reason}`,
+                response,
+            )
+            attachTraceId(error, extractTraceId(response.headers))
+            return Promise.reject(error)
+        },
         (error: unknown) => {
             if (error instanceof AxiosError && error.response) {
                 if (error.response.status === 401) {
