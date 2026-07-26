@@ -294,6 +294,12 @@ test.describe('S16 — Settings: Security tab', () => {
         // Confirm modal should open
         await expect(overlay.dialog(page)).toBeVisible({ timeout: 5000 })
 
+        // …and its description must name the passkey being deleted. The message
+        // (passkeySettings.deleteConfirm) carries a {name} placeholder, which vue-i18n
+        // interpolates ONLY when passed as a named param — a post-hoc string replace
+        // silently yields empty quotes (issue #133).
+        await expect(overlay.dialog(page)).toContainText('E2E Test Key', { timeout: 5000 })
+
         // Confirm the deletion (common.delete button in the dialog)
         await overlay.confirmDelete(page).click()
 

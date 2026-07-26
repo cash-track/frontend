@@ -2,17 +2,19 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import PasskeyItem from '../PasskeyItem.vue'
+import ConfirmModal from '@/components/Shared/ConfirmModal.vue'
 import { Passkey } from '@/api/models/passkey'
 
-const { mockDeletePasskey } = vi.hoisted(() => ({
+const { mockDeletePasskey, mockT } = vi.hoisted(() => ({
     mockDeletePasskey: vi.fn(),
+    mockT: vi.fn((key: string) => key),
 }))
 
 const mockLocale = { value: 'en' }
 
 vi.mock('vue-i18n', () => ({
     useI18n: () => ({
-        t: (key: string) => key,
+        t: mockT,
         locale: mockLocale,
     }),
 }))
@@ -55,6 +57,7 @@ describe('PasskeyItem', () => {
     beforeEach(() => {
         setActivePinia(createPinia())
         vi.clearAllMocks()
+        mockT.mockImplementation((key: string) => key)
         mockLocale.value = 'en'
     })
 
@@ -73,6 +76,22 @@ describe('PasskeyItem', () => {
         const wrapper = mount(PasskeyItem, { ...globalStubs, props: { passkey: makePasskey(usedAt) } })
         expect(wrapper.text()).not.toContain('passkeySettings.usedAtNever')
         expect(wrapper.text()).toContain('passkeySettings.used')
+    })
+
+    it('passes the passkey name to the confirm description as a named param', () => {
+        // Param-aware t mock: proves the name reaches t() as an interpolation param
+        // rather than being post-hoc string-replaced (vue-i18n eats {name} first).
+        mockT.mockImplementation((key: string, params?: Record<string, unknown>) =>
+            params ? `${key}:${JSON.stringify(params)}` : key,
+        )
+
+        const wrapper = mount(PasskeyItem, { ...globalStubs, props: { passkey: makePasskey() } })
+        const modal = wrapper.findComponent(ConfirmModal)
+
+        expect(modal.exists()).toBe(true)
+        expect(modal.props('description')).toBe(
+            'passkeySettings.deleteConfirm:{"name":"My YubiKey"}',
+        )
     })
 
     it('opens confirm modal when delete button is clicked', async () => {
