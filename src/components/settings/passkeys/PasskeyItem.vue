@@ -39,7 +39,7 @@ const usedAt = computed(() => {
 })
 
 const deleteConfirmDescription = computed(() =>
-    t('passkeySettings.deleteConfirm').replace(/\{name\}/g, props.passkey.name),
+    t('passkeySettings.deleteConfirm', { name: props.passkey.name }),
 )
 
 async function onDeleteConfirmed() {
