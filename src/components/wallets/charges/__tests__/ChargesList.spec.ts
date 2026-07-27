@@ -181,6 +181,47 @@ describe('ChargesList', () => {
         expect(events).toBeFalsy()
     })
 
+    it('shows the move error alert on failure and clears it when the alert is dismissed', async () => {
+        mockMoveCharges.mockRejectedValue(new Error('network error'))
+
+        const sourceWallet = makeWallet(1)
+        const targetWallet = makeWallet(2)
+
+        const { useWalletsStore } = await import('@/stores/wallets')
+        const store = useWalletsStore()
+        store.activeWallets = [sourceWallet, targetWallet]
+
+        const wrapper = shallowMount(ChargesList, {
+            props: { wallet: sourceWallet },
+        })
+
+        await vi.waitFor(() => {
+            expect(mockGetCharges).toHaveBeenCalledTimes(1)
+        })
+
+        const vm = wrapper.vm as unknown as {
+            selectedCharges: Charge[]
+            moveError: string | null
+            onMoveTo: (w: Wallet) => Promise<void>
+        }
+        vm.selectedCharges = [makeCharge()]
+
+        await vm.onMoveTo(targetWallet)
+        await nextTick()
+
+        expect(vm.moveError).toBe('charges.moveError')
+
+        // Nuxt UI v4.10's UAlert emits `update:open` (not `close`) when its close
+        // button is pressed — the alert must clear moveError on that event.
+        const alert = wrapper.findComponent({ name: 'Alert' })
+        expect(alert.exists()).toBe(true)
+
+        await alert.vm.$emit('update:open', false)
+        await nextTick()
+
+        expect(vm.moveError).toBeNull()
+    })
+
     it('renders a today header for charges dated today', async () => {
         const todayCharge = makeTodayCharge()
         mockGetCharges.mockResolvedValue({ data: [todayCharge], pagination: makePagination() })

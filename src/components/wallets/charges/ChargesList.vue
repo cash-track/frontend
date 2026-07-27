@@ -283,7 +283,7 @@ defineExpose({ onChargeCreated })
                     :description="moveError"
                     close
                     class="basis-full"
-                    @close="moveError = null"
+                    @update:open="moveError = null"
                 />
             </div>
 

@@ -40,9 +40,11 @@ const activeBadge = (page: import('@playwright/test').Page) =>
 const archivedBadge = (page: import('@playwright/test').Page) =>
     page.getByText(label('wallets.archived')).first()
 
-// A generic toast/notification — Nuxt UI renders role=alert for notifications
+// A generic toast/notification. Nuxt UI 4.10 moved role="alert" onto a
+// visually-hidden announce span, so the visible toast can no longer be reached
+// by role — match it structurally instead: an <li> inside Reka's toast viewport.
 const errorToast = (page: import('@playwright/test').Page, pattern: RegExp) =>
-    page.getByRole('alert').filter({ hasText: pattern }).first()
+    page.locator('[data-slot="viewport"] li').filter({ hasText: pattern }).first()
 
 // Delete confirm button inside the modal (uses confirmLabel = 'wallets.delete')
 const modalConfirmDelete = (page: import('@playwright/test').Page) =>
