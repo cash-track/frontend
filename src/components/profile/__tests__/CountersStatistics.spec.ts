@@ -36,7 +36,13 @@ const globalStubs = {
                 template: '<span><slot /></span>',
                 props: ['text', 'arrow'],
             },
+            // Nuxt UI's SFCs resolve by their bare filename-derived name, so the
+            // U*-prefixed key alone lets the real component through. That matters
+            // here: with the offline @iconify/vue alias and no icon data registered
+            // in unit tests, the real UIcon renders nothing at all — taking its
+            // class attribute (and this test's `.text-warning` target) with it.
             UIcon: true,
+            Icon: true,
             USkeleton: true,
         },
     },
