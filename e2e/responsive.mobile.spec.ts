@@ -372,4 +372,46 @@ test.describe('S21 — Responsive / Mobile', () => {
         }
     })
 
+    // RM-10 — Charge timeline connector must not double up between adjacent rows
+    // (issue #108: ChargeItem's timeline column had an unconditional -my-2 cancelling a
+    // `sm:`-only py-2, so below sm it overflowed 8px past each edge and neighbouring
+    // 10%-opacity lines overlapped, compositing to ~19% — a clipped-looking border).
+    test('RM-10 charge timeline connector does not overlap between adjacent rows', async ({ request, page }) => {
+        const stamp = Date.now()
+        const w = await createWalletViaApi(request, { name: `E2E RM10 ${stamp}` })
+        try {
+            // Two charges on the same day land in one group → adjacent sibling rows.
+            await createChargeViaApi(request, w.id, { title: `E2E RM10 first ${stamp}` })
+            await createChargeViaApi(request, w.id, { title: `E2E RM10 second ${stamp}` })
+
+            await page.goto(`/wallets/${w.id}`)
+            await expect(wallet.detailHeading(page)).toBeVisible({ timeout: 10000 })
+            await expect(page.getByText(`E2E RM10 second ${stamp}`)).toBeVisible({ timeout: 10000 })
+
+            // ChargeItem root is the only .items-stretch in the app; its first child is
+            // the timeline column. Measure boxes rather than assert Tailwind classes.
+            const overflow = await page.evaluate(() => {
+                const rows = Array.from(document.querySelectorAll('.items-stretch'))
+                return rows.map(row => {
+                    const column = row.firstElementChild as HTMLElement | null
+                    if (!column) return null
+                    const r = row.getBoundingClientRect()
+                    const c = column.getBoundingClientRect()
+                    return { above: r.top - c.top, below: c.bottom - r.bottom }
+                })
+            })
+
+            expect(overflow.length).toBeGreaterThanOrEqual(2)
+            for (const box of overflow) {
+                expect(box).not.toBeNull()
+                expect(box!.above).toBeLessThanOrEqual(0.5)
+                expect(box!.below).toBeLessThanOrEqual(0.5)
+            }
+
+            await assertNoErrorLeak(page)
+        } finally {
+            await deleteWalletViaApi(request, w.id)
+        }
+    })
+
 })

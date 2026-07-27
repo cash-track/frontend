@@ -129,9 +129,11 @@ defineExpose({ fullDateTime, chargeTime })
         ]"
         @click="toggleExpand()"
     >
-        <!-- Timeline column: fixed width, centered icon + vertical line -->
-        <div class="flex flex-col items-center w-10 shrink-0 py-0 -my-2">
-            <div class="w-px h-[20px] bg-black/10 dark:bg-white/10" />
+        <!-- Timeline column. -my-2 cancels the row's own padding, so it must share its
+             breakpoint or the column overflows the row and neighbouring lines overlap.
+             The spacer aligns the icon to the title line at each breakpoint. -->
+        <div class="flex flex-col items-center w-10 shrink-0 sm:-my-2">
+            <div class="w-px h-3 sm:h-5 bg-black/10 dark:bg-white/10" />
             <button
                 type="button"
                 class="flex items-center justify-center size-7 rounded-full border-0 shrink-0 transition-colors"

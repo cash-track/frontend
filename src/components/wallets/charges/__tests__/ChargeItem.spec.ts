@@ -564,4 +564,39 @@ describe('ChargeItem', () => {
         expect(wrapper.emitted('updated')).toBeTruthy()
         expect(wrapper.emitted('updated')![0]).toEqual([charge])
     })
+
+    // Issue #108 — the timeline column's -my-2 only cancels the row's own padding, so
+    // both must share a breakpoint; otherwise the column overflows 8px past each edge
+    // on mobile and adjacent rows' lines overlap at double opacity.
+    describe('timeline column geometry (issue #108)', () => {
+        function timelineColumn(wrapper: ReturnType<typeof shallowMount>) {
+            return wrapper.find('.flex.flex-col.items-center.w-10')
+        }
+
+        it('gates the timeline negative margin on the same breakpoint as the row padding', () => {
+            const wrapper = shallowMount(ChargeItem, {
+                props: { charge: makeCharge({}), wallet: makeWallet() },
+            })
+
+            const rowClasses = wrapper.classes()
+            expect(rowClasses).toContain('sm:py-2')
+            expect(rowClasses).not.toContain('py-2')
+
+            const columnClasses = timelineColumn(wrapper).classes()
+            expect(columnClasses).toContain('sm:-my-2')
+            expect(columnClasses).not.toContain('-my-2')
+        })
+
+        it('offsets the icon by the row content padding at each breakpoint', () => {
+            const wrapper = shallowMount(ChargeItem, {
+                props: { charge: makeCharge({}), wallet: makeWallet() },
+            })
+
+            // Spacer must span column top → title top: py-3 (12px), plus the row's
+            // sm:py-2 once it applies (20px).
+            const spacer = timelineColumn(wrapper).find('div')
+            expect(spacer.classes()).toContain('h-3')
+            expect(spacer.classes()).toContain('sm:h-5')
+        })
+    })
 })
