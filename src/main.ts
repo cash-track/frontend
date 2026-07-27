@@ -8,7 +8,6 @@ import i18n from './lang'
 import { setupPWA } from './pwa'
 
 import './assets/main.css'
-import './plugins/icons'
 
 const app = createApp(App)
 

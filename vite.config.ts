@@ -10,7 +10,23 @@ import { VitePWA } from 'vite-plugin-pwa'
 export default defineConfig({
     plugins: [
         vue(),
-        ui(),
+        // Icons are embedded into the bundle at build time instead of being fetched
+        // from api.iconify.design on first render. Nuxt UI's own icons come from its
+        // default icon map automatically; `scan` picks up the ones referenced in our
+        // own code. The glob is deliberately every file under src/ — the default
+        // (`**/*.{vue,jsx,tsx,md,...}`) skips .ts, where useNotifications keeps its
+        // toast icons. Collections must be installed locally (@iconify-json/*) or
+        // their icons silently fall through to the API.
+        ui({
+            icon: {
+                clientBundle: {
+                    scan: {
+                        globInclude: ['src/**/*'],
+                        globExclude: ['**/__tests__/**'],
+                    },
+                },
+            },
+        }),
         vueDevTools(),
         // Precache the app shell only (hashed JS/CSS/HTML).
         // The API is a different origin (gateway) so it is never precached;
@@ -35,8 +51,18 @@ export default defineConfig({
         }),
     ],
     resolve: {
-        alias: {
-            '@': fileURLToPath(new URL('./src', import.meta.url)),
-        },
+        alias: [
+            { find: '@', replacement: fileURLToPath(new URL('./src', import.meta.url)) },
+            // The default @iconify/vue entry keeps an HTTP fallback that fetches any
+            // unregistered icon from api.iconify.design. The offline entry drops that
+            // code path entirely, so a bundling gap shows up as a blank icon rather
+            // than a silent third-party request. Nuxt UI only imports Icon and
+            // addIcon; the shim re-exports both and bridges the colon/dash icon-name
+            // difference the offline entry does not normalise (see the file).
+            {
+                find: /^@iconify\/vue$/,
+                replacement: fileURLToPath(new URL('./src/shared/iconify-offline.ts', import.meta.url)),
+            },
+        ],
     },
 })
