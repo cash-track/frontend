@@ -3,6 +3,9 @@ import { ref, computed, reactive, nextTick } from 'vue'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import AppHeader from '../AppHeader.vue'
+import { useAuthStore } from '@/stores/auth'
+import { useLocaleStore } from '@/stores/locale'
+import { updateLocale } from '@/api/profile'
 
 vi.mock('vue-i18n', () => ({
     useI18n: () => ({
@@ -63,8 +66,8 @@ vi.mock('@/shared/links', () => ({
 vi.mock('@/lang', () => ({
     locales: [
         { code: 'en', name: 'English', flag: '🇺🇸' },
+        { code: 'uk', name: 'Ukrainian', flag: '🇺🇦' },
     ],
-    loadLocaleAsync: vi.fn(),
 }))
 
 vi.mock('@/api/auth', () => ({
@@ -263,5 +266,35 @@ describe('AppHeader', () => {
         const wrapper = mountHeader()
         const btn = wrapper.find('[aria-label="language"]')
         expect(btn.exists()).toBe(true)
+    })
+
+    it('picking a locale from the menu fires updateLocale when logged in', async () => {
+        vi.mocked(updateLocale).mockClear()
+        const wrapper = mountHeader()
+        useAuthStore().isLogged = true
+        const vm = wrapper.vm as unknown as {
+            availableLocales: { label: string; onSelect?: () => void }[][]
+        }
+
+        // Goes through the real onSelect callback (onLocaleChange), not the store action
+        // directly — that's the only path that's supposed to echo to the server.
+        vm.availableLocales[0].find(i => i.label === 'Ukrainian')?.onSelect?.()
+        await nextTick()
+
+        expect(updateLocale).toHaveBeenCalledWith('uk')
+    })
+
+    it('a profile-load-triggered locale change does not fire updateLocale even when logged in', async () => {
+        vi.mocked(updateLocale).mockClear()
+        mountHeader()
+        useAuthStore().isLogged = true
+
+        // stores/profile.ts's setProfile() calls localeStore.localeChange(user.locale)
+        // directly (bypassing onLocaleChange) after login — must not echo the server's
+        // own value back to it.
+        useLocaleStore().localeChange('uk')
+        await nextTick()
+
+        expect(updateLocale).not.toHaveBeenCalled()
     })
 })
