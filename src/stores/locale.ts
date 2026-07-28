@@ -1,22 +1,17 @@
 import { shallowRef, watch } from 'vue'
 import { defineStore } from 'pinia'
 import { loadLocaleAsync } from '@/lang'
+import { readRawCookie, writeRawCookie } from '@/shared/sharedCookie'
 
-const LOCALE_COOKIE = 'cshtrkl'
-const COOKIE_MAX_AGE = 365 * 24 * 60 * 60 // 365 days in seconds
+// Domain-scoped (see shared/sharedCookie.ts) so the marketing website sees it too.
+export const LOCALE_COOKIE = 'cshtrkl'
 
 function readLocaleCookie(): string | null {
-    const match = document.cookie.match(/(?:^|;\s*)cshtrkl=([^;]*)/)
-    return match ? decodeURIComponent(match[1]) : null
+    return readRawCookie(LOCALE_COOKIE)
 }
 
 function writeLocaleCookie(locale: string) {
-    document.cookie = [
-        `${LOCALE_COOKIE}=${encodeURIComponent(locale)}`,
-        'path=/',
-        `max-age=${COOKIE_MAX_AGE}`,
-        'SameSite=Strict',
-    ].join('; ')
+    writeRawCookie(LOCALE_COOKIE, locale)
 }
 
 export const useLocaleStore = defineStore('locale', () => {
@@ -37,7 +32,13 @@ export const useLocaleStore = defineStore('locale', () => {
         }
     }
 
-    return { locale, localeChange, loadCachedLocale }
+    // Applies a locale another tab already wrote to the cookie (see useCrossTabSync).
+    // Distinct from localeChange only in that it skips the write-back — it's already correct.
+    function applyExternalLocale(newLocale: 'en' | 'uk') {
+        locale.value = newLocale
+    }
+
+    return { locale, localeChange, loadCachedLocale, applyExternalLocale }
 })
 
 export function syncLocaleWithI18n() {

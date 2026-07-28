@@ -10,7 +10,9 @@ import { useAuthStore } from '@/stores/auth'
 import { useProfileStore } from '@/stores/profile'
 import { updateLocale } from '@/api/profile'
 import { webSiteLink } from '@/shared/links'
-import { locales, loadLocaleAsync, type LocaleInterface } from '@/lang'
+import { COOKIE_NAME as THEME_COOKIE_NAME, themeCookieStorage } from '@/shared/themeCookie'
+import { useCrossTabSync } from '@/composables/useCrossTabSync'
+import { locales, type LocaleInterface } from '@/lang'
 import LogoFull from '@/components/LogoFull.vue'
 import HamburgerMenu from '@/components/Shared/HamburgerMenu.vue'
 
@@ -22,7 +24,13 @@ const authStore = useAuthStore()
 const { isLogged } = storeToRefs(authStore)
 const profileStore = useProfileStore()
 const { profile } = storeToRefs(profileStore)
-const mode = useColorMode()
+// Shared with the website via the `cshtrkt` cookie instead of localStorage (see shared/themeCookie.ts).
+const mode = useColorMode({ storageKey: THEME_COOKIE_NAME, storage: themeCookieStorage })
+
+// Re-applies cshtrkt/cshtrkl on focus/visibility if another tab changed them —
+// see composables/useCrossTabSync.ts for why this can't rely on VueUse's normal
+// cross-tab storage-event wiring.
+useCrossTabSync(mode)
 
 const isHeaderOpened = ref(false)
 
@@ -54,6 +62,12 @@ const currentLocale = computed(() => {
 
 function onLocaleChange(changed: LocaleInterface) {
     localeStore.localeChange(changed.code)
+
+    // Only a real user pick echoes to the server; profile load and cross-tab sync use
+    // other entry points and must not PUT the value straight back.
+    if (isLogged.value) {
+        updateLocale(changed.code).catch(() => {})
+    }
 }
 
 type ThemeChoice = 'light' | 'dark' | 'auto'
@@ -66,10 +80,8 @@ const themeChoices: { value: ThemeChoice; labelKey: string; icon: string }[] = [
 
 const isSystemTheme = computed(() => mode.store.value === 'auto')
 
-// mode.value resolves 'auto' down to the live device scheme (light/dark) and is reactive
-// to prefers-color-scheme changes; for manual light/dark it's the same as mode.store.value.
-// Drives the trigger's main glyph — the monitor badge (below, in the template) marks the
-// auto/system case on top of it.
+// mode.value resolves 'auto' to the live device scheme; the monitor badge in the template
+// marks the auto case on top of this glyph.
 const resolvedThemeIcon = computed(() => (mode.value === 'dark' ? 'i-lucide-moon' : 'i-lucide-sun'))
 
 const themeMenuItems = computed<DropdownMenuItem[][]>(() => {
@@ -92,14 +104,6 @@ const themeMenuItems = computed<DropdownMenuItem[][]>(() => {
 function onThemeChange(choice: ThemeChoice) {
     mode.value = choice
 }
-
-watch(locale, (newLocale) => {
-    loadLocaleAsync(newLocale)
-
-    if (isLogged.value) {
-        updateLocale(newLocale).catch(() => {})
-    }
-})
 
 watch(() => route.fullPath, () => {
     isHeaderOpened.value = false

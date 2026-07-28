@@ -4,14 +4,14 @@
  * IT-01  Locale switch updates in-page UI labels
  * IT-02  Locale persists after page reload (cshtrkl cookie)
  * IT-03  Switching locale calls PUT /api/profile/locale (updateLocale)
- * IT-04  Theme menu: selecting Light/Dark pins html.dark and persists after reload (localStorage)
+ * IT-04  Theme menu: selecting Light/Dark pins html.dark and persists after reload (cshtrkt cookie)
  * IT-05  Document titles for each route (static meta.title; namedTitle is dead code — see NAV-09)
- * IT-06  Theme menu: selecting System follows prefers-color-scheme live and persists 'auto'
+ * IT-06  Theme menu: selecting System follows prefers-color-scheme live and persists 'system'
  *
  * Notes:
  * - NEVER click Sign Out (kills shared session).
  * - PUT /api/profile/locale is INTERCEPTED and not allowed to persist server-side.
- * - Client-only effects (html.dark class, cshtrkl cookie) are per-context and safe.
+ * - Client-only effects (html.dark class, cshtrkl/cshtrkt cookies) are per-context and safe.
  * - Locale is RESTORED at test end so subsequent tests start clean.
  * - The updateLocale path is PUT /api/profile/locale (src/api/profile.ts, updateLocale()).
  * - The app detects locale from cshtrkl cookie on mount, then overrides it from
@@ -24,6 +24,9 @@
  * - In System mode the trigger renders a composite icon (resolved sun/moon + a small
  *   monitor corner badge) — 2 <svg> nodes inside the trigger vs 1 for a manual pin.
  *   IT-06 asserts this count as a cheap, stable proxy for "the badge is showing."
+ * - Theme persists in the `cshtrkt` cookie, not localStorage (src/shared/themeCookie.ts).
+ *   VueUse's 'auto' maps to the cookie's 'system' — use `toCookieValue()`, imported from
+ *   themeCookieVocabulary.ts so this file's isolated tsconfig doesn't need env.ts's types.
  */
 import { test, expect } from '@playwright/test'
 import {
@@ -33,6 +36,7 @@ import {
     deleteWalletViaApi,
     assertNoErrorLeak,
 } from './support'
+import { toCookieValue } from '../src/shared/themeCookieVocabulary'
 
 // ── Helper: detect the current app locale ────────────────────────────────────
 // We read the *store* locale via the language menu's disabled item, NOT html.lang.
@@ -74,7 +78,7 @@ async function switchLocale(
     // first time on a page does an `await import('./messages/uk')` (lang/index.ts:63) before
     // setI18nLanguage flips html.lang — Vite transforms that chunk on first request, so under
     // cold start + parallel-worker load it can take several seconds. 10s gives that margin;
-    // the PUT this test asserts already fired synchronously from AppHeader's watch(locale).
+    // the PUT this test asserts already fired synchronously from AppHeader's onLocaleChange().
     await expect
         .poll(() => page.evaluate(() => document.documentElement.lang), { timeout: 10000 })
         .toBe(targetLocale)
@@ -96,6 +100,12 @@ async function gotoReady(page: Parameters<typeof shell.hamburger>[0], path: stri
     )
     await page.goto(path)
     await profileLoaded
+}
+
+// ── Helper: read the cshtrkt cookie value ────────────────────────────────────
+async function themeCookieValue(page: Parameters<typeof shell.hamburger>[0]): Promise<string | undefined> {
+    const cookies = await page.context().cookies()
+    return cookies.find(c => c.name === 'cshtrkt')?.value
 }
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -209,8 +219,8 @@ test.describe('S22 — i18n, dark mode, document titles', () => {
         'IT-03 switching locale fires PUT /api/profile/locale (updateLocale)',
         async ({ page }) => {
             // This test specifically asserts that the API call fires (IT-03 requirement).
-            // AppHeader.vue watch(locale) calls updateLocale(newLocale) when isLogged.
-            // The path is PUT /api/profile/locale (src/api/profile.ts line 84).
+            // onLocaleChange() calls updateLocale() when isLogged — only for a real user pick,
+            // not profile-load or cross-tab sync. Path: PUT /api/profile/locale.
             let updateLocaleFired = false
             let capturedLocale: string | null = null
 
@@ -268,8 +278,8 @@ test.describe('S22 — i18n, dark mode, document titles', () => {
                 )
                 .toBe(!isInitiallyDark)
 
-            // Reload → localStorage restores the pinned mode (VueUse colorMode). Poll: the
-            // html.dark class is reapplied on mount, which can land just after domcontentloaded.
+            // Reload → cshtrkt cookie restores the pinned mode; poll since html.dark
+            // reapplies just after domcontentloaded.
             await page.reload()
             await page.waitForLoadState('domcontentloaded')
             await expect
@@ -278,12 +288,10 @@ test.describe('S22 — i18n, dark mode, document titles', () => {
                     { timeout: 5000 },
                 )
                 .toBe(!isInitiallyDark)
+            // 'light'/'dark' pass through the cookie translation unchanged.
             await expect
-                .poll(
-                    () => page.evaluate(() => localStorage.getItem('vueuse-color-scheme')),
-                    { timeout: 5000 },
-                )
-                .toBe(targetChoice)
+                .poll(() => themeCookieValue(page), { timeout: 5000 })
+                .toBe(toCookieValue(targetChoice))
 
             // Restore original mode (per-context so harmless, but good practice)
             const restoreChoice: 'light' | 'dark' = isInitiallyDark ? 'dark' : 'light'
@@ -346,7 +354,7 @@ test.describe('S22 — i18n, dark mode, document titles', () => {
 
     // IT-06 ───────────────────────────────────────────────────────────────────
     test(
-        'IT-06 theme menu: selecting System follows prefers-color-scheme live and persists auto',
+        'IT-06 theme menu: selecting System follows prefers-color-scheme live and persists system',
         async ({ page }) => {
             // Pin the OS-level scheme so the assertions below are deterministic.
             await page.emulateMedia({ colorScheme: 'light' })
@@ -355,13 +363,10 @@ test.describe('S22 — i18n, dark mode, document titles', () => {
             await shell.darkModeToggle(page).click()
             await shell.themeMenuItem(page, 'system').click()
 
-            // Selecting System writes 'auto' to the VueUse colorMode storage key…
+            // VueUse's 'auto' translates to 'system' before writing cshtrkt.
             await expect
-                .poll(
-                    () => page.evaluate(() => localStorage.getItem('vueuse-color-scheme')),
-                    { timeout: 5000 },
-                )
-                .toBe('auto')
+                .poll(() => themeCookieValue(page), { timeout: 5000 })
+                .toBe(toCookieValue('auto'))
             // …and immediately follows the (emulated) device scheme.
             await expect
                 .poll(
@@ -402,11 +407,8 @@ test.describe('S22 — i18n, dark mode, document titles', () => {
             await shell.darkModeToggle(page).click()
             await shell.themeMenuItem(page, 'light').click()
             await expect
-                .poll(
-                    () => page.evaluate(() => localStorage.getItem('vueuse-color-scheme')),
-                    { timeout: 5000 },
-                )
-                .toBe('light')
+                .poll(() => themeCookieValue(page), { timeout: 5000 })
+                .toBe(toCookieValue('light'))
 
             // Manual pin: back down to a single icon/svg node — no monitor badge.
             await expect

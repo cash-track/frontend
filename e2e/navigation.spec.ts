@@ -251,8 +251,11 @@ test.describe('S1 — Navigation & App Shell', () => {
             // (localeChange() writes it via writeLocaleCookie())
             const updatedHtmlLang = await page.evaluate(() => document.documentElement.lang)
             expect(updatedHtmlLang).toBe(targetLocale)
+            const cookiesAfterSwitch = await page.context().cookies()
+            const localeCookieAfterSwitch = cookiesAfterSwitch.find(c => c.name === 'cshtrkl')
+            expect(localeCookieAfterSwitch?.value).toBe(targetLocale)
 
-            // The watch(locale) in AppHeader.vue calls updateLocale() when logged in
+            // onLocaleChange() in AppHeader.vue calls updateLocale() for this real, user-driven pick
             expect(updateLocaleFired).toBe(true)
 
             // ── Restore original locale ──────────────────────────────────────
