@@ -32,6 +32,7 @@ localeStore.loadCachedLocale()
 syncLocaleWithI18n()
 
 const profileStore = useProfileStore()
+profileStore.loadCachedProfile()
 const authStore = useAuthStore()
 const { loading, failed, lastError } = storeToRefs(profileStore)
 const { isLogged } = storeToRefs(authStore)

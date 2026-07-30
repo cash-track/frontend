@@ -1,16 +1,22 @@
 import { shallowRef } from 'vue'
 import { defineStore } from 'pinia'
-import type { User } from '@/api/models/user'
 import { logout as apiLogout } from '@/api/auth'
 import { webSiteLink } from '@/shared/links'
+import { clearCachedProfile } from '@/shared/profileCookie'
 
 export const useAuthStore = defineStore('auth', () => {
     const isLogged = shallowRef(false)
     const isEmailConfirmed = shallowRef(false)
 
-    function login(profile: User) {
+    // Structural param so both User and the leaner CachedProfile can seed this.
+    function login(profile: { isEmailConfirmed: boolean }) {
         isLogged.value = true
         isEmailConfirmed.value = profile.isEmailConfirmed
+    }
+
+    function reset() {
+        isLogged.value = false
+        isEmailConfirmed.value = false
     }
 
     async function logout() {
@@ -19,10 +25,10 @@ export const useAuthStore = defineStore('auth', () => {
         } catch {
             // redirect regardless
         }
-        isLogged.value = false
-        isEmailConfirmed.value = false
+        reset()
+        clearCachedProfile()
         window.location.href = webSiteLink('/')
     }
 
-    return { isLogged, isEmailConfirmed, login, logout }
+    return { isLogged, isEmailConfirmed, login, reset, logout }
 })

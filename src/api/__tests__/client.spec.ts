@@ -8,10 +8,49 @@ import {
     REQUEST_TIMEOUT_MS,
     RETRY_MAX_ATTEMPTS,
 } from '../client'
+import { PROFILE_COOKIE, writeCachedProfile } from '@/shared/profileCookie'
 
 vi.mock('@/shared/links', () => ({
     webSiteLink: (path: string) => `https://website.test${path}`,
 }))
+
+const mockCachedProfile = {
+    v: 1 as const,
+    id: 1,
+    name: 'Ann',
+    lastName: null,
+    nickName: 'ann',
+    email: 'a@b.c',
+    photoUrl: null,
+    isEmailConfirmed: true,
+    locale: 'en',
+}
+
+let cookieJar: Record<string, string>
+
+// See shared/__tests__/sharedCookie.spec.ts for why jsdom's native cookie jar is replaced.
+function installCookieJar() {
+    cookieJar = {}
+    Object.defineProperty(document, 'cookie', {
+        configurable: true,
+        get() {
+            return Object.entries(cookieJar)
+                .map(([name, value]) => `${name}=${value}`)
+                .join('; ')
+        },
+        set(raw: string) {
+            const firstPair = raw.split(';')[0]
+            const eqIndex = firstPair.indexOf('=')
+            const name = firstPair.slice(0, eqIndex).trim()
+            const value = firstPair.slice(eqIndex + 1)
+            if (/max-age=0(?:;|$)/.test(raw)) {
+                delete cookieJar[name]
+            } else {
+                cookieJar[name] = value
+            }
+        },
+    })
+}
 
 // Minimal AxiosInstance mock factory
 function mockInstance(overrides: Partial<AxiosInstance> = {}): AxiosInstance {
@@ -62,6 +101,7 @@ describe('apiCall', () => {
     let originalReload: () => void
 
     beforeEach(() => {
+        installCookieJar()
         originalHref = window.location.href
         originalReload = window.location.reload
         Object.defineProperty(window, 'location', {
@@ -115,6 +155,7 @@ describe('apiCall', () => {
     })
 
     it('redirects to login when CSRF refresh returns 401', async () => {
+        writeCachedProfile(mockCachedProfile)
         const fn = vi.fn().mockRejectedValue(new CsrfError(new Error('CSRF')))
 
         const csrfError = Object.assign(new AxiosError('Unauthorized'), {
@@ -126,9 +167,12 @@ describe('apiCall', () => {
 
         await expect(apiCall(fn, () => instance)).rejects.toThrow('redirecting to login')
         expect(window.location.href).toBe('https://website.test/login')
+        // Same "session is dead" case as a direct 401.
+        expect(document.cookie).not.toContain(PROFILE_COOKIE)
     })
 
     it('reloads page when CSRF refresh throws unexpected error', async () => {
+        writeCachedProfile(mockCachedProfile)
         const fn = vi.fn().mockRejectedValue(new CsrfError(new Error('CSRF')))
         const instance = mockInstance({
             get: vi.fn().mockRejectedValue(new Error('Redis down')),
@@ -136,6 +180,8 @@ describe('apiCall', () => {
 
         await expect(apiCall(fn, () => instance)).rejects.toThrow('Redis down')
         expect(window.location.reload).toHaveBeenCalled()
+        // An unexpected refresh error is not proof the session is dead.
+        expect(document.cookie).toContain(PROFILE_COOKIE)
     })
 
     it('does not apply CSRF retry to GET requests with an HTTP response error', async () => {
@@ -302,6 +348,74 @@ function instanceWithResponses(responses: Array<Partial<AxiosResponse>>): {
 
 const JSON_HEADERS = { 'content-type': 'application/json; charset=utf-8' }
 const PROFILE_BODY = '{"data":{"id":1,"name":"Jane"}}'
+
+describe('createAxiosInstance — 401 handling', () => {
+    let originalHref: string
+
+    beforeEach(() => {
+        installCookieJar()
+        originalHref = window.location.href
+        Object.defineProperty(window, 'location', {
+            writable: true,
+            value: { href: '' },
+        })
+    })
+
+    afterEach(() => {
+        Object.defineProperty(window, 'location', {
+            writable: true,
+            value: { href: originalHref },
+        })
+    })
+
+    it('clears the cshtrkp cookie and redirects to login on a 401 response', () => {
+        writeCachedProfile(mockCachedProfile)
+        expect(document.cookie).toContain(PROFILE_COOKIE)
+
+        // A custom adapter bypasses axios' settle logic, so a 401 would resolve rather than
+        // reject. Invoke the registered rejected handler directly instead.
+        const instance = createAxiosInstance()
+        const rejectedHandler = (
+            instance.interceptors.response as unknown as {
+                handlers: Array<{ rejected?: (error: unknown) => unknown }>
+            }
+        ).handlers[0]?.rejected
+        expect(rejectedHandler).toBeTypeOf('function')
+
+        const error = Object.assign(new AxiosError('Unauthorized'), {
+            response: { status: 401 } as AxiosResponse,
+        })
+        rejectedHandler?.(error)
+
+        expect(document.cookie).not.toContain(PROFILE_COOKIE)
+        expect(window.location.href).toBe('https://website.test/login')
+    })
+
+    // Only logout or a 401 clears the cookie — no other status may.
+    it.each([500, 503, 403, 429])(
+        'leaves the cshtrkp cookie intact and does not redirect on a %i response',
+        async (status) => {
+            writeCachedProfile(mockCachedProfile)
+            expect(document.cookie).toContain(PROFILE_COOKIE)
+
+            const instance = createAxiosInstance()
+            const rejectedHandler = (
+                instance.interceptors.response as unknown as {
+                    handlers: Array<{ rejected?: (error: unknown) => unknown }>
+                }
+            ).handlers[0]?.rejected
+            expect(rejectedHandler).toBeTypeOf('function')
+
+            const error = Object.assign(new AxiosError('Server error'), {
+                response: { status } as AxiosResponse,
+            })
+
+            await expect(Promise.resolve(rejectedHandler?.(error))).rejects.toBe(error)
+            expect(document.cookie).toContain(PROFILE_COOKIE)
+            expect(window.location.href).toBe('')
+        },
+    )
+})
 
 describe('malformed response detection', () => {
     it('rejects a 200 JSON response whose body never arrived', async () => {

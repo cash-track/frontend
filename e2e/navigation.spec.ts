@@ -12,15 +12,23 @@
  * NAV-09  Title guard: router.push with nameForTitle sets namedTitle
  * NAV-10  Unknown path /nope — no crash, app shell still present
  * NAV-11  Footer degrades gracefully when no release version/commit vars are configured
+ * NAV-12  Cached profile renders the header name before GET /api/profile resolves (#147)
+ * NAV-13  A 401 from the API drops the cshtrkp cache cookie (#147)
  */
 import { test, expect } from '@playwright/test'
 import {
     label,
     createWalletViaApi,
     deleteWalletViaApi,
+    routeDelay,
+    route401,
     shell,
     assertNoErrorLeak,
 } from './support'
+
+// A literal, not an import: this name is a wire contract shared with the separate website
+// repo, so a rename must fail here rather than be silently followed.
+const PROFILE_COOKIE = 'cshtrkp'
 
 // ── Local selector helpers not yet in support/selectors.ts ───────────────────
 //
@@ -36,6 +44,11 @@ const profileMenuTrigger = (page: Parameters<typeof shell.hamburger>[0]) =>
 // In AppHeader this is the second labeled button after the dark-mode toggle.
 const langMenuTrigger = (page: Parameters<typeof shell.hamburger>[0]) =>
     shell.languageToggle(page)
+
+// Context-level, so it survives the cross-origin redirect NAV-13 triggers.
+async function cookieNames(page: Parameters<typeof shell.hamburger>[0]): Promise<string[]> {
+    return (await page.context().cookies()).map(c => c.name)
+}
 // ─────────────────────────────────────────────────────────────────────────────
 
 test.describe('S1 — Navigation & App Shell', () => {
@@ -353,6 +366,54 @@ test.describe('S1 — Navigation & App Shell', () => {
             await expect(footer.locator('a[href*="github.com/cash-track/frontend"]')).toHaveCount(0)
 
             await assertNoErrorLeak(page)
+        },
+    )
+
+    // NAV-12 ──────────────────────────────────────────────────────────────────
+    test(
+        'NAV-12 cached profile renders the header name before GET /api/profile resolves',
+        async ({ page }) => {
+            // Warm the cache with one normal load, and remember the name it settled on.
+            await page.goto('/wallets')
+            const trigger = profileMenuTrigger(page)
+            await expect(trigger).not.toBeEmpty({ timeout: 15000 })
+            const displayName = ((await trigger.textContent()) ?? '').trim()
+            expect(displayName).not.toBe('')
+            await expect.poll(() => cookieNames(page), { timeout: 5000 }).toContain(PROFILE_COOKIE)
+
+            // Hold the profile GET open so the cookie is the only possible source for the
+            // name. Do not page.unroute() here — it races the in-flight handler.
+            const release = await routeDelay(page, '**/api/profile')
+            await page.reload({ waitUntil: 'domcontentloaded' })
+
+            // #147: the name is on screen while the request is still pending.
+            await expect(trigger).toContainText(displayName, { timeout: 10000 })
+
+            release()
+            await expect(trigger).toContainText(displayName)
+            await assertNoErrorLeak(page)
+        },
+    )
+
+    // NAV-13 ──────────────────────────────────────────────────────────────────
+    test(
+        'NAV-13 a 401 from the API drops the cached profile cookie',
+        async ({ page }) => {
+            // The 401 is faked by interception so the shared E2E session is never revoked —
+            // same reason NAV-06 never clicks Sign Out. Logout clearing is unit-tested in
+            // stores/__tests__/auth.spec.ts.
+            await page.goto('/wallets')
+            await expect(profileMenuTrigger(page)).not.toBeEmpty({ timeout: 15000 })
+            await expect.poll(() => cookieNames(page), { timeout: 5000 }).toContain(PROFILE_COOKIE)
+
+            await route401(page, '**/api/profile')
+            await page.reload({ waitUntil: 'domcontentloaded' })
+
+            await expect
+                .poll(() => cookieNames(page), { timeout: 10000 })
+                .not.toContain(PROFILE_COOKIE)
+
+            // No assertNoErrorLeak — this ends on the website login page, off the SPA.
         },
     )
 })
