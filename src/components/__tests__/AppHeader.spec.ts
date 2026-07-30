@@ -5,7 +5,10 @@ import { createPinia, setActivePinia } from 'pinia'
 import AppHeader from '../AppHeader.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useLocaleStore } from '@/stores/locale'
+import { useProfileStore } from '@/stores/profile'
 import { updateLocale } from '@/api/profile'
+import type { User } from '@/api/models/user'
+import type { CachedProfile } from '@/shared/profileCookie'
 
 vi.mock('vue-i18n', () => ({
     useI18n: () => ({
@@ -296,5 +299,59 @@ describe('AppHeader', () => {
         await nextTick()
 
         expect(updateLocale).not.toHaveBeenCalled()
+    })
+
+    it('falls back to the cached profile for display name when the real profile has not loaded yet', async () => {
+        const wrapper = mountHeader()
+        const cached: CachedProfile = {
+            v: 1,
+            id: 1,
+            name: 'Ann',
+            lastName: null,
+            nickName: 'ann',
+            email: 'a@b.c',
+            photoUrl: null,
+            isEmailConfirmed: true,
+            locale: 'en',
+        }
+        useProfileStore().cachedProfile = cached
+        await nextTick()
+
+        expect(wrapper.text()).toContain('Ann')
+    })
+
+    it('prefers the loaded profile over the cached one once it resolves', async () => {
+        const wrapper = mountHeader()
+        const profileStore = useProfileStore()
+        profileStore.cachedProfile = {
+            v: 1,
+            id: 1,
+            name: 'Cached',
+            lastName: null,
+            nickName: 'cached',
+            email: 'a@b.c',
+            photoUrl: null,
+            isEmailConfirmed: true,
+            locale: 'en',
+        }
+        profileStore.profile = {
+            id: 1,
+            name: 'Real',
+            lastName: null,
+            nickName: 'real',
+            email: 'a@b.c',
+            isEmailConfirmed: true,
+            photoUrl: null,
+            defaultCurrencyCode: null,
+            defaultCurrency: null,
+            locale: 'en',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            displayName: 'Real',
+        } as unknown as User
+        await nextTick()
+
+        expect(wrapper.text()).toContain('Real')
+        expect(wrapper.text()).not.toContain('Cached')
     })
 })

@@ -26,20 +26,27 @@ export function readRawCookie(name: string): string | null {
     return pair ? decodeURIComponent(pair.slice(prefix.length)) : null
 }
 
+// Deletes both forms: per RFC 6265 a delete only matches an exact (name, domain, path),
+// so a domain-scoped cookie survives a host-only delete.
 export function deleteRawCookie(name: string) {
     document.cookie = `${name}=; path=/; max-age=0`
+
+    const domain = parentDomain()
+    if (domain && domain !== 'localhost' && !/^[\d.]+$/.test(domain)) {
+        document.cookie = `${name}=; Domain=.${domain}; path=/; max-age=0`
+    }
 }
 
 // Always deletes a host-only sibling first — a domain-scoped and host-only
 // cookie of the same name can otherwise coexist, and reads become ambiguous.
-export function writeRawCookie(name: string, value: string) {
+export function writeRawCookie(name: string, value: string, maxAge: number = COOKIE_MAX_AGE) {
     deleteRawCookie(name)
 
     const domain = parentDomain()
     const attrs = [
         `${name}=${encodeURIComponent(value)}`,
         'path=/',
-        `max-age=${COOKIE_MAX_AGE}`,
+        `max-age=${maxAge}`,
         'SameSite=Lax',
     ]
 

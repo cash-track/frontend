@@ -1,6 +1,7 @@
 import axios, { AxiosError, type AxiosInstance, type AxiosResponse } from 'axios'
 import { webSiteLink } from '@/shared/links'
 import { getEnv } from '@/shared/env'
+import { clearCachedProfile } from '@/shared/profileCookie'
 
 // Axios normalizes response header lookups to lowercase regardless of wire casing.
 const TRACE_ID_HEADER = 'x-ct-trace-id'
@@ -131,6 +132,8 @@ export function createAxiosInstance(): AxiosInstance {
         (error: unknown) => {
             if (error instanceof AxiosError && error.response) {
                 if (error.response.status === 401) {
+                    // Session is dead — drop the display cache so no stale logged-in header.
+                    clearCachedProfile()
                     window.location.href = webSiteLink('/login')
                     return new Promise(() => {}) // never resolves — navigation takes over
                 }
@@ -211,6 +214,7 @@ export async function apiCall<T>(
                 }
 
                 // Refresh returned false (401) — auth expired
+                clearCachedProfile()
                 window.location.href = webSiteLink('/login')
                 return Promise.reject(new Error('CSRF refresh failed — redirecting to login'))
             }

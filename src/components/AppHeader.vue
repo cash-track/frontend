@@ -10,6 +10,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useProfileStore } from '@/stores/profile'
 import { updateLocale } from '@/api/profile'
 import { webSiteLink } from '@/shared/links'
+import type { CachedProfile } from '@/shared/profileCookie'
 import { COOKIE_NAME as THEME_COOKIE_NAME, themeCookieStorage } from '@/shared/themeCookie'
 import { useCrossTabSync } from '@/composables/useCrossTabSync'
 import { locales, type LocaleInterface } from '@/lang'
@@ -23,7 +24,16 @@ const { locale } = storeToRefs(localeStore)
 const authStore = useAuthStore()
 const { isLogged } = storeToRefs(authStore)
 const profileStore = useProfileStore()
-const { profile } = storeToRefs(profileStore)
+const { profile, cachedProfile } = storeToRefs(profileStore)
+
+// Falls back to the cached snapshot so the header doesn't flash empty on first paint (#147).
+function cachedDisplayName(cached: CachedProfile): string {
+    return cached.lastName ? `${cached.name} ${cached.lastName}` : cached.name
+}
+const displayName = computed(() => profile.value?.displayName ?? (cachedProfile.value ? cachedDisplayName(cachedProfile.value) : undefined))
+const avatarPhotoUrl = computed(() => profile.value?.photoUrl ?? cachedProfile.value?.photoUrl ?? undefined)
+const avatarInitial = computed(() => (profile.value?.name ?? cachedProfile.value?.name)?.charAt(0))
+
 // Shared with the website via the `cshtrkt` cookie instead of localStorage (see shared/themeCookie.ts).
 const mode = useColorMode({ storageKey: THEME_COOKIE_NAME, storage: themeCookieStorage })
 
@@ -265,12 +275,12 @@ function onLogout() {
                                         variant="subtle"
                                         trailing-icon="i-heroicons-chevron-down-20-solid"
                                         class="cursor-pointer"
-                                        :label="profile?.displayName"
+                                        :label="displayName"
                                     >
                                         <template #leading>
                                             <UAvatar
-                                                :src="profile?.photoUrl ?? undefined"
-                                                :text="profile?.name?.charAt(0)"
+                                                :src="avatarPhotoUrl"
+                                                :text="avatarInitial"
                                                 size="xs"
                                             />
                                         </template>

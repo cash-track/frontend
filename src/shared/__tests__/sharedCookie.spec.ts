@@ -95,4 +95,29 @@ describe('readRawCookie / writeRawCookie / deleteRawCookie', () => {
 
         expect(cookieJar.foo).toBeUndefined()
     })
+
+    // Without both deletes a domain-scoped cookie silently survives in production
+    // while appearing to clear in local dev, where cookies are host-only.
+    it('issues both a host-only and a domain-scoped delete when a parent domain resolves', () => {
+        window.__APP_CONFIG__ = { VITE_WEBSITE_URL: 'https://cash-track.app' }
+        document.cookie = 'foo=bar'
+        writes.length = 0
+
+        deleteRawCookie('foo')
+
+        expect(writes.some((w) => !w.includes('Domain=') && /max-age=0(?:;|$)/.test(w))).toBe(true)
+        expect(
+            writes.some((w) => w.includes('Domain=.cash-track.app') && /max-age=0(?:;|$)/.test(w)),
+        ).toBe(true)
+    })
+
+    it('only issues a host-only delete on localhost (no Domain to match)', () => {
+        window.__APP_CONFIG__ = { VITE_WEBSITE_URL: 'http://localhost:3001' }
+        document.cookie = 'foo=bar'
+        writes.length = 0
+
+        deleteRawCookie('foo')
+
+        expect(writes.every((w) => !w.includes('Domain='))).toBe(true)
+    })
 })

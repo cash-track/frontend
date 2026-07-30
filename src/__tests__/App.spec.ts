@@ -54,6 +54,7 @@ const mockIsLogged = shallowRef(false)
 const mockFailed = shallowRef(false)
 const mockLastError = shallowRef<unknown>(null)
 const mockLoadProfile = vi.fn()
+const mockLoadCachedProfile = vi.fn()
 
 vi.mock('@/stores/profile', () => ({
     useProfileStore: () => ({
@@ -61,6 +62,7 @@ vi.mock('@/stores/profile', () => ({
         failed: mockFailed,
         lastError: mockLastError,
         loadProfile: mockLoadProfile,
+        loadCachedProfile: mockLoadCachedProfile,
     }),
 }))
 
@@ -102,6 +104,7 @@ describe('App.vue', () => {
         setActivePinia(createPinia())
         hrefSpy.mockClear()
         mockLoadProfile.mockClear()
+        mockLoadCachedProfile.mockClear()
         mockLoading.value = true
         mockIsLogged.value = false
         mockFailed.value = false
