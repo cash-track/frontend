@@ -1,6 +1,6 @@
 # Frontend
 
-[![quality](https://github.com/cash-track/frontend/actions/workflows/quality.yml/badge.svg)](https://github.com/cash-track/frontend/actions/workflows/quality.yml) 
+[![quality](https://github.com/cash-track/frontend/actions/workflows/quality.yml/badge.svg)](https://github.com/cash-track/frontend/actions/workflows/quality.yml) [![codecov](https://codecov.io/gh/cash-track/frontend/graph/badge.svg)](https://codecov.io/gh/cash-track/frontend)
 
 Static resources and frontend code for Cash Track web interface.
 
@@ -30,6 +30,15 @@ npm run build
 ```
 npm run test:unit
 ```
+
+### Run unit tests with coverage
+```
+npm run test:coverage
+```
+
+Writes an `lcov` report to `coverage/` (gitignored) and prints a summary. CI runs the same
+thing through `npm run test:ci` and uploads `coverage/lcov.info` to
+[Codecov](https://codecov.io/gh/cash-track/frontend).
 
 ### Run End-to-End Tests with [Playwright](https://playwright.dev)
 
