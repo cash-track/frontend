@@ -1,5 +1,5 @@
 // S11 — Charges list within wallet detail (ChargesList, ChargeItem)
-// CL-01..CL-09
+// CL-01..CL-10
 import { test, expect } from '@playwright/test'
 import {
     label, labelStrings,
@@ -90,7 +90,7 @@ function makeCharge(walletId: number, overrides: Record<string, unknown> = {}) {
 
 test.describe('S11 — Charges List', () => {
 
-    // CL-01 — Loading overlay visible while charges GET is delayed @smoke
+    // CL-01 — Loading overlay visible while charges GET is delayed; create row stays usable @smoke
     test('CL-01 @smoke loading overlay visible during delayed charges fetch', async ({ request, page }) => {
         const w = await createWalletViaApi(request, { name: `E2E CL01 ${Date.now()}` })
         try {
@@ -101,6 +101,12 @@ test.describe('S11 — Charges List', () => {
 
             // Loading overlay should be visible while request is held
             await expect(chargesLoadingOverlay(page)).toBeVisible({ timeout: 5000 })
+
+            // click() fails on an intercepted element, so this also proves the
+            // overlay does not cover the create row
+            await expect(charge.newChargeButton(page)).toBeVisible({ timeout: 5000 })
+            await charge.newChargeButton(page).click()
+            await expect(charge.amountInput(page)).toBeVisible({ timeout: 5000 })
 
             // Release and wait for content
             release()
@@ -375,6 +381,40 @@ test.describe('S11 — Charges List', () => {
 
             // New Charge button should not be present on inactive wallet
             await expect(charge.newChargeButton(page)).toBeHidden()
+
+            await assertNoErrorLeak(page)
+        } finally {
+            await deleteWalletViaApi(request, w.id)
+        }
+    })
+
+    // CL-10 — Static create row: first item, above every day group (issue #111)
+    test('CL-10 static create row sits above the first day-group header, outside any group', async ({ request, page }) => {
+        const w = await createWalletViaApi(request, { name: `E2E CL10 ${Date.now()}` })
+        try {
+            const todayCharge = await createChargeViaApi(request, w.id, {
+                title: `E2E CL10 ${Date.now()}`,
+            })
+
+            await page.goto(`/wallets/${w.id}`)
+            await expect(page.getByRole('heading', { level: 2 })).toBeVisible({ timeout: 10000 })
+            await expect(page.getByText(todayCharge.title)).toBeVisible({ timeout: 10000 })
+            await expect(todayHeader(page)).toBeVisible({ timeout: 5000 })
+
+            // The create row's "+" icon is aria-hidden, so it never collides with
+            // the charges.new button beside it
+            const createRowIcon = page.locator('button[aria-hidden="true"]').first()
+            await expect(createRowIcon).toBeVisible({ timeout: 5000 })
+
+            await expect(charge.newChargeButton(page)).toBeVisible({ timeout: 5000 })
+
+            const createBox = await createRowIcon.boundingBox()
+            const headerBox = await todayHeader(page).boundingBox()
+            expect(createBox).not.toBeNull()
+            expect(headerBox).not.toBeNull()
+
+            // Smaller y = rendered above the first group header, so it sits outside every group
+            expect(createBox!.y).toBeLessThan(headerBox!.y)
 
             await assertNoErrorLeak(page)
         } finally {

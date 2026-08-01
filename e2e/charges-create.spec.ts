@@ -1,5 +1,5 @@
-// S8 — Charge create form (ChargeCreate inside WalletView)
-// CC-01..CC-10
+// S8 — Charge create form (ChargeCreate inline in ChargesList, issue #111)
+// CC-01..CC-12
 import { test, expect } from '@playwright/test'
 import {
     label, labelStrings,

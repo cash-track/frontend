@@ -388,8 +388,8 @@ test.describe('S21 — Responsive / Mobile', () => {
             await expect(wallet.detailHeading(page)).toBeVisible({ timeout: 10000 })
             await expect(page.getByText(`E2E RM10 second ${stamp}`)).toBeVisible({ timeout: 10000 })
 
-            // ChargeItem root is the only .items-stretch in the app; its first child is
-            // the timeline column. Measure boxes rather than assert Tailwind classes.
+            // ChargeItem and the create row both use .items-stretch with the timeline
+            // column first. Measure boxes rather than assert Tailwind classes.
             const overflow = await page.evaluate(() => {
                 const rows = Array.from(document.querySelectorAll('.items-stretch'))
                 return rows.map(row => {
@@ -401,7 +401,8 @@ test.describe('S21 — Responsive / Mobile', () => {
                 })
             })
 
-            expect(overflow.length).toBeGreaterThanOrEqual(2)
+            // create row + 2 charge rows
+            expect(overflow.length).toBeGreaterThanOrEqual(3)
             for (const box of overflow) {
                 expect(box).not.toBeNull()
                 expect(box!.above).toBeLessThanOrEqual(0.5)

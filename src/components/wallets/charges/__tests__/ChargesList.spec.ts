@@ -327,6 +327,32 @@ describe('ChargesList', () => {
         expect(wrapper.find('[role="button"]').exists()).toBe(false)
     })
 
+    it('group header draws the timeline connector while the select control is hidden', async () => {
+        const todayCharge = makeTodayCharge('td-connector')
+        mockGetCharges.mockResolvedValue({ data: [todayCharge], pagination: makePagination() })
+
+        const wrapper = shallowMount(ChargesList, {
+            props: { wallet: makeWallet(1) },
+            global: { stubs: { Tooltip: tooltipStub, UTooltip: tooltipStub } },
+        })
+
+        await vi.waitFor(() => expect(mockGetCharges).toHaveBeenCalledTimes(1))
+        await nextTick()
+
+        // One connector per group header, so the timeline reads as one unbroken line
+        const connector = wrapper.find('div.absolute.w-px')
+        expect(connector.exists()).toBe(true)
+        // It yields to the select control exactly when that control appears
+        expect(connector.classes()).toContain('group-hover:invisible')
+        expect(connector.classes()).toContain('pointer-coarse:invisible')
+
+        // Selecting the group pins the control visible, so the connector gives way
+        await wrapper.find('[aria-label="charges.selectGroup"]').trigger('click')
+        await nextTick()
+
+        expect(wrapper.find('div.absolute.w-px').exists()).toBe(false)
+    })
+
     it('clicking the select-group control toggles the whole group', async () => {
         const todayCharge = makeTodayCharge('td-click')
         mockGetCharges.mockResolvedValue({ data: [todayCharge], pagination: makePagination() })
@@ -402,6 +428,8 @@ describe('ChargesList', () => {
         expect(wrapper.find('[aria-label="charges.selectGroup"]').exists()).toBe(false)
         // No role="button" either
         expect(wrapper.find('[role="button"]').exists()).toBe(false)
+        // The decorative dash stands in for the control, so no vertical connector here
+        expect(wrapper.find('div.absolute.w-px').exists()).toBe(false)
     })
 
     it('clears selectedCharges and removes moved charges from local list on success', async () => {
@@ -473,5 +501,254 @@ describe('ChargesList', () => {
 
         // After successful reload the error should be cleared
         expect(vm.error).toBeNull()
+    })
+
+    // The create-charge entry point is a static top-level row, never part of a day group
+    describe('static create row (issue #111)', () => {
+        // shallowMount's auto-stub swallows slot content, so both stubs render slots
+        const collapsibleStub = {
+            name: 'Collapsible',
+            template: '<div><slot v-if="open" name="content" /></div>',
+            props: ['open', 'unmountOnHide', 'ui'],
+        }
+        const buttonStub = {
+            name: 'Button',
+            template: '<button @click="$emit(\'click\')"><slot /></button>',
+            props: ['variant', 'color', 'size', 'icon'],
+            emits: ['click'],
+        }
+        const stubs = {
+            UCollapsible: collapsibleStub,
+            Collapsible: collapsibleStub,
+            UButton: buttonStub,
+            Button: buttonStub,
+        }
+
+        it('renders the create row for an active wallet, before the first group header', async () => {
+            const todayCharge = makeTodayCharge()
+            mockGetCharges.mockResolvedValue({ data: [todayCharge], pagination: makePagination() })
+
+            const wrapper = shallowMount(ChargesList, {
+                props: { wallet: makeWallet(1) },
+                global: { stubs },
+            })
+
+            await vi.waitFor(() => expect(mockGetCharges).toHaveBeenCalledTimes(1))
+            await nextTick()
+
+            const text = wrapper.text()
+            const createIndex = text.indexOf('charges.new')
+            const groupIndex = text.indexOf('charges.today')
+            expect(createIndex).toBeGreaterThanOrEqual(0)
+            expect(groupIndex).toBeGreaterThanOrEqual(0)
+            expect(createIndex).toBeLessThan(groupIndex)
+
+            // The "+" icon button is decorative — hidden from the accessibility tree
+            expect(wrapper.find('button[aria-hidden="true"]').exists()).toBe(true)
+        })
+
+        it('stays visible and clickable while charges are loading, unblurred and uncovered by the loading overlay', async () => {
+            // A never-resolving promise keeps `loading` true
+            let resolveGetCharges: (value: { data: Charge[]; pagination: Pagination }) => void = () => {}
+            mockGetCharges.mockReturnValue(new Promise((resolve) => {
+                resolveGetCharges = resolve
+            }))
+
+            const wrapper = shallowMount(ChargesList, {
+                props: { wallet: makeWallet(1) },
+                global: { stubs },
+            })
+            await nextTick()
+
+            expect(wrapper.text()).toContain('charges.loading')
+
+            // The create row stays clickable under the overlay
+            const label = wrapper.findAll('button').find(b => b.text() === 'charges.new')
+            expect(label).toBeTruthy()
+            await label!.trigger('click')
+            await nextTick()
+
+            const vm = wrapper.vm as unknown as { isCreateOpen: boolean }
+            expect(vm.isCreateOpen).toBe(true)
+
+            // The overlay's positioning context must not contain the create row
+            const overlay = wrapper.find('.absolute.inset-0.z-10')
+            expect(overlay.exists()).toBe(true)
+            const relativeAncestor = overlay.element.closest('.relative')
+            expect(relativeAncestor).toBeTruthy()
+            const createRow = wrapper.find('button[aria-hidden="true"]').element.closest('.group.flex.items-stretch')
+            expect(createRow).toBeTruthy()
+            expect(relativeAncestor!.contains(createRow!)).toBe(false)
+
+            // Settle the pending fetch so it doesn't leak into other tests
+            resolveGetCharges({ data: [], pagination: makePagination() })
+            await nextTick()
+        })
+
+        it('does not render the create row for an inactive wallet', async () => {
+            const inactiveWallet = new Wallet({
+                id: 1,
+                name: 'Wallet 1',
+                slug: 'wallet-1',
+                totalAmount: 0,
+                isActive: false,
+                isPublic: false,
+                isArchived: true,
+                defaultCurrencyCode: 'USD',
+                defaultCurrency: usd,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+                users: [],
+                latestCharges: [],
+            })
+            mockGetCharges.mockResolvedValue({ data: [makeCharge('c-inactive')], pagination: makePagination() })
+
+            const wrapper = shallowMount(ChargesList, {
+                props: { wallet: inactiveWallet },
+                global: { stubs },
+            })
+
+            await vi.waitFor(() => expect(mockGetCharges).toHaveBeenCalledTimes(1))
+            await nextTick()
+
+            expect(wrapper.find('button[aria-hidden="true"]').exists()).toBe(false)
+            expect(wrapper.text()).not.toContain('charges.new')
+        })
+
+        it('opens the inline ChargeCreate form on click and keeps the button visible', async () => {
+            mockGetCharges.mockResolvedValue({ data: [makeCharge()], pagination: makePagination() })
+
+            const wrapper = shallowMount(ChargesList, {
+                props: { wallet: makeWallet(1) },
+                global: { stubs },
+            })
+
+            await vi.waitFor(() => expect(mockGetCharges).toHaveBeenCalledTimes(1))
+            await nextTick()
+
+            expect(wrapper.findComponent({ name: 'ChargeCreate' }).exists()).toBe(false)
+
+            const label = wrapper.findAll('button').find(b => b.text() === 'charges.new')
+            expect(label).toBeTruthy()
+            await label!.trigger('click')
+            await nextTick()
+
+            const vm = wrapper.vm as unknown as { isCreateOpen: boolean }
+            expect(vm.isCreateOpen).toBe(true)
+            expect(wrapper.findComponent({ name: 'ChargeCreate' }).exists()).toBe(true)
+            // The button stays visible alongside the open form and toggles it shut.
+            const stillThere = wrapper.findAll('button').find(b => b.text() === 'charges.new')
+            expect(stillThere).toBeTruthy()
+
+            await stillThere!.trigger('click')
+            await nextTick()
+
+            expect(vm.isCreateOpen).toBe(false)
+            expect(wrapper.findComponent({ name: 'ChargeCreate' }).exists()).toBe(false)
+            expect(wrapper.findAll('button').some(b => b.text() === 'charges.new')).toBe(true)
+        })
+
+        it('inserts the created charge, closes the form, and emits charge-created', async () => {
+            mockGetCharges.mockResolvedValue({ data: [makeCharge('c-existing')], pagination: makePagination() })
+
+            const wrapper = shallowMount(ChargesList, {
+                props: { wallet: makeWallet(1) },
+                global: { stubs },
+            })
+
+            await vi.waitFor(() => expect(mockGetCharges).toHaveBeenCalledTimes(1))
+            await nextTick()
+
+            const vm = wrapper.vm as unknown as { isCreateOpen: boolean; charges: Charge[] }
+            vm.isCreateOpen = true
+            await nextTick()
+
+            const chargeCreate = wrapper.findComponent({ name: 'ChargeCreate' })
+            expect(chargeCreate.exists()).toBe(true)
+
+            const newCharge = makeCharge('c-new', new Date('2030-01-01T00:00:00'))
+            await chargeCreate.vm.$emit('charge-created', newCharge)
+
+            expect(vm.charges.some(c => c.id === 'c-new')).toBe(true)
+            expect(vm.isCreateOpen).toBe(false)
+            const events = wrapper.emitted('charge-created')
+            expect(events).toBeTruthy()
+            expect(events![0]).toEqual([newCharge])
+        })
+
+        it('closes the form when ChargeCreate emits cancelled', async () => {
+            mockGetCharges.mockResolvedValue({ data: [makeCharge()], pagination: makePagination() })
+
+            const wrapper = shallowMount(ChargesList, {
+                props: { wallet: makeWallet(1) },
+                global: { stubs },
+            })
+
+            await vi.waitFor(() => expect(mockGetCharges).toHaveBeenCalledTimes(1))
+            await nextTick()
+
+            const vm = wrapper.vm as unknown as { isCreateOpen: boolean }
+            vm.isCreateOpen = true
+            await nextTick()
+
+            const chargeCreate = wrapper.findComponent({ name: 'ChargeCreate' })
+            await chargeCreate.vm.$emit('cancelled')
+
+            expect(vm.isCreateOpen).toBe(false)
+        })
+
+        it('relays dropdown-open-change into the collapsible overflow-visible override, resetting on close', async () => {
+            mockGetCharges.mockResolvedValue({ data: [makeCharge()], pagination: makePagination() })
+
+            const wrapper = shallowMount(ChargesList, {
+                props: { wallet: makeWallet(1) },
+                global: { stubs },
+            })
+
+            await vi.waitFor(() => expect(mockGetCharges).toHaveBeenCalledTimes(1))
+            await nextTick()
+
+            const vm = wrapper.vm as unknown as { isCreateOpen: boolean }
+            vm.isCreateOpen = true
+            await nextTick()
+
+            const collapsible = wrapper.findComponent({ name: 'Collapsible' })
+            expect(collapsible.exists()).toBe(true)
+            expect(collapsible.props('ui')).toEqual({ content: '' })
+
+            const chargeCreate = wrapper.findComponent({ name: 'ChargeCreate' })
+            await chargeCreate.vm.$emit('dropdown-open-change', true)
+            await nextTick()
+            expect(collapsible.props('ui')).toEqual({ content: 'overflow-visible' })
+
+            // Closing the form resets the override on its own
+            vm.isCreateOpen = false
+            await nextTick()
+            expect(wrapper.findComponent({ name: 'Collapsible' }).props('ui')).toEqual({ content: '' })
+        })
+
+        it('closes the create form when the wallet switches', async () => {
+            mockGetCharges.mockResolvedValue({ data: [makeCharge()], pagination: makePagination() })
+
+            const wrapper = shallowMount(ChargesList, {
+                props: { wallet: makeWallet(1) },
+                global: { stubs },
+            })
+
+            await vi.waitFor(() => expect(mockGetCharges).toHaveBeenCalledTimes(1))
+            await nextTick()
+
+            const vm = wrapper.vm as unknown as { isCreateOpen: boolean }
+            vm.isCreateOpen = true
+            await nextTick()
+            expect(vm.isCreateOpen).toBe(true)
+
+            mockGetCharges.mockResolvedValue({ data: [], pagination: makePagination() })
+            await wrapper.setProps({ wallet: makeWallet(2) })
+            await vi.waitFor(() => expect(mockGetCharges).toHaveBeenCalledTimes(2))
+            await nextTick()
+
+            expect(vm.isCreateOpen).toBe(false)
+        })
     })
 })

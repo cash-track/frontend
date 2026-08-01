@@ -3,7 +3,6 @@ import { shallowRef, ref, computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { getWallet, getWalletTotals, getWalletUsers } from '@/api/wallets'
-import type { Charge } from '@/api/models/charge'
 import { getWalletTags } from '@/api/tags'
 import type { Wallet } from '@/api/models/wallet'
 import type { WalletTotal } from '@/api/models/wallet'
@@ -13,7 +12,6 @@ import type { FilterState } from '@/components/wallets/charges/ChargesFilter.vue
 import { useWalletsStore } from '@/stores/wallets'
 import TagChip from '@/components/tags/Tag.vue'
 import WalletHeader from '@/components/wallets/WalletHeader.vue'
-import ChargeCreate from '@/components/wallets/charges/ChargeCreate.vue'
 import ChargesList from '@/components/wallets/charges/ChargesList.vue'
 import ChargesFilter from '@/components/wallets/charges/ChargesFilter.vue'
 import ChargesFlowChart from '@/components/wallets/charges/ChargesFlowChart.vue'
@@ -38,14 +36,11 @@ const loading = ref(false)
 const error = ref<string | null>(null)
 const lastError = ref<unknown>(null)
 
-const showCreateForm = ref(false)
 const showFilters = ref(false)
 const showGraph = ref(false)
 const showLimits = ref(false)
 const showTags = shallowRef(false)
 const filter = ref<FilterState>({ dateFrom: '', dateTo: '' })
-const titleAutocompleteOpen = ref(false)
-const chargesListRef = ref<InstanceType<typeof ChargesList> | null>(null)
 const flowChartRef = ref<InstanceType<typeof ChargesFlowChart> | null>(null)
 const totalChartRef = ref<InstanceType<typeof ChargesTotalChart> | null>(null)
 const limitsRef = ref<InstanceType<typeof WalletLimitsTotal> | null>(null)
@@ -93,9 +88,7 @@ async function refreshTotals() {
     }
 }
 
-function onChargeCreated(charge: Charge) {
-    showCreateForm.value = false
-    chargesListRef.value?.onChargeCreated(charge)
+function onChargeCreated() {
     refreshTotals()
     if (showGraph.value) {
         flowChartRef.value?.reload()
@@ -213,7 +206,6 @@ watch(selectedTags, () => {
 
 onMounted(() => loadWallet())
 watch(() => props.walletID, () => {
-    showCreateForm.value = false
     showFilters.value = false
     showGraph.value = false
     showLimits.value = false
@@ -223,11 +215,7 @@ watch(() => props.walletID, () => {
     loadWallet()
 })
 
-watch(showCreateForm, (open) => {
-    if (!open) titleAutocompleteOpen.value = false
-})
-
-defineExpose({ wallet, error, showCreateForm, showFilters, showGraph, showLimits, showTags })
+defineExpose({ wallet, error, showFilters, showGraph, showLimits, showTags })
 </script>
 
 <template>
@@ -325,36 +313,7 @@ defineExpose({ wallet, error, showCreateForm, showFilters, showGraph, showLimits
                     >
                         {{ t('wallets.filters') }}
                     </UButton>
-                    <UButton
-                        v-if="wallet.isActive"
-                        variant="solid"
-                        color="primary"
-                        size="md"
-                        icon="i-lucide-plus"
-                        @click="showCreateForm = !showCreateForm"
-                    >
-                        {{ t('charges.new') }}
-                    </UButton>
                 </div>
-
-                <!-- Create form -->
-                <UCollapsible
-                    v-if="wallet.isActive"
-                    v-model:open="showCreateForm"
-                    :ui="{ content: titleAutocompleteOpen ? 'overflow-visible' : '' }"
-                >
-                    <template #content>
-                        <div class="border border-default rounded-lg p-4 mb-4">
-                            <ChargeCreate
-                                :wallet="wallet"
-                                :wallet-tags="walletTags"
-                                @charge-created="onChargeCreated"
-                                @cancelled="showCreateForm = false"
-                                @dropdown-open-change="titleAutocompleteOpen = $event"
-                            />
-                        </div>
-                    </template>
-                </UCollapsible>
 
                 <!-- Limits -->
                 <UCollapsible v-model:open="showLimits" :unmount-on-hide="false">
@@ -457,10 +416,10 @@ defineExpose({ wallet, error, showCreateForm, showFilters, showGraph, showLimits
                 <!-- Charges list -->
                 <div class="rounded-lg">
                     <ChargesList
-                        ref="chargesListRef"
                         :wallet="wallet"
                         :wallet-tags="walletTags"
                         :filter="chargesFilter"
+                        @charge-created="onChargeCreated"
                         @charge-updated="onChargeUpdated"
                         @charge-deleted="onChargeDeleted"
                         @charges-moved="onChargesMoved"
