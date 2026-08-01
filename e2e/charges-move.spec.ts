@@ -42,9 +42,11 @@ const moveErrorAlert = (page: import('@playwright/test').Page) =>
     }).first()
 
 // ChargeItem rows — each outer div wrapping the timeline + content
-// They have class containing "group" and "flex items-stretch"
+// They have class containing "group" and "flex items-stretch". The create row shares
+// that class list, so exclude it by its aria-hidden icon button (issue #111).
 const chargeRows = (page: import('@playwright/test').Page) =>
     page.locator('div.group.flex.items-stretch.-mx-4')
+        .filter({ hasNot: page.locator('button[aria-hidden="true"]') })
 
 test.describe('S17 — Charges Move', () => {
 

@@ -75,12 +75,15 @@ const makeGlobal = (walletID = '1') => ({
         stubs: {
             WalletsActiveShortList: { template: '<div />' },
             WalletHeader: { template: '<div />', props: ['wallet', 'totals', 'users'] },
-            ChargeCreate: { template: '<div />', props: ['wallet', 'walletTags'] },
-            ChargesList: { template: '<div />', props: ['wallet', 'walletTags', 'filter'] },
+            ChargesList: { name: 'ChargesList', template: '<div />', props: ['wallet', 'walletTags', 'filter'] },
             ChargesFilter: { template: '<div />' },
             ChargesFlowChart: { template: '<div />', props: ['walletId', 'currency', 'tags', 'dateFrom', 'dateTo'] },
             ChargesTotalChart: { template: '<div />', props: ['walletId', 'currency', 'walletTags', 'tags', 'dateFrom', 'dateTo'] },
-            WalletLimitsTotal: { template: '<div />', props: ['wallet'] },
+            WalletLimitsTotal: {
+                template: '<div />',
+                props: ['wallet'],
+                methods: { reload: () => {} },
+            },
             MoneyAmount: { template: '<span />', props: ['amount', 'currency'] },
             TagChip: { template: '<span />', props: ['tag', 'highlighted', 'removable'] },
             Tag: { template: '<span />', props: ['tag', 'highlighted', 'removable'] },
@@ -130,14 +133,12 @@ describe('WalletView.vue', () => {
 
         // Open all panels
         const vm = wrapper.vm as unknown as {
-            showCreateForm: boolean
             showFilters: boolean
             showGraph: boolean
             showLimits: boolean
             showTags: boolean
             wallet: Wallet | null
         }
-        vm.showCreateForm = true
         vm.showFilters = true
         vm.showGraph = true
         vm.showLimits = true
@@ -150,7 +151,6 @@ describe('WalletView.vue', () => {
         await wrapper.setProps({ walletID: '2' })
         await flushAll()
 
-        expect(vm.showCreateForm).toBe(false)
         expect(vm.showFilters).toBe(false)
         expect(vm.showGraph).toBe(false)
         expect(vm.showLimits).toBe(false)
@@ -206,85 +206,31 @@ describe('WalletView.vue', () => {
         expect(vm.error).toBeNull()
     })
 
-    describe('charge title autocomplete overflow override (issue #110)', () => {
-        // WalletView.vue's <UCollapsible> tags resolve at runtime to the global
-        // stub keyed 'Collapsible' (not 'UCollapsible') — verified empirically:
-        // matching against the 'UCollapsible' stub (by name or by reference)
-        // finds nothing, while the 'Collapsible' stub reference finds all 5.
-        function findCreateFormCollapsible(
-            wrapper: ReturnType<typeof mount>,
-            options: ReturnType<typeof makeGlobal>,
-        ) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const chargeCreate = wrapper.findComponent(options.global.stubs.ChargeCreate as any)
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const collapsibles = wrapper.findAllComponents(options.global.stubs.Collapsible as any)
-            const createCollapsible = collapsibles.find(c => c.element.contains(chargeCreate.element))
-            return { chargeCreate, createCollapsible, allCollapsibles: collapsibles }
-        }
+    // The create-charge entry point moved into ChargesList (issue #111) —
+    // see ChargesList.spec.ts for the create-row behaviour.
+    it('does not render its own New Charge toolbar button or ChargeCreate form (moved into ChargesList)', async () => {
+        const wrapper = mount(WalletView, makeGlobal())
+        await flushAll()
 
-        it("sets titleAutocompleteOpen from ChargeCreate's relayed dropdown-open-change and binds only the create-form UCollapsible's :ui override", async () => {
-            const options = makeGlobal()
-            const wrapper = mount(WalletView, options)
-            await flushAll()
+        expect(wrapper.findComponent({ name: 'ChargeCreate' }).exists()).toBe(false)
 
-            const vm = wrapper.vm as unknown as { showCreateForm: boolean; titleAutocompleteOpen: boolean }
-            vm.showCreateForm = true
-            await nextTick()
+        // Tool buttons render as real <button> elements via the UButton stub.
+        // Tags, Limits, Graph, Filters remain — no fifth "New Charge" button.
+        expect(wrapper.findAll('button').length).toBe(4)
+    })
 
-            const { chargeCreate, createCollapsible, allCollapsibles } = findCreateFormCollapsible(wrapper, options)
-            expect(chargeCreate.exists()).toBe(true)
-            expect(createCollapsible).toBeTruthy()
+    it('relays ChargesList\'s charge-created event into a totals/charts/limits/wallets-store refresh', async () => {
+        const wrapper = mount(WalletView, makeGlobal())
+        await flushAll()
 
-            // Closed by default: falls back to the theme's default (no override).
-            expect(vm.titleAutocompleteOpen).toBe(false)
-            expect(createCollapsible!.props('ui')).toEqual({ content: '' })
+        const callsBeforeCreate = vi.mocked(getWalletTotals).mock.calls.length
 
-            // The other UCollapsible instances (limits, tags, graph, filters) must never
-            // receive an overflow override — only the one wrapping ChargeCreate does.
-            expect(allCollapsibles.length).toBeGreaterThan(1)
-            const untouched = allCollapsibles.filter(c => c.element !== createCollapsible!.element)
-            expect(untouched.length).toBe(allCollapsibles.length - 1)
-            for (const c of untouched) {
-                expect(c.props('ui')).toBeUndefined()
-            }
+        const chargesList = wrapper.findComponent({ name: 'ChargesList' })
+        expect(chargesList.exists()).toBe(true)
+        await chargesList.vm.$emit('charge-created')
+        await flushAll()
 
-            chargeCreate.vm.$emit('dropdown-open-change', true)
-            await nextTick()
-            expect(vm.titleAutocompleteOpen).toBe(true)
-            expect(createCollapsible!.props('ui')).toEqual({ content: 'overflow-visible' })
-
-            chargeCreate.vm.$emit('dropdown-open-change', false)
-            await nextTick()
-            expect(vm.titleAutocompleteOpen).toBe(false)
-            expect(createCollapsible!.props('ui')).toEqual({ content: '' })
-        })
-
-        it('resets titleAutocompleteOpen when the create form closes, even if the dropdown never explicitly emitted false', async () => {
-            // Regression guard for a race: ChargeTitleFormInput's own blur timeout and
-            // the collapsible's exit-animation-driven unmount both fire around 200ms.
-            // If the unmount wins, the child is torn down before its watcher ever emits
-            // the final `false`. WalletView must not depend on receiving that event —
-            // closing the form has to deterministically reset the flag on its own.
-            const options = makeGlobal()
-            const wrapper = mount(WalletView, options)
-            await flushAll()
-
-            const vm = wrapper.vm as unknown as { showCreateForm: boolean; titleAutocompleteOpen: boolean }
-            vm.showCreateForm = true
-            await nextTick()
-
-            const { chargeCreate } = findCreateFormCollapsible(wrapper, options)
-            chargeCreate.vm.$emit('dropdown-open-change', true)
-            await nextTick()
-            expect(vm.titleAutocompleteOpen).toBe(true)
-
-            // Close the form without any further dropdown-open-change event.
-            vm.showCreateForm = false
-            await nextTick()
-
-            expect(vm.titleAutocompleteOpen).toBe(false)
-        })
+        expect(vi.mocked(getWalletTotals).mock.calls.length).toBe(callsBeforeCreate + 1)
     })
 
     it('clears wallet on switch-to-failing wallet', async () => {

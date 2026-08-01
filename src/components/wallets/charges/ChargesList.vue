@@ -8,6 +8,7 @@ import type { Tag } from '@/api/models/tag'
 import type { Pagination } from '@/api/models/pagination'
 import type { FilterState } from './ChargesFilter.vue'
 import ChargeItem from './ChargeItem.vue'
+import ChargeCreate from './ChargeCreate.vue'
 import { useWalletsStore } from '@/stores/wallets'
 import { useMoneyFormatter } from '@/composables/useMoneyFormatter'
 import { useChargesGrouping } from '@/composables/useChargesGrouping'
@@ -24,6 +25,7 @@ const emit = defineEmits<{
     'charge-deleted': [chargeId: string]
     'charges-moved': []
     'tag-selected': [tagId: number]
+    'charge-created': [charge: Charge]
 }>()
 
 const { t, locale } = useI18n()
@@ -42,6 +44,10 @@ const lastError = ref<unknown>(null)
 const currentPage = ref(1)
 const sentinelRef = ref<HTMLElement | null>(null)
 let observer: IntersectionObserver | null = null
+
+// Static create-row state — top-level item, outside grouping/filtering/pagination
+const isCreateOpen = ref(false)
+const titleAutocompleteOpen = ref(false)
 
 const { chargesGrouped } = useChargesGrouping(charges, t, locale)
 
@@ -167,6 +173,24 @@ function onChargeDeleted(chargeId: string) {
     emit('charge-deleted', chargeId)
 }
 
+function openCreate() {
+    if (isCreateOpen.value) return
+    isCreateOpen.value = true
+}
+
+// The button stays visible while the form is open, so it toggles
+function toggleCreate() {
+    isCreateOpen.value = !isCreateOpen.value
+}
+
+function closeCreate() {
+    isCreateOpen.value = false
+}
+
+watch(isCreateOpen, (open) => {
+    if (!open) titleAutocompleteOpen.value = false
+})
+
 function onChargeCreated(charge: Charge) {
     // Insert at the correct position in the descending-dateTime list
     const index = charges.value.findIndex(c => c.dateTime < charge.dateTime)
@@ -177,6 +201,8 @@ function onChargeCreated(charge: Charge) {
         next.splice(index, 0, charge)
         charges.value = next
     }
+    closeCreate()
+    emit('charge-created', charge)
 }
 
 function setupObserver() {
@@ -200,8 +226,10 @@ function observeSentinel() {
 // Combined into one watcher: on a wallet switch the parent resets the filter and
 // sets the new wallet in the same tick, so two separate watchers would each fire a
 // load. An array watch fires once when both change together → a single fetch.
+// closeCreate() is deliberate: the open form targets the current wallet and filter.
 watch([() => props.wallet.id, () => props.filter], () => {
     selectedCharges.value = []
+    closeCreate()
     loadCharges(1)
 }, { deep: true })
 
@@ -221,132 +249,191 @@ onMounted(() => {
 onUnmounted(() => {
     observer?.disconnect()
 })
-
-defineExpose({ onChargeCreated })
 </script>
 
 <template>
-    <div class="relative">
-        <!-- Loading overlay -->
-        <div v-if="loading" class="absolute inset-0 z-10 flex items-start justify-center pt-8 bg-default/60 backdrop-blur-xs rounded-lg">
-            <UIcon name="i-lucide-loader-circle" class="size-6 animate-spin text-muted" />
-            <span class="ml-2 text-muted">{{ t('charges.loading') }}</span>
+    <div>
+        <!-- Static create row: first item, never part of a day group. Sits outside the
+             loading wrapper below so it stays clickable while charges reload. -->
+        <div
+            v-if="wallet.isActive"
+            class="group flex items-stretch transition-colors -mx-4 sm:mx-0 sm:px-4 sm:py-2"
+            :class="isCreateOpen ? 'bg-elevated' : 'hover:bg-muted'"
+        >
+            <!-- Timeline column: mirrors ChargeItem's -my-2/py-2 pairing (issue #108) -->
+            <div class="flex flex-col items-center w-10 shrink-0 sm:-my-2">
+                <div class="w-px h-3 sm:h-5 bg-black/10 dark:bg-white/10" />
+                <button
+                    type="button"
+                    aria-hidden="true"
+                    tabindex="-1"
+                    class="flex items-center justify-center size-7 rounded-full border-0 shrink-0 border-primary text-primary transition-colors"
+                    @click="openCreate"
+                >
+                    <UIcon name="i-lucide-plus" class="size-6" />
+                </button>
+                <div class="w-px flex-1 bg-black/10 dark:bg-white/10" />
+            </div>
+
+            <!-- Main content -->
+            <div class="flex-1 min-w-0 py-3 pr-4">
+                <UButton
+                    variant="solid"
+                    color="primary"
+                    size="md"
+                    icon="i-lucide-plus"
+                    @click="toggleCreate"
+                >
+                    {{ t('charges.new') }}
+                </UButton>
+                <UCollapsible
+                    v-model:open="isCreateOpen"
+                    :ui="{ content: titleAutocompleteOpen ? 'overflow-visible' : '' }"
+                >
+                    <template #content>
+                        <ChargeCreate
+                            class="mt-4"
+                            :wallet="wallet"
+                            :wallet-tags="walletTags"
+                            @charge-created="onChargeCreated"
+                            @cancelled="closeCreate"
+                            @dropdown-open-change="titleAutocompleteOpen = $event"
+                        />
+                    </template>
+                </UCollapsible>
+            </div>
         </div>
 
-        <!-- Error -->
-        <LoadErrorAlert
-            v-if="error && !loading"
-            :title="error"
-            :error="lastError"
-            retryable
-            class="my-3"
-            @retry="loadCharges(1)"
-        />
-
-        <!-- Charges list -->
-        <div v-if="!error">
-            <!-- Move toolbar -->
-            <div
-                v-if="selectedCharges.length && moveTargetWallets.length"
-                class="flex items-center gap-2 px-4 py-2 -mx-4 sm:mx-0 bg-elevated flex-wrap"
-            >
-                <UDropdownMenu :items="moveDropdownItems">
-                    <UButton
-                        variant="solid"
-                        color="primary"
-                        size="md"
-                        icon="i-lucide-move"
-                        :loading="moveLoading"
-                    >
-                        {{ t('charges.move') }}
-                    </UButton>
-                </UDropdownMenu>
-
-                <UButton
-                    variant="soft"
-                    color="neutral"
-                    size="md"
-                    @click="selectedCharges = []"
-                >
-                    {{ t('charges.clearSelection') }}
-                </UButton>
-
-                <span class="text-sm text-muted ml-auto">
-                    {{ t('charges.selectedCount', { count: selectedCharges.length }) }}
-                </span>
-
-                <UAlert
-                    v-if="moveError"
-                    color="error"
-                    variant="soft"
-                    icon="i-lucide-circle-alert"
-                    :description="moveError"
-                    close
-                    class="basis-full"
-                    @update:open="moveError = null"
-                />
+        <div class="relative">
+            <!-- Loading overlay: scoped to this wrapper, so it never covers the create row -->
+            <div v-if="loading" class="absolute inset-0 z-10 flex items-start justify-center pt-8 bg-default/60 backdrop-blur-xs rounded-lg">
+                <UIcon name="i-lucide-loader-circle" class="size-6 animate-spin text-muted" />
+                <span class="ml-2 text-muted">{{ t('charges.loading') }}</span>
             </div>
 
-            <template v-for="[group, groupCharges] in chargesGrouped" :key="group">
-                <!-- Group header -->
+            <!-- Error -->
+            <LoadErrorAlert
+                v-if="error && !loading"
+                :title="error"
+                :error="lastError"
+                retryable
+                class="my-3"
+                @retry="loadCharges(1)"
+            />
+
+            <!-- Charges list -->
+            <div v-if="!error">
+                <!-- Move toolbar -->
                 <div
-                    class="group px-0 sm:px-4 py-2 -mx-4 sm:mx-0 transition-colors"
-                    :class="isGroupSelected(groupCharges) ? 'bg-elevated' : (wallet.isActive ? 'hover:bg-muted' : '')"
+                    v-if="selectedCharges.length && moveTargetWallets.length"
+                    class="flex items-center gap-2 px-4 py-2 -mx-4 sm:mx-0 bg-elevated flex-wrap"
                 >
-                    <div class="flex items-center gap-2">
-                        <!-- Explicit select control (active wallets only) -->
-                        <UTooltip v-if="wallet.isActive" :text="t('charges.selectGroup')" :arrow="true">
-                            <button
-                                type="button"
-                                class="size-6 rounded-full border transition-colors shrink-0 cursor-pointer flex items-center justify-center ml-2"
-                                :class="[
-                                    isGroupSelected(groupCharges)
-                                        ? 'bg-primary border-primary text-white'
-                                        : 'border-default text-muted hover:border-primary hover:text-primary',
-                                    isGroupSelected(groupCharges) ? '' : 'invisible group-hover:visible active:visible pointer-coarse:visible',
-                                ]"
-                                :aria-label="t('charges.selectGroup')"
-                                :aria-pressed="isGroupSelected(groupCharges)"
-                                @click="onToggleGroup(groupCharges)"
-                            >
-                                <UIcon name="i-lucide-check" class="size-4" />
-                            </button>
-                        </UTooltip>
-                        <!-- Decorative divider for inactive wallets -->
-                        <div v-else class="w-6 shrink-0 h-px transition-colors bg-black/10 dark:bg-white/10 ml-2" />
-                        <span class="text-sm text-muted">{{ group }}</span>
-                        <div class="flex-1 h-px transition-colors" :class="isGroupSelected(groupCharges) ? '' : 'bg-black/10 dark:bg-white/10'" />
-                    </div>
+                    <UDropdownMenu :items="moveDropdownItems">
+                        <UButton
+                            variant="solid"
+                            color="primary"
+                            size="md"
+                            icon="i-lucide-move"
+                            :loading="moveLoading"
+                        >
+                            {{ t('charges.move') }}
+                        </UButton>
+                    </UDropdownMenu>
+
+                    <UButton
+                        variant="soft"
+                        color="neutral"
+                        size="md"
+                        @click="selectedCharges = []"
+                    >
+                        {{ t('charges.clearSelection') }}
+                    </UButton>
+
+                    <span class="text-sm text-muted ml-auto">
+                        {{ t('charges.selectedCount', { count: selectedCharges.length }) }}
+                    </span>
+
+                    <UAlert
+                        v-if="moveError"
+                        color="error"
+                        variant="soft"
+                        icon="i-lucide-circle-alert"
+                        :description="moveError"
+                        close
+                        class="basis-full"
+                        @update:open="moveError = null"
+                    />
                 </div>
 
-                <ChargeItem
-                    v-for="charge in groupCharges"
-                    :key="charge.id"
-                    :charge="charge"
-                    :wallet="wallet"
-                    :wallet-tags="walletTags"
-                    :read-only="!wallet.isActive"
-                    :selectable="wallet.isActive"
-                    :selected="selectedCharges.some(c => c.id === charge.id)"
-                    @updated="onChargeUpdated"
-                    @deleted="onChargeDeleted"
-                    @tag-selected="(tagId) => emit('tag-selected', tagId)"
-                    @toggle-selected="onToggleSelected"
-                />
-            </template>
+                <template v-for="[group, groupCharges] in chargesGrouped" :key="group">
+                    <!-- Group header -->
+                    <div
+                        class="group px-0 sm:px-4 py-2 -mx-4 sm:mx-0 transition-colors"
+                        :class="isGroupSelected(groupCharges) ? 'bg-elevated' : (wallet.isActive ? 'hover:bg-muted' : '')"
+                    >
+                        <div class="flex items-center gap-2">
+                            <!-- Timeline slot: the connector runs through the header and yields
+                                 to the select control. -my-2 spans the row's py-2 (issue #108) -->
+                            <div class="relative flex items-center justify-center w-6 shrink-0 ml-2 self-stretch -my-2">
+                                <div
+                                    v-if="wallet.isActive && !isGroupSelected(groupCharges)"
+                                    class="absolute inset-y-0 left-1/2 -translate-x-1/2 w-px bg-black/10 dark:bg-white/10 group-hover:invisible pointer-coarse:invisible"
+                                />
+                                <!-- Explicit select control (active wallets only) -->
+                                <UTooltip v-if="wallet.isActive" :text="t('charges.selectGroup')" :arrow="true">
+                                    <button
+                                        type="button"
+                                        class="relative size-6 rounded-full border transition-colors shrink-0 cursor-pointer flex items-center justify-center"
+                                        :class="[
+                                            isGroupSelected(groupCharges)
+                                                ? 'bg-primary border-primary text-white'
+                                                : 'border-default text-muted hover:border-primary hover:text-primary',
+                                            isGroupSelected(groupCharges) ? '' : 'invisible group-hover:visible active:visible pointer-coarse:visible',
+                                        ]"
+                                        :aria-label="t('charges.selectGroup')"
+                                        :aria-pressed="isGroupSelected(groupCharges)"
+                                        @click="onToggleGroup(groupCharges)"
+                                    >
+                                        <UIcon name="i-lucide-check" class="size-4" />
+                                    </button>
+                                </UTooltip>
+                                <!-- Decorative divider for inactive wallets -->
+                                <div v-else class="w-6 shrink-0 h-px transition-colors bg-black/10 dark:bg-white/10" />
+                            </div>
+                            <span class="text-sm text-muted">{{ group }}</span>
+                            <div class="flex-1 h-px transition-colors" :class="isGroupSelected(groupCharges) ? '' : 'bg-black/10 dark:bg-white/10'" />
+                        </div>
+                    </div>
 
-            <!-- Empty state -->
-            <div v-if="charges.length === 0" class="py-8 text-center text-muted">
-                {{ t('charges.empty') }}
-            </div>
+                    <ChargeItem
+                        v-for="charge in groupCharges"
+                        :key="charge.id"
+                        :charge="charge"
+                        :wallet="wallet"
+                        :wallet-tags="walletTags"
+                        :read-only="!wallet.isActive"
+                        :selectable="wallet.isActive"
+                        :selected="selectedCharges.some(c => c.id === charge.id)"
+                        @updated="onChargeUpdated"
+                        @deleted="onChargeDeleted"
+                        @tag-selected="(tagId) => emit('tag-selected', tagId)"
+                        @toggle-selected="onToggleSelected"
+                    />
+                </template>
 
-            <!-- Infinite scroll sentinel -->
-            <div ref="sentinelRef" class="h-1" />
+                <!-- Empty state -->
+                <div v-if="charges.length === 0" class="py-8 text-center text-muted">
+                    {{ t('charges.empty') }}
+                </div>
 
-            <!-- Loading more spinner -->
-            <div v-if="loadingMore" class="flex justify-center py-4">
-                <UIcon name="i-lucide-loader-circle" class="size-5 animate-spin text-muted" />
-                <span class="ml-2 text-sm text-muted">{{ t('charges.loadingMore') }}</span>
+                <!-- Infinite scroll sentinel -->
+                <div ref="sentinelRef" class="h-1" />
+
+                <!-- Loading more spinner -->
+                <div v-if="loadingMore" class="flex justify-center py-4">
+                    <UIcon name="i-lucide-loader-circle" class="size-5 animate-spin text-muted" />
+                    <span class="ml-2 text-sm text-muted">{{ t('charges.loadingMore') }}</span>
+                </div>
             </div>
         </div>
     </div>

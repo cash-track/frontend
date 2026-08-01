@@ -111,7 +111,7 @@ describe('ChargeTitleFormInput', () => {
     it('emits dropdown-open-change whenever the internal dropdownOpen ref toggles', async () => {
         // Ancestors (e.g. a UCollapsible with overflow-hidden) rely on this event to
         // temporarily allow overflow while the suggestions listbox is open — see
-        // WalletView.vue's titleAutocompleteOpen (issue #110).
+        // ChargesList.vue's titleAutocompleteOpen (issue #110).
         const wrapper = mountInput()
         const vm = wrapper.vm as unknown as { dropdownOpen: boolean }
 
