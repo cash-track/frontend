@@ -157,7 +157,7 @@ export interface SeededLimit {
 }
 
 /**
- * Create a wallet limit. The API rejects an empty `tags` array (422) — a limit
+ * Create a wallet limit. The API rejects an empty `tagGroups` array (422) — a limit
  * must reference ≥1 tag, so seed one with createTagViaApi and pass its id.
  */
 export async function createLimitViaApi(
@@ -169,7 +169,7 @@ export async function createLimitViaApi(
     const data = await send(request, 'post', `/api/wallets/${walletId}/limits`, {
         type: opts.type ?? '-',
         amount: opts.amount ?? 100,
-        tags: [tagId],
+        tagGroups: [{ operation: 'or', tags: [tagId] }],
     })
     return { id: data.id as number, amount: data.amount as number }
 }

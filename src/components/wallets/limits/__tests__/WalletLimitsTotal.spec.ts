@@ -49,7 +49,7 @@ function makeWalletLimit(id = 1): WalletLimit {
         limit: new Limit({
             id, operation: '-', amount: 1000, walletId: 1,
             createdAt: new Date(), updatedAt: new Date(),
-            tags: [], wallet: null,
+            tagGroups: [], wallet: null,
         }),
     })
 }

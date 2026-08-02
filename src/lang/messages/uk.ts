@@ -313,6 +313,10 @@ export default {
         deletingConfirm: 'Точно видалити цей ліміт? Цю дію неможливо скасувати.',
 
         total: 'Всього',
+
+        connectionOr: 'АБО',
+        connectionAnd: 'І',
+        connectionToggleTooltip: 'Перемкнути, як наступний обраний тег поєднується з попереднім',
     },
 
     titles: {

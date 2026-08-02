@@ -80,11 +80,14 @@ function onEditCancelled() {
                     name="i-lucide-arrow-down"
                     class="text-red-500 hidden sm:inline-block size-6"
                 />
-                <Tag
-                    v-for="tag in walletLimit.limit.tags"
-                    :key="tag.id"
-                    :tag="tag"
-                />
+                <template v-for="(group, groupIndex) in walletLimit.limit.tagGroups" :key="groupIndex">
+                    <span v-if="groupIndex > 0" class="mx-2 text-xs text-muted select-none">+</span>
+                    <Tag
+                        v-for="tag in group.tags"
+                        :key="tag.id"
+                        :tag="tag"
+                    />
+                </template>
             </div>
             <div class="flex items-center gap-2 justify-between sm:justify-normal">
                 <span class="text-lg whitespace-nowrap" :class="isIncome ? 'text-primary' : 'text-red-500'">

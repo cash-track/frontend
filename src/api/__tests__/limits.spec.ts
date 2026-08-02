@@ -16,7 +16,7 @@ import { Limit, WalletLimit } from '../models/limit'
 const rawLimit = {
     id: 10, operation: '-', amount: 500, walletId: 2,
     createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T00:00:00Z',
-    tags: [], wallet: null,
+    tagGroups: [], wallet: null,
 }
 
 const rawWalletLimit = { amount: 200, percentage: 0.4, limit: rawLimit }
@@ -45,10 +45,16 @@ describe('createLimit', () => {
     it('posts limit data to /api/wallets/{id}/limits and returns Limit', async () => {
         mockAxios.post = vi.fn().mockResolvedValue({ data: { data: rawLimit } })
 
-        const result = await createLimit(2, { type: '-', amount: 500, tags: [1, 2] })
+        const result = await createLimit(2, {
+            type: '-',
+            amount: 500,
+            tagGroups: [{ operation: 'or', tags: [1] }, { operation: 'and', tags: [2, 3] }],
+        })
 
         expect(mockAxios.post).toHaveBeenCalledWith('/api/wallets/2/limits', {
-            type: '-', amount: 500, tags: [1, 2],
+            type: '-',
+            amount: 500,
+            tagGroups: [{ operation: 'or', tags: [1] }, { operation: 'and', tags: [2, 3] }],
         })
         expect(result).toBeInstanceOf(Limit)
         expect(result.amount).toBe(500)
@@ -63,10 +69,10 @@ describe('updateLimit', () => {
         const updated = { ...rawLimit, amount: 750 }
         mockAxios.put = vi.fn().mockResolvedValue({ data: { data: updated } })
 
-        const result = await updateLimit(2, 10, { type: '-', amount: 750, tags: [] })
+        const result = await updateLimit(2, 10, { type: '-', amount: 750, tagGroups: [] })
 
         expect(mockAxios.put).toHaveBeenCalledWith('/api/wallets/2/limits/10', {
-            type: '-', amount: 750, tags: [],
+            type: '-', amount: 750, tagGroups: [],
         })
         expect(result).toBeInstanceOf(Limit)
         expect(result.amount).toBe(750)
