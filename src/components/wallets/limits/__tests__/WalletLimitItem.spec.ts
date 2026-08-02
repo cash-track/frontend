@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { ref } from 'vue'
 import { shallowMount } from '@vue/test-utils'
 import WalletLimitItem from '../WalletLimitItem.vue'
-import { WalletLimit, Limit } from '@/api/models/limit'
+import { WalletLimit, Limit, LimitTagGroup } from '@/api/models/limit'
 import { Wallet } from '@/api/models/wallet'
 import { Currency } from '@/api/models/currency'
 import { Tag } from '@/api/models/tag'
@@ -52,7 +52,7 @@ function makeWalletLimit(percentage: number): WalletLimit {
         limit: new Limit({
             id: 1, operation: '-', amount: 1000, walletId: 1,
             createdAt: new Date(), updatedAt: new Date(),
-            tags: [makeTag()], wallet: null,
+            tagGroups: [new LimitTagGroup({ connection: 'or', tags: [makeTag()] })], wallet: null,
         }),
     })
 }
@@ -133,5 +133,42 @@ describe('WalletLimitItem', () => {
         })
         expect(wrapper.find('.text-xs').text()).toBe('100%')
         expect(wrapper.find('.bg-red-500').exists()).toBe(true)
+    })
+
+    it('renders a "+" separator between tag groups but not within a group', () => {
+        const shop = makeTag()
+        const fuel = new Tag({ id: 2, name: 'Fuel', icon: null, color: '#00ff00', userId: 1, createdAt: new Date(), updatedAt: new Date() })
+        const medicine = new Tag({ id: 3, name: 'Medicine', icon: null, color: '#0000ff', userId: 1, createdAt: new Date(), updatedAt: new Date() })
+
+        const walletLimit = new WalletLimit({
+            amount: 500,
+            percentage: 50,
+            limit: new Limit({
+                id: 1, operation: '-', amount: 1000, walletId: 1,
+                createdAt: new Date(), updatedAt: new Date(),
+                tagGroups: [
+                    new LimitTagGroup({ connection: 'or', tags: [shop] }),
+                    new LimitTagGroup({ connection: 'and', tags: [fuel, medicine] }),
+                ],
+                wallet: null,
+            }),
+        })
+
+        const wrapper = shallowMount(WalletLimitItem, {
+            ...stubs,
+            props: { walletLimit, wallet: makeWallet() },
+        })
+
+        const separators = wrapper.findAll('span.mx-2')
+        expect(separators).toHaveLength(1)
+        expect(separators[0].text()).toBe('+')
+    })
+
+    it('renders no separator for a single tag group', () => {
+        const wrapper = shallowMount(WalletLimitItem, {
+            ...stubs,
+            props: { walletLimit: makeWalletLimit(50), wallet: makeWallet() },
+        })
+        expect(wrapper.findAll('span.mx-2')).toHaveLength(0)
     })
 })

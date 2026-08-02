@@ -313,6 +313,10 @@ export default {
         deletingConfirm: 'Are you sure you want to delete this limit? This action cannot be undone.',
 
         total: 'Total',
+
+        connectionOr: 'OR',
+        connectionAnd: 'AND',
+        connectionToggleTooltip: 'Toggle how the next selected tag combines with the previous one',
     },
 
     titles: {

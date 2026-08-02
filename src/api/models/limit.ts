@@ -2,6 +2,33 @@ import { requireNumber, requireString } from './_validators'
 import { Tag } from './tag'
 import { WalletShort } from './wallet'
 
+export class LimitTagGroup {
+    readonly connection: 'and' | 'or'
+    readonly tags: Tag[]
+
+    constructor(data: { connection: 'and' | 'or'; tags: Tag[] }) {
+        this.connection = data.connection
+        this.tags = data.tags
+    }
+
+    static from(raw: unknown): LimitTagGroup {
+        if (!raw || typeof raw !== 'object') {
+            throw new Error('LimitTagGroup.from: expected object')
+        }
+        const d = raw as Record<string, unknown>
+
+        const connection = requireString(d, 'connection')
+        if (connection !== 'and' && connection !== 'or') {
+            throw new Error(`LimitTagGroup.from: invalid connection "${connection}"`)
+        }
+
+        return new LimitTagGroup({
+            connection,
+            tags: Array.isArray(d.tags) ? d.tags.map(Tag.from) : [],
+        })
+    }
+}
+
 export class Limit {
     readonly id: number
     readonly operation: '+' | '-'
@@ -9,7 +36,7 @@ export class Limit {
     readonly walletId: number
     readonly createdAt: Date
     readonly updatedAt: Date
-    readonly tags: Tag[]
+    readonly tagGroups: LimitTagGroup[]
     readonly wallet: WalletShort | null
 
     constructor(data: {
@@ -19,7 +46,7 @@ export class Limit {
         walletId: number
         createdAt: Date
         updatedAt: Date
-        tags: Tag[]
+        tagGroups: LimitTagGroup[]
         wallet: WalletShort | null
     }) {
         this.id = data.id
@@ -28,7 +55,7 @@ export class Limit {
         this.walletId = data.walletId
         this.createdAt = data.createdAt
         this.updatedAt = data.updatedAt
-        this.tags = data.tags
+        this.tagGroups = data.tagGroups
         this.wallet = data.wallet
     }
 
@@ -50,7 +77,7 @@ export class Limit {
             walletId: requireNumber(d, 'walletId'),
             createdAt: new Date(requireString(d, 'createdAt')),
             updatedAt: new Date(requireString(d, 'updatedAt')),
-            tags: Array.isArray(d.tags) ? d.tags.map(Tag.from) : [],
+            tagGroups: Array.isArray(d.tagGroups) ? d.tagGroups.map(LimitTagGroup.from) : [],
             wallet: d.wallet ? WalletShort.from(d.wallet) : null,
         })
     }

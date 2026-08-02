@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { createLimit, updateLimit } from '@/api/limits'
 import type { Limit } from '@/api/models/limit'
@@ -9,6 +9,11 @@ import { useApiErrors } from '@/composables/useApiErrors'
 import TagFormInput from '@/components/tags/TagFormInput.vue'
 import TagChip from '@/components/tags/Tag.vue'
 import LoadErrorAlert from '@/components/Shared/LoadErrorAlert.vue'
+
+interface TagGroup {
+    connection: 'and' | 'or'
+    tags: Tag[]
+}
 
 const props = defineProps<{
     wallet: Wallet
@@ -23,7 +28,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const { fieldErrors, generalError, generalErrorRaw, reset: resetErrors, handleError } = useApiErrors([
-    'tags',
+    'tagGroups',
     'amount',
     'type',
 ])
@@ -32,13 +37,26 @@ const tagInputRef = ref<InstanceType<typeof TagFormInput> | null>(null)
 const loading = ref(false)
 const operation = ref<'+' | '-'>('-')
 const amount = ref<number | null>(null)
-const selectedTags = ref<Tag[]>([])
+// Tags selected for this limit, grouped by how they combine: tags within a group are ANDed
+// together, groups are ORed together. A group is 'and' iff it grew past one tag via an
+// AND-toggled pick; a lone tag (or the initial state) is always 'or'.
+const groups = ref<TagGroup[]>([])
+const nextConnection = ref<'and' | 'or'>('or')
+
+const selectedTags = computed(() => groups.value.flatMap(group => group.tags))
+
+const nextConnectionLabel = computed(() =>
+    nextConnection.value === 'and' ? t('limits.connectionAnd') : t('limits.connectionOr'),
+)
 
 function loadFromEdit() {
     if (props.edit) {
         operation.value = props.edit.operation
         amount.value = props.edit.amount
-        selectedTags.value = [...props.edit.tags]
+        groups.value = props.edit.tagGroups.map(group => ({
+            connection: group.connection,
+            tags: [...group.tags],
+        }))
     }
 }
 
@@ -46,11 +64,30 @@ onMounted(() => loadFromEdit())
 
 function onTagSelected(tag: Tag) {
     if (selectedTags.value.some(t => t.id === tag.id)) return
-    selectedTags.value = [tag, ...selectedTags.value]
+
+    if (nextConnection.value === 'and' && groups.value.length > 0) {
+        const lastIndex = groups.value.length - 1
+        groups.value = groups.value.map((group, index) =>
+            index === lastIndex
+                ? { connection: 'and' as const, tags: [...group.tags, tag] }
+                : group,
+        )
+    } else {
+        groups.value = [...groups.value, { connection: 'or' as const, tags: [tag] }]
+    }
 }
 
 function onTagRemoved(tag: Tag) {
-    selectedTags.value = selectedTags.value.filter(t => t.id !== tag.id)
+    groups.value = groups.value
+        .map(group => {
+            const tags = group.tags.filter(t => t.id !== tag.id)
+            return { connection: tags.length >= 2 ? group.connection : ('or' as const), tags }
+        })
+        .filter(group => group.tags.length > 0)
+}
+
+function toggleConnection() {
+    nextConnection.value = nextConnection.value === 'and' ? 'or' : 'and'
 }
 
 async function onSubmit() {
@@ -60,7 +97,10 @@ async function onSubmit() {
     const request = {
         type: operation.value,
         amount: Number(amount.value),
-        tags: selectedTags.value.map(t => t.id),
+        tagGroups: groups.value.map(group => ({
+            operation: group.connection,
+            tags: group.tags.map(t => t.id),
+        })),
     }
 
     try {
@@ -82,7 +122,8 @@ async function onSubmit() {
 function resetForm() {
     operation.value = '-'
     amount.value = null
-    selectedTags.value = []
+    groups.value = []
+    nextConnection.value = 'or'
     tagInputRef.value?.reset()
 }
 
@@ -94,29 +135,45 @@ function onCancel() {
 
 <template>
     <form @submit.prevent="onSubmit" class="space-y-3">
-        <!-- Selected tags -->
-        <div v-if="selectedTags.length > 0" class="flex flex-wrap gap-1">
-            <TagChip
-                v-for="tag in selectedTags"
-                :key="tag.id"
-                :tag="tag"
-                removable
-                @click="onTagRemoved(tag)"
-            />
+        <!-- Selected tags, grouped: tags within a group sit close together, a "+" label
+             (with extra spacing) separates distinct groups -->
+        <div v-if="groups.length > 0" class="flex flex-wrap items-center gap-1">
+            <template v-for="(group, groupIndex) in groups" :key="groupIndex">
+                <span v-if="groupIndex > 0" class="mx-2 text-xs text-muted select-none">+</span>
+                <TagChip
+                    v-for="tag in group.tags"
+                    :key="tag.id"
+                    :tag="tag"
+                    removable
+                    @click="onTagRemoved(tag)"
+                />
+            </template>
         </div>
 
         <!-- Tag search + Operation toggle + Amount -->
         <!-- Mobile: stacked, full width (Type+Amount on top, Tag below). Desktop: one row,
              Tag left (3/5) + Type+Amount right (2/5). flex order swaps the visual order. -->
         <div class="flex flex-col sm:flex-row gap-2">
-            <UFormField class="w-full sm:w-3/5 order-2 sm:order-1" :error="fieldErrors.tags?.[0]">
-                <TagFormInput
-                    ref="tagInputRef"
-                    :wallet-id="wallet.id"
-                    :tags="selectedTags"
-                    :disabled="loading"
-                    @selected="onTagSelected"
-                />
+            <UFormField class="w-full sm:w-3/5 order-2 sm:order-1" :error="fieldErrors.tagGroups?.[0]">
+                <UFieldGroup size="lg" class="w-full">
+                    <TagFormInput
+                        ref="tagInputRef"
+                        class="flex-1"
+                        :wallet-id="wallet.id"
+                        :tags="selectedTags"
+                        :disabled="loading"
+                        @selected="onTagSelected"
+                    />
+                    <UTooltip :text="t('limits.connectionToggleTooltip')" :arrow="true">
+                        <UButton
+                            :label="nextConnectionLabel"
+                            :color="nextConnection === 'and' ? 'primary' : 'neutral'"
+                            variant="soft"
+                            :disabled="loading"
+                            @click="toggleConnection"
+                        />
+                    </UTooltip>
+                </UFieldGroup>
             </UFormField>
 
             <div class="flex items-start gap-0 w-full sm:w-2/5 order-1 sm:order-2">

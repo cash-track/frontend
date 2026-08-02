@@ -4,7 +4,7 @@ import { Limit, WalletLimit } from './models/limit'
 export interface LimitRequest {
     type: '+' | '-'
     amount: number
-    tags: number[]
+    tagGroups: { operation: 'and' | 'or'; tags: number[] }[]
 }
 
 export async function getLimits(walletId: number): Promise<WalletLimit[]> {
@@ -19,7 +19,7 @@ export async function createLimit(walletId: number, request: LimitRequest): Prom
         const res = await client.post(`/api/wallets/${walletId}/limits`, {
             type: request.type,
             amount: request.amount,
-            tags: request.tags,
+            tagGroups: request.tagGroups,
         })
         return Limit.from(res.data.data)
     })
@@ -30,7 +30,7 @@ export async function updateLimit(walletId: number, limitId: number, request: Li
         const res = await client.put(`/api/wallets/${walletId}/limits/${limitId}`, {
             type: request.type,
             amount: request.amount,
-            tags: request.tags,
+            tagGroups: request.tagGroups,
         })
         return Limit.from(res.data.data)
     })
