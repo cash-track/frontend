@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { ref } from 'vue'
-import { shallowMount } from '@vue/test-utils'
+import { shallowMount, mount } from '@vue/test-utils'
 import { AxiosError } from 'axios'
 import { Wallet } from '@/api/models/wallet'
 import { Currency } from '@/api/models/currency'
@@ -23,6 +23,10 @@ const mockUpdateLimit = vi.fn()
 vi.mock('@/api/limits', () => ({
     createLimit: (...args: unknown[]) => mockCreateLimit(...args),
     updateLimit: (...args: unknown[]) => mockUpdateLimit(...args),
+}))
+vi.mock('@/api/tags', () => ({
+    getWalletTags: vi.fn().mockResolvedValue([]),
+    searchWalletTags: vi.fn().mockResolvedValue([]),
 }))
 
 const usd = new Currency({
@@ -169,6 +173,22 @@ describe('LimitForm', () => {
         expect(vm.groups[0].tags.map(t => t.id)).toEqual([1, 2])
     })
 
+    it('toggling the connection flips nextConnection and its label between OR and AND', () => {
+        const wrapper = shallowMount(LimitForm, { props: { wallet: makeWallet() } })
+        const vm = wrapper.vm as unknown as LimitFormVm & { nextConnectionLabel: string }
+
+        expect(vm.nextConnection).toBe('or')
+        expect(vm.nextConnectionLabel).toBe('limits.connectionOr')
+
+        vm.toggleConnection()
+        expect(vm.nextConnection).toBe('and')
+        expect(vm.nextConnectionLabel).toBe('limits.connectionAnd')
+
+        vm.toggleConnection()
+        expect(vm.nextConnection).toBe('or')
+        expect(vm.nextConnectionLabel).toBe('limits.connectionOr')
+    })
+
     it('does not add a duplicate tag id across groups', () => {
         const wrapper = shallowMount(LimitForm, { props: { wallet: makeWallet() } })
         const vm = wrapper.vm as unknown as LimitFormVm
@@ -211,6 +231,25 @@ describe('LimitForm', () => {
         expect(vm.groups).toHaveLength(1)
         expect(vm.groups[0].connection).toBe('or')
         expect(vm.groups[0].tags).toEqual([fuel])
+    })
+
+    it('removing one tag from a 3-tag AND group keeps the connection as AND', () => {
+        const wrapper = shallowMount(LimitForm, { props: { wallet: makeWallet() } })
+        const vm = wrapper.vm as unknown as LimitFormVm
+        const fuel = makeTag(1, 'Fuel')
+        const medicine = makeTag(2, 'Medicine')
+        const parking = makeTag(3, 'Parking')
+        vm.onTagSelected(fuel)
+        vm.toggleConnection()
+        vm.onTagSelected(medicine)
+        vm.onTagSelected(parking)
+        expect(vm.groups[0].tags).toHaveLength(3)
+
+        vm.onTagRemoved(medicine)
+
+        expect(vm.groups).toHaveLength(1)
+        expect(vm.groups[0].connection).toBe('and')
+        expect(vm.groups[0].tags.map(t => t.id)).toEqual([1, 3])
     })
 
     it('calls createLimit with the entered amount, operation and tag groups on submit', async () => {
@@ -265,6 +304,30 @@ describe('LimitForm', () => {
         expect(vm.groups).toHaveLength(0)
     })
 
+    it("resets the tag input's own state after a successful create", async () => {
+        const limit = makeLimit()
+        mockCreateLimit.mockResolvedValue(limit)
+
+        // Deep mount: TagFormInput sits inside UFormField/UFieldGroup, which shallowMount
+        // would auto-stub without rendering their slot content, leaving tagInputRef null.
+        // Tooltip is stubbed because it requires a TooltipProvider ancestor not present here.
+        const wrapper = mount(LimitForm, {
+            props: { wallet: makeWallet() },
+            global: { stubs: { Tooltip: true } },
+        })
+        const vm = wrapper.vm as unknown as LimitFormVm & { tagInputRef: { reset: () => void } }
+        const resetSpy = vi.spyOn(vm.tagInputRef, 'reset')
+        vm.amount = 100
+        vm.onTagSelected(makeTag())
+
+        await wrapper.find('form').trigger('submit')
+
+        await vi.waitFor(() => {
+            expect(wrapper.emitted('created')).toBeTruthy()
+        })
+        expect(resetSpy).toHaveBeenCalledTimes(1)
+    })
+
     it('calls updateLimit and emits updated in edit mode (form is not reset)', async () => {
         const limit = makeLimit({ id: 7 })
         const updated = makeLimit({ id: 7, amount: 999 })
@@ -295,6 +358,26 @@ describe('LimitForm', () => {
         const alert = wrapper.findComponent({ name: 'LoadErrorAlert' })
         expect(alert.props('retryable')).toBeFalsy()
         expect(wrapper.findComponent({ name: 'UAlert' }).exists()).toBe(false)
+    })
+
+    it('falls back to the default unknown-error title if generalError is unexpectedly unset', async () => {
+        mockCreateLimit.mockRejectedValue(new Error('network error'))
+
+        const wrapper = shallowMount(LimitForm, { props: { wallet: makeWallet() } })
+        const vm = wrapper.vm as unknown as LimitFormVm
+        vm.amount = 100
+
+        await wrapper.find('form').trigger('submit')
+
+        await vi.waitFor(() => {
+            expect(wrapper.findComponent({ name: 'LoadErrorAlert' }).exists()).toBe(true)
+        })
+
+        vm.generalError = null
+        await wrapper.vm.$nextTick()
+
+        const alert = wrapper.findComponent({ name: 'LoadErrorAlert' })
+        expect(alert.props('title')).toBe('unknownError')
     })
 
     it('routes a 422 error for a field the form does not render into generalError, not LoadErrorAlert', async () => {
@@ -340,6 +423,52 @@ describe('LimitForm', () => {
 
         await vi.waitFor(() => {
             expect(vm.fieldErrors.tagGroups?.[0]).toBe('At least one tag is required')
+        })
+        expect(vm.generalError).toBeNull()
+    })
+
+    it('routes a 422 error for the amount field into fieldErrors', async () => {
+        const axiosError = new AxiosError('Validation failed')
+        axiosError.response = {
+            status: 422,
+            data: { errors: { amount: ['Amount must be greater than 0'] } },
+            headers: {},
+            config: {} as never,
+            statusText: 'Unprocessable Entity',
+        }
+        mockCreateLimit.mockRejectedValue(axiosError)
+
+        const wrapper = shallowMount(LimitForm, { props: { wallet: makeWallet() } })
+        const vm = wrapper.vm as unknown as LimitFormVm
+        vm.amount = 100
+
+        await wrapper.find('form').trigger('submit')
+
+        await vi.waitFor(() => {
+            expect(vm.fieldErrors.amount?.[0]).toBe('Amount must be greater than 0')
+        })
+        expect(vm.generalError).toBeNull()
+    })
+
+    it('routes a 422 error for the type field into fieldErrors', async () => {
+        const axiosError = new AxiosError('Validation failed')
+        axiosError.response = {
+            status: 422,
+            data: { errors: { type: ['Type is invalid'] } },
+            headers: {},
+            config: {} as never,
+            statusText: 'Unprocessable Entity',
+        }
+        mockCreateLimit.mockRejectedValue(axiosError)
+
+        const wrapper = shallowMount(LimitForm, { props: { wallet: makeWallet() } })
+        const vm = wrapper.vm as unknown as LimitFormVm
+        vm.amount = 100
+
+        await wrapper.find('form').trigger('submit')
+
+        await vi.waitFor(() => {
+            expect(vm.fieldErrors.type?.[0]).toBe('Type is invalid')
         })
         expect(vm.generalError).toBeNull()
     })
