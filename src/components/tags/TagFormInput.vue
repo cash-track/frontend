@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { getWalletTags, searchWalletTags } from '@/api/tags'
 import type { Tag } from '@/api/models/tag'
@@ -82,7 +82,8 @@ function onSelect(tag: Tag) {
     query.value = ''
     searchResults.value = []
     highlightedIndex.value = -1
-    dropdownOpen.value = false
+    // Deferred so `props.tags` has round-tripped and displayedTags sees the pick (#155).
+    nextTick(() => { dropdownOpen.value = displayedTags.value.length > 0 })
 }
 
 function onKeyDown(e: KeyboardEvent) {
