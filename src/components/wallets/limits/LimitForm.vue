@@ -225,7 +225,6 @@ function onCancel() {
             <UButton
                 type="submit"
                 color="primary"
-                size="lg"
                 :loading="loading"
             >
                 {{ edit ? t('limits.update') : t('limits.create') }}
@@ -233,7 +232,6 @@ function onCancel() {
             <UButton
                 variant="outline"
                 color="neutral"
-                size="lg"
                 :disabled="loading"
                 @click="onCancel"
             >
