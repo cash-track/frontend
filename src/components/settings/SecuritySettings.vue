@@ -28,6 +28,7 @@ function resetForm() {
 }
 
 async function onSubmit() {
+    if (loading.value) return
     reset()
     successMessage.value = ''
 

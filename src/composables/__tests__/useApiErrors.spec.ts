@@ -75,6 +75,83 @@ describe('useApiErrors', () => {
         expect(consoleSpy).toHaveBeenCalled()
     })
 
+    it('sets a distinct localised message for a 409 (duplicate request in flight)', () => {
+        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+        const { fieldErrors, generalError, generalErrorRaw, handleError } = useApiErrors()
+
+        const err = makeAxiosError(409, { message: 'Conflict' })
+        handleError(err)
+
+        expect(generalError.value).toBe('duplicateRequestError')
+        expect(generalError.value).not.toBe('unknownError')
+        expect(fieldErrors.value).toEqual({})
+        expect(generalErrorRaw.value).toBe(err)
+        expect(consoleSpy).toHaveBeenCalled()
+    })
+
+    it('sets the idempotency-conflict message for a 422 with a well-formed body but no errors key', () => {
+        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+        const { fieldErrors, generalError, generalErrorRaw, handleError } = useApiErrors()
+
+        // Same key reused with a different body: no `errors` key, so ValidationError.from
+        // throws even though the body is well-formed.
+        handleError(makeAxiosError(422, { message: 'Idempotency key reused with a different payload' }))
+
+        expect(generalError.value).toBe('idempotencyConflictError')
+        expect(generalError.value).not.toBe('validationError')
+        expect(fieldErrors.value).toEqual({})
+        // Consistent with the other 422 branches: generalErrorRaw is reserved for
+        // non-422 failures, not set here.
+        expect(generalErrorRaw.value).toBeNull()
+        expect(consoleSpy).toHaveBeenCalled()
+    })
+
+    it('still yields the generic validationError for a null 422 body (genuinely unparseable, not idempotency conflict)', () => {
+        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+        const { generalError, handleError } = useApiErrors()
+
+        handleError(makeAxiosError(422, null))
+
+        expect(generalError.value).toBe('validationError')
+        expect(generalError.value).not.toBe('idempotencyConflictError')
+        expect(consoleSpy).toHaveBeenCalled()
+    })
+
+    it('yields the generic validationError, not idempotencyConflictError, for a 422 body with a malformed `errors` key ({ errors: null })', () => {
+        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+        const { generalError, handleError } = useApiErrors()
+
+        // `errors` is present, so this is a malformed validation response, not the
+        // idempotency 422 shape.
+        handleError(makeAxiosError(422, { errors: null }))
+
+        expect(generalError.value).toBe('validationError')
+        expect(generalError.value).not.toBe('idempotencyConflictError')
+        expect(consoleSpy).toHaveBeenCalled()
+    })
+
+    it('yields the generic validationError, not idempotencyConflictError, for a 422 body with a malformed `errors` key ({ errors: "string" })', () => {
+        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+        const { generalError, handleError } = useApiErrors()
+
+        handleError(makeAxiosError(422, { errors: 'not an object' }))
+
+        expect(generalError.value).toBe('validationError')
+        expect(generalError.value).not.toBe('idempotencyConflictError')
+        expect(consoleSpy).toHaveBeenCalled()
+    })
+
+    it('yields the generic validationError, not idempotencyConflictError, for an array 422 body', () => {
+        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+        const { generalError, handleError } = useApiErrors()
+
+        handleError(makeAxiosError(422, ['unexpected', 'array', 'body']))
+
+        expect(generalError.value).toBe('validationError')
+        expect(generalError.value).not.toBe('idempotencyConflictError')
+        expect(consoleSpy).toHaveBeenCalled()
+    })
+
     it('sets generic localised error for non-422 HTTP response, does NOT surface raw message', () => {
         const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
         const { generalError, handleError } = useApiErrors()
@@ -202,6 +279,25 @@ describe('useApiErrors', () => {
             handleError(err)
 
             expect(generalErrorRaw.value).toBe(err)
+        })
+
+        it('is set to the raw AxiosError for a 409 (duplicate request in flight)', () => {
+            vi.spyOn(console, 'error').mockImplementation(() => {})
+            const { generalErrorRaw, handleError } = useApiErrors()
+
+            const err = makeAxiosError(409, { message: 'Conflict' })
+            handleError(err)
+
+            expect(generalErrorRaw.value).toBe(err)
+        })
+
+        it('stays null for a 422 idempotency-conflict body (well-formed object, no errors key)', () => {
+            vi.spyOn(console, 'error').mockImplementation(() => {})
+            const { generalErrorRaw, handleError } = useApiErrors()
+
+            handleError(makeAxiosError(422, { message: 'Idempotency key reused with a different payload' }))
+
+            expect(generalErrorRaw.value).toBeNull()
         })
 
         it('stays null for a 422 with field errors', () => {

@@ -56,6 +56,7 @@ onMounted(async () => {
 })
 
 async function onSubmit() {
+    if (loading.value) return
     reset()
     loading.value = true
     try {

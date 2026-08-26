@@ -186,6 +186,29 @@ describe('WalletCreate', () => {
         wrapper.unmount()
     })
 
+    it('a second onSubmit call while the first is still in flight is a no-op (double-submit guard)', async () => {
+        vi.useFakeTimers()
+        mockCreateWallet.mockResolvedValue({ id: 42 })
+        mockLoadActive.mockResolvedValue(undefined)
+
+        const wrapper = mount(WalletCreate, globalStubs)
+        const vm = wrapper.vm as unknown as { form: { name: string; defaultCurrencyCode: string }; onSubmit: () => Promise<void> }
+        vm.form.name = 'Test Wallet'
+        vm.form.defaultCurrencyCode = 'USD'
+        await wrapper.vm.$nextTick()
+
+        const first = vm.onSubmit()
+        const second = vm.onSubmit()
+
+        expect(mockCreateWallet).toHaveBeenCalledTimes(1)
+
+        await Promise.all([first, second])
+
+        expect(mockCreateWallet).toHaveBeenCalledTimes(1)
+
+        wrapper.unmount()
+    })
+
     it('does not call createWallet when name is empty', async () => {
         const wrapper = mount(WalletCreate, globalStubs)
         const vm = wrapper.vm as unknown as { form: { name: string; defaultCurrencyCode: string }; onSubmit: () => Promise<void> }

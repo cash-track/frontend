@@ -206,6 +206,26 @@ describe('WalletEdit', () => {
         wrapper.unmount()
     })
 
+    it('a second onSubmit call while the first is still in flight is a no-op (double-submit guard)', async () => {
+        vi.useFakeTimers()
+        mockUpdateWallet.mockResolvedValue({})
+        mockLoadActive.mockResolvedValue(undefined)
+
+        const wrapper = mount(WalletEdit, { props: { wallet: makeWallet() }, ...globalStubs })
+        const vm = wrapper.vm as unknown as { onSubmit: () => Promise<void> }
+
+        const first = vm.onSubmit()
+        const second = vm.onSubmit()
+
+        expect(mockUpdateWallet).toHaveBeenCalledTimes(1)
+
+        await Promise.all([first, second])
+
+        expect(mockUpdateWallet).toHaveBeenCalledTimes(1)
+
+        wrapper.unmount()
+    })
+
     it('shows LoadErrorAlert (no retry) and no plain UAlert for a non-422 updateWallet failure', async () => {
         mockUpdateWallet.mockRejectedValue(new Error('network error'))
 

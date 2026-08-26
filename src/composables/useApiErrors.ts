@@ -38,6 +38,15 @@ export function useApiErrors(knownFields?: string[]) {
 
         const { status, data } = error.response
 
+        // A duplicate-in-flight request gets a plain 409 with no field breakdown — an
+        // actionable case of its own, not a generic failure.
+        if (status === 409) {
+            console.error('[useApiErrors] HTTP error', 409, 'duplicate request already in flight')
+            generalError.value = i18n.global.t('duplicateRequestError')
+            generalErrorRaw.value = error
+            return
+        }
+
         if (status === 422) {
             try {
                 const ve = ValidationError.from(data)
@@ -62,8 +71,22 @@ export function useApiErrors(knownFields?: string[]) {
                     fieldErrors.value = ve.errors
                 }
             } catch (parseError) {
-                console.error('[useApiErrors] HTTP error', 422, parseError)
-                generalError.value = i18n.global.t('validationError')
+                // A well-formed object with no `errors` key is the idempotency 422: the same
+                // key reused with a different body. A malformed validation body that does
+                // carry `errors` keeps the generic validation message instead.
+                const isIdempotencyConflict =
+                    data !== null &&
+                    typeof data === 'object' &&
+                    !Array.isArray(data) &&
+                    !('errors' in data)
+
+                if (isIdempotencyConflict) {
+                    console.error('[useApiErrors] HTTP error', 422, 'idempotency key reused with a different body')
+                    generalError.value = i18n.global.t('idempotencyConflictError')
+                } else {
+                    console.error('[useApiErrors] HTTP error', 422, parseError)
+                    generalError.value = i18n.global.t('validationError')
+                }
             }
             return
         }
