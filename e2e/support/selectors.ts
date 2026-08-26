@@ -19,8 +19,10 @@ export const shell = {
     navProfile: (page: Page): Locator => page.getByRole('link', { name: label('profile.profile') }),
     // Opens the Light / Dark / System theme menu (see themeMenuItem below).
     darkModeToggle: (page: Page): Locator => page.getByRole('button', { name: label('theme.theme') }),
+    // labelExact, not label: the UK word for Dark ("Темна") is a substring of the UK word for
+    // System ("Системна"), so an unanchored match hits both and trips strict mode.
     themeMenuItem: (page: Page, choice: ThemeChoice): Locator =>
-        page.getByRole('menuitemcheckbox', { name: label(`theme.${choice}`) }),
+        page.getByRole('menuitemcheckbox', { name: labelExact(`theme.${choice}`) }),
     languageToggle: (page: Page): Locator => page.getByRole('button', { name: label('language') }),
     signOutItem: (page: Page): Locator => page.getByRole('menuitem', { name: label('signOut') }),
     settingsItem: (page: Page): Locator => page.getByRole('menuitem', { name: labelExact('settings') }),
