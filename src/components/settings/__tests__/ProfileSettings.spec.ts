@@ -311,6 +311,24 @@ describe('ProfileSettings', () => {
         expect(wrapper.text()).not.toContain('validationError')
     })
 
+    it('a second onSubmit call while the first is still in flight is a no-op (double-submit guard)', async () => {
+        mockUpdateProfile.mockResolvedValue(mockUser)
+
+        const wrapper = mount(ProfileSettings, globalStubs)
+        const vm = wrapper.vm as unknown as { onSubmit: () => Promise<void> }
+
+        const first = vm.onSubmit()
+        const second = vm.onSubmit()
+
+        // The guard is synchronous: the second call must not reach updateProfile even before
+        // either promise settles.
+        expect(mockUpdateProfile).toHaveBeenCalledTimes(1)
+
+        await Promise.all([first, second])
+
+        expect(mockUpdateProfile).toHaveBeenCalledTimes(1)
+    })
+
     it('converts empty lastName to null on submit', async () => {
         mockUpdateProfile.mockResolvedValue(mockUser)
 

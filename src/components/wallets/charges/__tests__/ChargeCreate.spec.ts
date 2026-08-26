@@ -116,6 +116,29 @@ describe('ChargeCreate', () => {
         expect(callArgs[1].type).toBe('-') // default is expense
     })
 
+    it('a second submit while the first is still in flight is a no-op (double-submit guard)', async () => {
+        mockCreateCharge.mockResolvedValue(makeCharge(50))
+
+        const wrapper = shallowMount(ChargeCreate, {
+            props: { wallet: makeWallet() },
+        })
+
+        const vm = wrapper.vm as unknown as { amount: number | null; title: string }
+        vm.amount = 50
+        vm.title = 'Test charge'
+        await nextTick()
+
+        const form = wrapper.find('form')
+        const first = form.trigger('submit')
+        const second = form.trigger('submit')
+
+        expect(mockCreateCharge).toHaveBeenCalledTimes(1)
+
+        await Promise.all([first, second])
+
+        expect(mockCreateCharge).toHaveBeenCalledTimes(1)
+    })
+
     it('shows LoadErrorAlert (no retry) and no plain UAlert for a non-422 createCharge failure', async () => {
         mockCreateCharge.mockRejectedValue(new Error('network error'))
 

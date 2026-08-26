@@ -21,6 +21,8 @@ export default {
     privacyPolicy: 'Privacy Policy',
     unknownError: 'Unknown error, please try again later.',
     validationError: 'Some fields are not valid. Please check the form and try again.',
+    duplicateRequestError: 'Your previous request is still being processed. Please wait a moment before trying again.',
+    idempotencyConflictError: 'This action could not be completed because it changed since your last attempt. Please try again.',
 
     currency: {
         USD: 'United States dollar',

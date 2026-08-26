@@ -78,6 +78,23 @@ const RETRY_BASE_DELAY_MS = 400
 const RETRY_BACKOFF_FACTOR = 3               // base delays 400ms, 1200ms (±50% jitter)
 const SAFE_METHODS = new Set(['get', 'head', 'options'])
 
+export const IDEMPOTENCY_KEY_HEADER = 'Idempotency-Key'
+
+/**
+ * Canonical lowercase UUIDv4, falling back to Math.random where crypto.randomUUID is
+ * unavailable. The API treats this header as an opaque dedupe token, not a security control.
+ */
+export function generateIdempotencyKey(): string {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        return crypto.randomUUID()
+    }
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, char => {
+        const r = (Math.random() * 16) | 0
+        const v = char === 'x' ? r : (r & 0x3) | 0x8
+        return v.toString(16)
+    })
+}
+
 function isRetryableTransportError(error: unknown): boolean {
     // Lost body → same idempotency rule as a dropped connection
     if (error instanceof MalformedResponseError) return SAFE_METHODS.has(error.method)
@@ -93,6 +110,9 @@ function backoffDelay(attempt: number): number {
     return base * (0.5 + Math.random())                    // ±50% jitter
 }
 
+// Relies on every apiCall() closure issuing exactly one HTTP call: withTransportRetry
+// retries the whole closure but judges retryability from the request that failed. A closure
+// doing a GET then a POST would get the POST replayed. Keep closures single-call.
 async function withTransportRetry<T>(operation: () => Promise<T>): Promise<T> {
     let lastError: unknown
     for (let attempt = 1; attempt <= RETRY_MAX_ATTEMPTS; attempt++) {
@@ -173,6 +193,19 @@ export async function apiCall<T>(
     instanceFactory: () => AxiosInstance = createAxiosInstance,
 ): Promise<T> {
     const instance = instanceFactory()
+
+    // Minted once per apiCall and reused across every retransmission of that action — each
+    // withTransportRetry attempt and the 417/CSRF-refresh replay share this `instance`, so
+    // they share the interceptor and its key. A key minted per HTTP attempt would let the API
+    // see distinct keys per retry and duplicate anyway. Mutating methods only.
+    const idempotencyKey = generateIdempotencyKey()
+    instance.interceptors.request.use(config => {
+        const method = config.method?.toLowerCase() ?? 'get'
+        if (!SAFE_METHODS.has(method)) {
+            config.headers.set(IDEMPOTENCY_KEY_HEADER, idempotencyKey)
+        }
+        return config
+    })
 
     // Remembers the trace ID of the last successful response on this call, so it's
     // still available if a later step (e.g. response shape parsing) throws a plain

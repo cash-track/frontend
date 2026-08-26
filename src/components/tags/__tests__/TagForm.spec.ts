@@ -235,6 +235,25 @@ describe('TagForm.vue', () => {
         })
     })
 
+    it('a second submit while the first is still in flight is a no-op (double-submit guard)', async () => {
+        const fakeTag = { id: 1, name: 'Food', icon: null, color: '#6366f1', userId: 0, createdAt: new Date(), updatedAt: new Date() }
+        mockCreateTag.mockResolvedValue(fakeTag)
+
+        const wrapper = mount(TagForm, makeGlobal())
+        await findNameInput(wrapper).setValue('Food')
+        await nextTick()
+
+        const form = wrapper.find('form')
+        const first = form.trigger('submit')
+        const second = form.trigger('submit')
+
+        expect(mockCreateTag).toHaveBeenCalledTimes(1)
+
+        await Promise.all([first, second])
+
+        expect(mockCreateTag).toHaveBeenCalledTimes(1)
+    })
+
     it('shows LoadErrorAlert (no retry) and no plain UAlert for a non-422 createTag failure', async () => {
         mockCreateTag.mockRejectedValue(new Error('network error'))
 

@@ -285,6 +285,25 @@ describe('LimitForm', () => {
         })
     })
 
+    it('a second submit while the first is still in flight is a no-op (double-submit guard)', async () => {
+        mockCreateLimit.mockResolvedValue(makeLimit())
+
+        const wrapper = shallowMount(LimitForm, { props: { wallet: makeWallet() } })
+        const vm = wrapper.vm as unknown as LimitFormVm
+        vm.amount = 100
+        vm.onTagSelected(makeTag())
+
+        const form = wrapper.find('form')
+        const first = form.trigger('submit')
+        const second = form.trigger('submit')
+
+        expect(mockCreateLimit).toHaveBeenCalledTimes(1)
+
+        await Promise.all([first, second])
+
+        expect(mockCreateLimit).toHaveBeenCalledTimes(1)
+    })
+
     it('emits created and resets the form after a successful create', async () => {
         const limit = makeLimit()
         mockCreateLimit.mockResolvedValue(limit)

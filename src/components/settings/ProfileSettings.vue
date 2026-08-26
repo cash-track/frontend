@@ -119,6 +119,7 @@ async function validateNickName(nickName: string) {
 }
 
 async function onSubmit() {
+    if (loading.value) return
     reset()
     successMessage.value = ''
     loading.value = true

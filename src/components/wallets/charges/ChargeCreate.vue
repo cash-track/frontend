@@ -87,6 +87,7 @@ function buildDateTime(): string | null {
 }
 
 async function onSubmit() {
+    if (loading.value) return
     resetErrors()
     loading.value = true
 

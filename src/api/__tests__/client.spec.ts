@@ -1,9 +1,17 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import axios, { AxiosError, type AxiosInstance, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios'
+import axios, {
+    AxiosError,
+    AxiosHeaders,
+    type AxiosInstance,
+    type AxiosResponse,
+    type InternalAxiosRequestConfig,
+} from 'axios'
 import {
     apiCall,
     CsrfError,
     createAxiosInstance,
+    generateIdempotencyKey,
+    IDEMPOTENCY_KEY_HEADER,
     MalformedResponseError,
     REQUEST_TIMEOUT_MS,
     RETRY_MAX_ATTEMPTS,
@@ -92,6 +100,41 @@ function mockInstanceWithInterceptors(overrides: Partial<AxiosInstance> = {}): {
         instance,
         emitResponse: (response: AxiosResponse) => {
             for (const handler of fulfilledHandlers) handler(response)
+        },
+    }
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
+
+// AxiosInstance mock that stores the fulfilled interceptor handler, so a test can run it
+// against a hand-built config and see the header apiCall would attach.
+function mockInstanceWithRequestInterceptor(overrides: Partial<AxiosInstance> = {}): {
+    instance: AxiosInstance
+    applyRequestInterceptor: (method: string) => InternalAxiosRequestConfig
+} {
+    let requestHandler: ((config: InternalAxiosRequestConfig) => InternalAxiosRequestConfig) | undefined
+    const instance = {
+        get: vi.fn(),
+        post: vi.fn(),
+        put: vi.fn(),
+        delete: vi.fn(),
+        interceptors: {
+            request: {
+                use: vi.fn((onFulfilled?: (config: InternalAxiosRequestConfig) => InternalAxiosRequestConfig) => {
+                    requestHandler = onFulfilled
+                }),
+            },
+            response: { use: vi.fn() },
+        },
+        ...overrides,
+    } as unknown as AxiosInstance
+
+    return {
+        instance,
+        applyRequestInterceptor: method => {
+            if (!requestHandler) throw new Error('no request interceptor registered')
+            const config = { method, url: '/api/wallets', headers: new AxiosHeaders() } as InternalAxiosRequestConfig
+            return requestHandler(config)
         },
     }
 }
@@ -221,6 +264,133 @@ describe('apiCall', () => {
         const caught = await apiCall(fn, () => instance).catch((e: unknown) => e)
         expect(caught).toBeInstanceOf(Error)
         expect((caught as Record<string, unknown>).ctTraceId).toBe('trace-parser-1')
+    })
+})
+
+describe('generateIdempotencyKey', () => {
+    it('returns a canonical lowercase UUIDv4', () => {
+        const key = generateIdempotencyKey()
+        expect(key).toMatch(UUID_RE)
+    })
+
+    it('returns a different value on each call', () => {
+        const a = generateIdempotencyKey()
+        const b = generateIdempotencyKey()
+        expect(a).not.toBe(b)
+    })
+
+    it('falls back to a Math.random-based UUIDv4 shape when crypto.randomUUID is unavailable', () => {
+        vi.stubGlobal('crypto', {})
+        try {
+            const key = generateIdempotencyKey()
+            expect(key).toMatch(UUID_RE)
+        } finally {
+            vi.unstubAllGlobals()
+        }
+    })
+})
+
+describe('Idempotency-Key header — request interceptor', () => {
+    afterEach(() => {
+        vi.clearAllMocks()
+    })
+
+    it.each(['post', 'put', 'patch', 'delete'])('attaches the header on a %s request', async method => {
+        const { instance, applyRequestInterceptor } = mockInstanceWithRequestInterceptor()
+        await apiCall(() => Promise.resolve('ok' as unknown as AxiosResponse), () => instance)
+
+        const config = applyRequestInterceptor(method)
+
+        expect((config.headers as AxiosHeaders).get(IDEMPOTENCY_KEY_HEADER)).toMatch(UUID_RE)
+    })
+
+    it.each(['get', 'head', 'options'])('does not attach the header on a %s request', async method => {
+        const { instance, applyRequestInterceptor } = mockInstanceWithRequestInterceptor()
+        await apiCall(() => Promise.resolve('ok' as unknown as AxiosResponse), () => instance)
+
+        const config = applyRequestInterceptor(method)
+
+        expect((config.headers as AxiosHeaders).get(IDEMPOTENCY_KEY_HEADER)).toBeFalsy()
+    })
+
+    it('mints a different key for two separate apiCall invocations', async () => {
+        const { instance: instanceA, applyRequestInterceptor: applyA } = mockInstanceWithRequestInterceptor()
+        const { instance: instanceB, applyRequestInterceptor: applyB } = mockInstanceWithRequestInterceptor()
+
+        await apiCall(() => Promise.resolve('ok' as unknown as AxiosResponse), () => instanceA)
+        await apiCall(() => Promise.resolve('ok' as unknown as AxiosResponse), () => instanceB)
+
+        const keyA = (applyA('post').headers as AxiosHeaders).get(IDEMPOTENCY_KEY_HEADER)
+        const keyB = (applyB('post').headers as AxiosHeaders).get(IDEMPOTENCY_KEY_HEADER)
+
+        expect(keyA).toBeTruthy()
+        expect(keyB).toBeTruthy()
+        expect(keyA).not.toBe(keyB)
+    })
+
+    // withTransportRetry only retries safe methods, so this isolates the mechanism that
+    // guarantees reuse if a retry ever did call fn(instance) again: one interceptor per
+    // apiCall, closing over one key, on the single shared `instance`.
+    it('reuses the same key across multiple simulated attempts within one apiCall invocation', async () => {
+        const { instance, applyRequestInterceptor } = mockInstanceWithRequestInterceptor()
+        await apiCall(() => Promise.resolve('ok' as unknown as AxiosResponse), () => instance)
+
+        const first = (applyRequestInterceptor('post').headers as AxiosHeaders).get(IDEMPOTENCY_KEY_HEADER)
+        const second = (applyRequestInterceptor('post').headers as AxiosHeaders).get(IDEMPOTENCY_KEY_HEADER)
+
+        expect(first).toBeTruthy()
+        expect(first).toBe(second)
+    })
+
+    // The real path where a mutating request is retransmitted: apiCall calls fn(instance) a
+    // second time after a CSRF refresh. Both calls share the instance, so the key must match.
+    it('reuses the same Idempotency-Key across the 417 CSRF-refresh replay path', async () => {
+        const { instance, applyRequestInterceptor } = mockInstanceWithRequestInterceptor({
+            get: vi.fn().mockResolvedValue({ status: 200 }),
+        })
+
+        const seenKeys: Array<string | null> = []
+        let callCount = 0
+        const fn = vi.fn().mockImplementation(async () => {
+            callCount++
+            const config = applyRequestInterceptor('post')
+            seenKeys.push((config.headers as AxiosHeaders).get(IDEMPOTENCY_KEY_HEADER) as string | null)
+            if (callCount === 1) throw new CsrfError(new Error('CSRF mismatch'))
+            return 'ok'
+        })
+
+        const result = await apiCall(fn, () => instance)
+
+        expect(result).toBe('ok')
+        expect(fn).toHaveBeenCalledTimes(2)
+        expect(instance.get).toHaveBeenCalledWith('/csrf')
+        expect(seenKeys).toHaveLength(2)
+        expect(seenKeys[0]).toBeTruthy()
+        expect(seenKeys[0]).toBe(seenKeys[1])
+    })
+})
+
+describe('Idempotency-Key header — real axios instance pipeline', () => {
+    it('attaches the header on a POST end-to-end through the real interceptor chain', async () => {
+        const { instance } = instanceWithResponses([{ headers: JSON_HEADERS, data: PROFILE_BODY }])
+
+        const header = await apiCall(async client => {
+            const res = await client.post('/api/wallets', { name: 'Main' })
+            return res.config.headers.get(IDEMPOTENCY_KEY_HEADER)
+        }, () => instance)
+
+        expect(header).toMatch(UUID_RE)
+    })
+
+    it('does not attach the header on a GET end-to-end through the real interceptor chain', async () => {
+        const { instance } = instanceWithResponses([{ headers: JSON_HEADERS, data: PROFILE_BODY }])
+
+        const header = await apiCall(async client => {
+            const res = await client.get('/api/profile')
+            return res.config.headers.get(IDEMPOTENCY_KEY_HEADER)
+        }, () => instance)
+
+        expect(header).toBeFalsy()
     })
 })
 

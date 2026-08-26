@@ -131,6 +131,29 @@ describe('SecuritySettings', () => {
         expect(vm.form.newPasswordConfirmation).toBe('')
     })
 
+    it('a second onSubmit call while the first is still in flight is a no-op (double-submit guard)', async () => {
+        mockUpdatePassword.mockResolvedValue(undefined)
+
+        const wrapper = mount(SecuritySettings, globalStubs)
+        const vm = wrapper.vm as unknown as {
+            form: { currentPassword: string; newPassword: string; newPasswordConfirmation: string }
+            onSubmit: () => Promise<void>
+        }
+
+        vm.form.currentPassword = 'oldpass'
+        vm.form.newPassword = 'newpass123'
+        vm.form.newPasswordConfirmation = 'newpass123'
+
+        const first = vm.onSubmit()
+        const second = vm.onSubmit()
+
+        expect(mockUpdatePassword).toHaveBeenCalledTimes(1)
+
+        await Promise.all([first, second])
+
+        expect(mockUpdatePassword).toHaveBeenCalledTimes(1)
+    })
+
     it('shows LoadErrorAlert (no retry) and no plain UAlert for a non-422 updatePassword failure', async () => {
         mockUpdatePassword.mockRejectedValue(new Error('network error'))
 

@@ -54,6 +54,7 @@ function makeSlug(name: string): string {
 }
 
 async function onSubmit() {
+    if (loading.value) return
     reset()
     loading.value = true
     try {

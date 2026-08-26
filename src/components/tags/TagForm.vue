@@ -71,6 +71,7 @@ function validate(): boolean {
 }
 
 async function onSubmit() {
+    if (loading.value) return
     resetErrors()
 
     const { name, icon } = parsed.value

@@ -91,6 +91,24 @@ describe('ChargeEdit', () => {
         mockUpdateCharge.mockReset()
     })
 
+    it('a second submit while the first is still in flight is a no-op (double-submit guard)', async () => {
+        mockUpdateCharge.mockResolvedValue(makeCharge())
+
+        const wrapper = shallowMount(ChargeEdit, {
+            props: { wallet: makeWallet(), charge: makeCharge() },
+        })
+
+        const form = wrapper.find('form')
+        const first = form.trigger('submit')
+        const second = form.trigger('submit')
+
+        expect(mockUpdateCharge).toHaveBeenCalledTimes(1)
+
+        await Promise.all([first, second])
+
+        expect(mockUpdateCharge).toHaveBeenCalledTimes(1)
+    })
+
     it('shows LoadErrorAlert (no retry) and no plain UAlert for a non-422 updateCharge failure', async () => {
         mockUpdateCharge.mockRejectedValue(new Error('network error'))
 
