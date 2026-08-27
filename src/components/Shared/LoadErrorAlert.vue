@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { describeError } from '@/shared/errors'
+import { statusPageLink } from '@/shared/links'
 
 const props = withDefaults(defineProps<{ title: string; error: unknown; retryable?: boolean }>(), {
     retryable: false,
@@ -42,10 +43,20 @@ defineExpose({ showDetails })
         :title="title"
         :actions="actions"
     >
-        <template v-if="showDetails" #description>
+        <template #description>
             <pre
+                v-if="showDetails"
                 class="p-3 rounded-md bg-elevated text-xs whitespace-pre-wrap break-words text-muted"
             >{{ details }}</pre>
+            <p :class="{ 'mt-2': showDetails }">
+                {{ t('statusPageHint') }}
+                <ULink
+                    :href="statusPageLink()"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="text-primary-500 hover:text-primary-700 transition-colors"
+                >{{ t('statusPageHintLink') }}</ULink>
+            </p>
         </template>
     </UAlert>
 </template>

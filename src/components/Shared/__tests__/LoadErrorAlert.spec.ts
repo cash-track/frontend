@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import LoadErrorAlert from '../LoadErrorAlert.vue'
+import { STATUS_PAGE_URL } from '@/shared/links'
 
 vi.mock('vue-i18n', () => ({
     useI18n: () => ({ t: (k: string) => k }),
@@ -28,6 +29,14 @@ const alertStub = {
     `,
 }
 
+// Stub ULink so mounting doesn't pull in vue-router (the real component warns about a
+// missing route-location injection). Renders a plain anchor so href/target/rel stay assertable.
+const linkStub = {
+    name: 'ULinkStub',
+    props: ['href', 'to', 'target', 'rel'],
+    template: '<a :href="href" :target="target" :rel="rel"><slot /></a>',
+}
+
 function mountComponent(props: { title?: string; error?: unknown; retryable?: boolean } = {}) {
     return mount(LoadErrorAlert, {
         props: {
@@ -40,6 +49,8 @@ function mountComponent(props: { title?: string; error?: unknown; retryable?: bo
             stubs: {
                 Alert: alertStub,
                 UAlert: alertStub,
+                ULink: linkStub,
+                Link: linkStub,
             },
         },
     })
@@ -139,6 +150,25 @@ describe('LoadErrorAlert', () => {
     it('exposes showDetails ref', () => {
         const wrapper = mountComponent()
         expect(wrapper.vm.showDetails).toBe(false)
+    })
+
+    it('always renders the status page hint with an external link, whether details are collapsed or expanded', async () => {
+        const wrapper = mountComponent({ error: new Error('boom') })
+
+        // Collapsed: no <pre>, but the hint + link are present.
+        expect(wrapper.find('pre').exists()).toBe(false)
+        expect(wrapper.text()).toContain('statusPageHint')
+        const link = wrapper.findAll('a').find(a => a.text() === 'statusPageHintLink')
+        expect(link).toBeDefined()
+        expect(link!.attributes('href')).toBe(STATUS_PAGE_URL)
+        expect(link!.attributes('target')).toBe('_blank')
+        expect(link!.attributes('rel')).toBe('noopener noreferrer')
+
+        // Expanded: the <pre> shows and the hint is still rendered.
+        const detailsBtn = wrapper.findAll('button.u-alert-action').find(b => b.text() === 'common.showDetails')
+        await detailsBtn!.trigger('click')
+        expect(wrapper.find('pre').exists()).toBe(true)
+        expect(wrapper.findAll('a').some(a => a.text() === 'statusPageHintLink')).toBe(true)
     })
 
     it('pre text contains describeError output', async () => {

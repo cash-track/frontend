@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { getEnv } from '@/shared/env'
-import { webSiteLink, releaseTagLink, commitLink } from '@/shared/links'
+import { webSiteLink, releaseTagLink, commitLink, statusPageLink } from '@/shared/links'
 
 const { t } = useI18n()
 
@@ -67,6 +67,14 @@ const commitHref = computed(() =>
                             class="text-primary-500 hover:text-primary-700 transition-colors"
                         >
                             {{ t('privacyPolicy') }}
+                        </ULink>
+                        <ULink
+                            :href="statusPageLink()"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="text-primary-500 hover:text-primary-700 transition-colors"
+                        >
+                            {{ t('statusPage') }}
                         </ULink>
                         <ULink
                             href="https://t.me/cash_track"
