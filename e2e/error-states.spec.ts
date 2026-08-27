@@ -1,9 +1,11 @@
 // S20 — Error States (cross-cutting resilience)
 // Centralizes routeError / routeAbort / 401 / 417 matrix so no page silently swallows failures.
 //
-// NOTE: ER-01..ER-05 are intentional-error tests → assertNoErrorLeak is NOT called in them
-// (the app renders the translated error text which IS the expected outcome).
+// NOTE: ER-01..ER-05 and ER-09 are intentional-error tests → assertNoErrorLeak is NOT called
+// in them (the app renders the translated error text which IS the expected outcome).
 // ER-08 is the dedicated leak check against normal flows.
+//
+// ER-09 — LoadErrorAlert renders a persistent status-page hint (footer link is NAV-14).
 import { test, expect } from '@playwright/test'
 import {
     label, labelStrings,
@@ -232,6 +234,46 @@ test.describe('S20 — Error States', () => {
         } finally {
             await deleteWalletViaApi(request, w.id)
         }
+    })
+
+    // ER-09 — LoadErrorAlert shows a status-page hint that survives the Show Details toggle
+    // Intentional error test — do NOT call assertNoErrorLeak
+    test('ER-09 load error alert shows a persistent status page hint with an external link', async ({ page }) => {
+        // Reuse the ER-04 failure path: a 500 on GET /api/tags makes TagsView render the
+        // shared LoadErrorAlert, whose #description slot always carries the status-page hint.
+        await routeError(page, '**/api/tags')
+        await page.goto('/tags')
+
+        const errorText = new RegExp(labelStrings('tags.statsLoadingError').join('|'), 'i')
+        await expect(alertTitle(page, errorText)).toBeVisible({ timeout: 10000 })
+
+        const hintText = new RegExp(labelStrings('statusPageHint').join('|'), 'i')
+        const hintBlock = page.locator('[data-slot="description"]').filter({ hasText: hintText }).first()
+        const statusLink = page.getByRole('link', { name: label('statusPageHintLink') })
+        // Details <pre> lives in the same slot; scope so the count assertions can't catch a stray.
+        const detailsPre = page.locator('[data-slot="description"] pre')
+
+        // Details collapsed: hint + external link are present, no <pre>.
+        // The URL literal is owned by src/shared/links.ts; E2E asserts the rendered value.
+        await expect(hintBlock).toBeVisible()
+        await expect(detailsPre).toHaveCount(0)
+        await expect(statusLink).toHaveAttribute('href', 'https://status.cash-track.app')
+        await expect(statusLink).toHaveAttribute('target', '_blank')
+        await expect(statusLink).toHaveAttribute('rel', 'noopener noreferrer')
+
+        // Toggle Show Details on: <pre> appears, hint stays put.
+        await page.getByRole('button', { name: label('common.showDetails') }).click()
+        await expect(detailsPre).toBeVisible()
+        await expect(hintBlock).toBeVisible()
+        await expect(statusLink).toHaveAttribute('href', 'https://status.cash-track.app')
+
+        // Toggle it back off: <pre> gone, hint still there.
+        await page.getByRole('button', { name: label('common.hideDetails') }).click()
+        await expect(detailsPre).toHaveCount(0)
+        await expect(hintBlock).toBeVisible()
+        await expect(statusLink).toHaveAttribute('href', 'https://status.cash-track.app')
+
+        await navShellVisible(page)
     })
 
     // ER-08 — No "Unknown error" leakage across normal flows

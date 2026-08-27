@@ -14,6 +14,7 @@
  * NAV-11  Footer degrades gracefully when no release version/commit vars are configured
  * NAV-12  Cached profile renders the header name before GET /api/profile resolves (#147)
  * NAV-13  A 401 from the API drops the cshtrkp cache cookie (#147)
+ * NAV-14  Footer Status link points to the uptime status page and opens in a new tab
  */
 import { test, expect } from '@playwright/test'
 import {
@@ -414,6 +415,25 @@ test.describe('S1 — Navigation & App Shell', () => {
                 .not.toContain(PROFILE_COOKIE)
 
             // No assertNoErrorLeak — this ends on the website login page, off the SPA.
+        },
+    )
+
+    // NAV-14 ──────────────────────────────────────────────────────────────────
+    test(
+        'NAV-14 footer Status link points to the uptime status page and opens in a new tab',
+        async ({ page }) => {
+            // The URL is a literal owned by src/shared/links.ts (STATUS_PAGE_URL); E2E asserts
+            // the real rendered value rather than re-importing app code. AppFooter.spec.ts (unit)
+            // covers the wiring; this guards the visible footer surface end to end.
+            await page.goto('/wallets')
+
+            const statusLink = shell.footer(page).getByRole('link', { name: label('statusPage') })
+            await expect(statusLink).toBeVisible()
+            await expect(statusLink).toHaveAttribute('href', 'https://status.cash-track.app')
+            await expect(statusLink).toHaveAttribute('target', '_blank')
+            await expect(statusLink).toHaveAttribute('rel', 'noopener noreferrer')
+
+            await assertNoErrorLeak(page)
         },
     )
 })

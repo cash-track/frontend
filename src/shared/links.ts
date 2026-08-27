@@ -15,3 +15,10 @@ export function releaseTagLink(tag: string): string {
 export function commitLink(sha: string): string {
     return `https://github.com/cash-track/frontend/commit/${sha}`
 }
+
+// Uptime monitor. Environment-independent, so it lives here as a literal rather than an env var.
+export const STATUS_PAGE_URL = 'https://status.cash-track.app'
+
+export function statusPageLink(): string {
+    return STATUS_PAGE_URL
+}
