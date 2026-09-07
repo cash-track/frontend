@@ -56,9 +56,9 @@ export default defineConfig({
             // The default @iconify/vue entry keeps an HTTP fallback that fetches any
             // unregistered icon from api.iconify.design. The offline entry drops that
             // code path entirely, so a bundling gap shows up as a blank icon rather
-            // than a silent third-party request. Nuxt UI only imports Icon and
-            // addIcon; the shim re-exports both and bridges the colon/dash icon-name
-            // difference the offline entry does not normalise (see the file).
+            // than a silent third-party request. Nuxt UI imports Icon, addIcon and
+            // iconLoaded; the shim provides all three and bridges the colon/dash
+            // icon-name difference the offline entry does not normalise (see the file).
             {
                 find: /^@iconify\/vue$/,
                 replacement: fileURLToPath(new URL('./src/shared/iconify-offline.ts', import.meta.url)),

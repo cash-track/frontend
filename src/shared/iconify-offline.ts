@@ -18,17 +18,30 @@
  * So `addIcon` below registers both spellings. Nuxt UI already does this for
  * hyphenated prefixes (`simple-icons:telegram` → `simple-icons-telegram`);
  * this covers the ordinary prefixes it leaves alone.
+ *
+ * `@nuxt/ui`'s `Icon.vue` also imports `iconLoaded` (used for its `ssr` prop).
+ * The offline entry keeps its `storage` private and exports no query helper, so
+ * we track every registered name here and answer `iconLoaded` from that set.
  */
 import { Icon, addCollection, addIcon as addIconExact } from '@iconify/vue/offline'
 import type { IconifyIcon } from '@iconify/vue/offline'
 
+const registered = new Set<string>()
+
 export function addIcon(name: string, data: IconifyIcon): void {
     addIconExact(name, data)
+    registered.add(name)
 
     const colon = name.indexOf(':')
     if (colon !== -1) {
-        addIconExact(`${name.slice(0, colon)}-${name.slice(colon + 1)}`, data)
+        const dashed = `${name.slice(0, colon)}-${name.slice(colon + 1)}`
+        addIconExact(dashed, data)
+        registered.add(dashed)
     }
+}
+
+export function iconLoaded(name: string): boolean {
+    return registered.has(name)
 }
 
 export { Icon, addCollection }
