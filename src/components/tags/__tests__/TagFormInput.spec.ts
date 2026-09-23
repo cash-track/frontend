@@ -1,20 +1,26 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { ref, nextTick } from 'vue'
 import { shallowMount, flushPromises } from '@vue/test-utils'
 import TagFormInput from '../TagFormInput.vue'
 import { Tag } from '@/api/models/tag'
-import { getWalletTags, searchWalletTags } from '@/api/tags'
+import { createTag, getWalletTags, searchWalletTags } from '@/api/tags'
 
 vi.mock('vue-i18n', () => ({
     useI18n: () => ({
-        t: (key: string) => key,
+        t: (key: string, params?: Record<string, unknown>) =>
+            params ? `${key}:${JSON.stringify(params)}` : key,
         locale: ref('en'),
     }),
+}))
+
+vi.mock('@/lang', () => ({
+    default: { global: { t: (key: string) => key } },
 }))
 
 vi.mock('@/api/tags', () => ({
     getWalletTags: vi.fn().mockResolvedValue([]),
     searchWalletTags: vi.fn().mockResolvedValue([]),
+    createTag: vi.fn(),
 }))
 
 function makeTag(id: number, name: string): Tag {
@@ -142,6 +148,80 @@ describe('TagFormInput', () => {
             } finally {
                 vi.useRealTimers()
             }
+        })
+    })
+
+    // Issue #172: typing an unknown tag name offers to create it right from the input.
+    describe('inline create (issue #172)', () => {
+        async function typeQuery(wrapper: ReturnType<typeof mountInputWithParent>, q: string) {
+            ;(wrapper.vm as unknown as { query: string }).query = q
+            await vi.advanceTimersByTimeAsync(300)
+            await flushPromises()
+        }
+
+        const createButton = (wrapper: ReturnType<typeof mountInputWithParent>) =>
+            wrapper.findAll('button').find(b => b.attributes('aria-label')?.startsWith('tags.create'))
+
+        beforeEach(() => {
+            vi.useFakeTimers()
+            vi.mocked(getWalletTags).mockResolvedValue([])
+            vi.mocked(searchWalletTags).mockResolvedValue([])
+        })
+
+        afterEach(() => {
+            vi.useRealTimers()
+        })
+
+        it('creates the tag with parsed icon and name, then selects it', async () => {
+            const created = makeTag(9, 'Food')
+            vi.mocked(createTag).mockResolvedValue(created)
+            const wrapper = mountInputWithParent()
+            await flushPromises()
+
+            await typeQuery(wrapper, '🥦 Food')
+            const button = createButton(wrapper)
+            expect(button?.text()).toBe('🥦 Food')
+            expect(button?.attributes('aria-label')).toBe('tags.create 🥦 Food')
+
+            await button!.trigger('mousedown')
+            await flushPromises()
+
+            expect(createTag).toHaveBeenCalledWith({ name: 'Food', icon: '🥦' })
+            expect(wrapper.emitted('selected')).toEqual([[created]])
+            expect((wrapper.vm as unknown as { query: string }).query).toBe('')
+        })
+
+        it('is not offered when a search result already has that name', async () => {
+            vi.mocked(searchWalletTags).mockResolvedValue([makeTag(1, 'Food')])
+            const wrapper = mountInputWithParent()
+            await flushPromises()
+
+            await typeQuery(wrapper, 'food')
+
+            expect(createButton(wrapper)).toBeUndefined()
+        })
+
+        it.each(['Fo', 'Fast food'])('is not offered for an invalid name "%s"', async q => {
+            const wrapper = mountInputWithParent()
+            await flushPromises()
+
+            await typeQuery(wrapper, q)
+
+            expect(createButton(wrapper)).toBeUndefined()
+        })
+
+        it('shows an error and keeps the query when creation fails', async () => {
+            vi.mocked(createTag).mockRejectedValue(new Error('network'))
+            const wrapper = mountInputWithParent()
+            await flushPromises()
+
+            await typeQuery(wrapper, 'Food')
+            await createButton(wrapper)!.trigger('mousedown')
+            await flushPromises()
+
+            expect(wrapper.emitted('selected')).toBeUndefined()
+            expect(wrapper.find('p.text-error').exists()).toBe(true)
+            expect((wrapper.vm as unknown as { query: string }).query).toBe('Food')
         })
     })
 })
