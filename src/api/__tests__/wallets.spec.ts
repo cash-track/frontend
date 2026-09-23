@@ -114,10 +114,11 @@ describe('createWallet', () => {
     it('posts to /api/wallets with request body and returns Wallet', async () => {
         mockAxios.post = vi.fn().mockResolvedValue({ data: { data: rawWallet } })
 
-        const request = { name: 'My Wallet', slug: 'my-wallet', isPublic: false, defaultCurrencyCode: 'USD' }
+        const request = { name: 'My Wallet', isPublic: false, defaultCurrencyCode: 'USD' }
         const result = await createWallet(request)
 
         expect(mockAxios.post).toHaveBeenCalledWith('/api/wallets', request)
+        expect((request as Record<string, unknown>).slug).toBeUndefined()
         expect(result).toBeInstanceOf(Wallet)
         expect(result.slug).toBe('my-wallet')
         expect(result.isPublic).toBe(false)
