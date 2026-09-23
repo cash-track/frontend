@@ -49,10 +49,6 @@ onMounted(async () => {
     }
 })
 
-function makeSlug(name: string): string {
-    return name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '').slice(0, 64) || 'wallet'
-}
-
 async function onSubmit() {
     if (loading.value) return
     reset()
@@ -60,7 +56,6 @@ async function onSubmit() {
     try {
         const wallet = await createWallet({
             name: form.name,
-            slug: makeSlug(form.name),
             defaultCurrencyCode: form.defaultCurrencyCode,
         })
         await walletsStore.loadActive()

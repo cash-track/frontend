@@ -4,7 +4,6 @@ import { User } from './models/user'
 
 export interface CreateWalletRequest {
     name: string
-    slug?: string | null
     isPublic?: boolean
     defaultCurrencyCode?: string | null
 }

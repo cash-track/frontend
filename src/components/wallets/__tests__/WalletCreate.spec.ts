@@ -94,12 +94,11 @@ describe('WalletCreate', () => {
 
         await vm.onSubmit()
 
-        expect(mockCreateWallet).toHaveBeenCalledWith(
-            expect.objectContaining({
-                name: 'Test Wallet',
-                defaultCurrencyCode: 'USD',
-            }),
-        )
+        expect(mockCreateWallet).toHaveBeenCalledWith({
+            name: 'Test Wallet',
+            defaultCurrencyCode: 'USD',
+        })
+        expect(mockCreateWallet.mock.calls[0][0]).not.toHaveProperty('slug')
 
         wrapper.unmount()
     })
