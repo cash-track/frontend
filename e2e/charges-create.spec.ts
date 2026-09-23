@@ -1,5 +1,5 @@
 // S8 — Charge create form (ChargeCreate inline in ChargesList, issue #111)
-// CC-01..CC-12
+// CC-01..CC-13
 import { test, expect } from '@playwright/test'
 import {
     label, labelStrings,
@@ -495,6 +495,46 @@ test.describe('S8 — Charge Create', () => {
 
             await assertNoErrorLeak(page)
         } finally {
+            await deleteWalletViaApi(request, w.id)
+        }
+    })
+
+    // CC-13 — An unknown tag name typed into TagFormInput can be created inline and
+    // lands in the selected-tags row without leaving the wallet (issue #172).
+    test('CC-13 create a new tag inline from TagFormInput', async ({ request, page }) => {
+        const w = await createWalletViaApi(request, { name: `E2E CC13 ${Date.now()}` })
+        const tagName = `E2Enew${Date.now()}`
+        let createdTagId: number | null = null
+        try {
+            await page.goto(`/wallets/${w.id}`)
+            await expect(page.getByRole('heading', { level: 2 })).toBeVisible({ timeout: 10000 })
+
+            await charge.newChargeButton(page).click()
+            await expect(charge.amountInput(page)).toBeVisible({ timeout: 5000 })
+
+            const tagInput = page.getByPlaceholder(label('tags.tags')).last()
+            await tagInput.fill(tagName)
+
+            const createBtn = page.locator('div.absolute.z-10')
+                .getByRole('button', { name: label('tags.create') })
+                .filter({ hasText: tagName })
+            await expect(createBtn).toBeVisible({ timeout: 8000 })
+
+            const createdResponse = page.waitForResponse(
+                r => r.url().endsWith('/api/tags') && r.request().method() === 'POST')
+            await createBtn.click()
+            const res = await createdResponse
+            expect(res.ok()).toBe(true)
+            createdTagId = (await res.json()).data.id
+
+            // Picked straight into the selected row; the input is cleared.
+            await expect(createBtn).toBeHidden()
+            await expect(tagInput).toHaveValue('')
+            await expect(page.getByRole('button', { name: tagName })).toBeVisible({ timeout: 5000 })
+
+            await assertNoErrorLeak(page)
+        } finally {
+            if (createdTagId !== null) await deleteTagViaApi(request, createdTagId)
             await deleteWalletViaApi(request, w.id)
         }
     })
