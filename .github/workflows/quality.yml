@@ -18,4 +18,6 @@ jobs:
     uses: cash-track/.github/.github/workflows/quality-node.yml@main
     secrets: inherit
     with:
+      # Same floating LTS as the Dockerfile's node:lts-alpine, so CI runs the release's npm.
+      node-version: 'lts/*'
       test-command: 'npm run test:ci'
