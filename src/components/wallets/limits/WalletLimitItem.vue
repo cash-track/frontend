@@ -48,8 +48,8 @@ async function onDeleteConfirmed() {
         await deleteLimit(props.wallet.id, props.walletLimit.limit.id)
         deleteConfirmOpen.value = false
         emit('deleted', props.walletLimit.limit)
-    } catch (err) {
-        console.error('unable to delete limit', err)
+    } catch {
+        // Reported by apiCall; the confirm modal stays open so the user can retry.
     } finally {
         deleting.value = false
     }

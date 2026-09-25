@@ -1,7 +1,8 @@
 import { ref } from 'vue'
 import { AxiosError } from 'axios'
-import { ApiError, ValidationError } from '@/api/models/error'
+import { ValidationError } from '@/api/models/error'
 import i18n from '@/lang'
+import { reportError } from '@/shared/sentry'
 
 /**
  * @param knownFields Names of fields the calling form actually renders (i.e. has a
@@ -28,9 +29,9 @@ export function useApiErrors(knownFields?: string[]) {
 
     function handleError(error: unknown): void {
         reset()
+        reportError(error)
 
         if (!(error instanceof AxiosError) || !error.response) {
-            console.error('[useApiErrors] non-HTTP error:', error)
             generalError.value = i18n.global.t('unknownError')
             generalErrorRaw.value = error
             return
@@ -41,7 +42,6 @@ export function useApiErrors(knownFields?: string[]) {
         // A duplicate-in-flight request gets a plain 409 with no field breakdown — an
         // actionable case of its own, not a generic failure.
         if (status === 409) {
-            console.error('[useApiErrors] HTTP error', 409, 'duplicate request already in flight')
             generalError.value = i18n.global.t('duplicateRequestError')
             generalErrorRaw.value = error
             return
@@ -70,7 +70,7 @@ export function useApiErrors(knownFields?: string[]) {
                 } else {
                     fieldErrors.value = ve.errors
                 }
-            } catch (parseError) {
+            } catch {
                 // A well-formed object with no `errors` key is the idempotency 422: the same
                 // key reused with a different body. A malformed validation body that does
                 // carry `errors` keeps the generic validation message instead.
@@ -80,23 +80,13 @@ export function useApiErrors(knownFields?: string[]) {
                     !Array.isArray(data) &&
                     !('errors' in data)
 
-                if (isIdempotencyConflict) {
-                    console.error('[useApiErrors] HTTP error', 422, 'idempotency key reused with a different body')
-                    generalError.value = i18n.global.t('idempotencyConflictError')
-                } else {
-                    console.error('[useApiErrors] HTTP error', 422, parseError)
-                    generalError.value = i18n.global.t('validationError')
-                }
+                generalError.value = i18n.global.t(
+                    isIdempotencyConflict ? 'idempotencyConflictError' : 'validationError',
+                )
             }
             return
         }
 
-        try {
-            const ae = ApiError.from(data)
-            console.error('[useApiErrors] HTTP error', status, ae.error ?? ae.message)
-        } catch (parseError) {
-            console.error('[useApiErrors] HTTP error', status, parseError)
-        }
         generalError.value = i18n.global.t('unknownError')
         generalErrorRaw.value = error
     }

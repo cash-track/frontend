@@ -17,6 +17,9 @@ import {
     RETRY_MAX_ATTEMPTS,
 } from '../client'
 import { PROFILE_COOKIE, writeCachedProfile } from '@/shared/profileCookie'
+import { reportError } from '@/shared/sentry'
+
+vi.mock('@/shared/sentry', () => ({ reportError: vi.fn() }))
 
 vi.mock('@/shared/links', () => ({
     webSiteLink: (path: string) => `https://website.test${path}`,
@@ -209,6 +212,7 @@ describe('apiCall', () => {
         })
 
         await expect(apiCall(fn, () => instance)).rejects.toThrow('redirecting to login')
+        await expect(apiCall(fn, () => instance)).rejects.toBeInstanceOf(CsrfError)
         expect(window.location.href).toBe('https://website.test/login')
         // Same "session is dead" case as a direct 401.
         expect(document.cookie).not.toContain(PROFILE_COOKIE)
@@ -264,6 +268,26 @@ describe('apiCall', () => {
         const caught = await apiCall(fn, () => instance).catch((e: unknown) => e)
         expect(caught).toBeInstanceOf(Error)
         expect((caught as Record<string, unknown>).ctTraceId).toBe('trace-parser-1')
+    })
+
+    it('reports the final error once, after the trace id is attached', async () => {
+        const err = Object.assign(new AxiosError('Server Error'), {
+            config: { method: 'POST' },
+            response: { status: 500, headers: { 'x-ct-trace-id': 'trace-500' } } as unknown as AxiosResponse,
+        })
+        vi.mocked(reportError).mockImplementationOnce(e => {
+            expect((e as Record<string, unknown>).ctTraceId).toBe('trace-500')
+        })
+
+        await apiCall(() => Promise.reject(err), () => mockInstance()).catch(() => {})
+
+        expect(reportError).toHaveBeenCalledTimes(1)
+        expect(reportError).toHaveBeenCalledWith(err)
+    })
+
+    it('does not report successful calls', async () => {
+        await apiCall(() => Promise.resolve('ok'), () => mockInstance())
+        expect(reportError).not.toHaveBeenCalled()
     })
 })
 

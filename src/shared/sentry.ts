@@ -1,6 +1,7 @@
 import * as Sentry from '@sentry/vue'
 import type { ErrorEvent, EventHint } from '@sentry/vue'
 import type { App } from 'vue'
+import { AxiosError } from 'axios'
 import { getEnv } from '@/shared/env'
 
 // Handled flows and browser noise, not bugs.
@@ -18,6 +19,33 @@ export function tagTraceId(event: ErrorEvent, hint: EventHint): ErrorEvent {
         event.tags = { ...event.tags, trace_id: traceId }
     }
     return event
+}
+
+// Expected outcomes, not bugs: the 417 CSRF flow (matched by name to avoid an import cycle
+// with api/client) and WebAuthn outcomes caused by the user or their authenticator.
+const EXPECTED_ERROR_NAMES = new Set(['CsrfError', 'NotAllowedError', 'AbortError', 'InvalidStateError'])
+
+/**
+ * 5xx, timeouts and non-HTTP exceptions are bugs. 4xx, CSRF, user cancels and connectivity
+ * drops (ERR_NETWORK: offline clients; server outages are alerted server-side) are not.
+ */
+export function isReportable(error: unknown): boolean {
+    if (error instanceof AxiosError) {
+        if (error.response) return error.response.status >= 500
+        return error.code !== AxiosError.ERR_CANCELED && error.code !== AxiosError.ERR_NETWORK
+    }
+    if (error instanceof Error && EXPECTED_ERROR_NAMES.has(error.name)) return false
+    return true
+}
+
+/**
+ * Reports a caught error to Sentry when it is unexpected. Safe to call more than once for
+ * the same error: Sentry skips an exception object it has already captured.
+ */
+export function reportError(error: unknown): void {
+    if (!isReportable(error)) return
+    if (import.meta.env.DEV) console.error(error)
+    Sentry.captureException(error)
 }
 
 export function initSentry(app: App): void {

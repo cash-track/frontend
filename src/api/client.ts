@@ -2,6 +2,7 @@ import axios, { AxiosError, type AxiosInstance, type AxiosResponse } from 'axios
 import { webSiteLink } from '@/shared/links'
 import { getEnv } from '@/shared/env'
 import { clearCachedProfile } from '@/shared/profileCookie'
+import { reportError } from '@/shared/sentry'
 
 // Axios normalizes response header lookups to lowercase regardless of wire casing.
 const TRACE_ID_HEADER = 'x-ct-trace-id'
@@ -249,7 +250,7 @@ export async function apiCall<T>(
                 // Refresh returned false (401) — auth expired
                 clearCachedProfile()
                 window.location.href = webSiteLink('/login')
-                return Promise.reject(new Error('CSRF refresh failed — redirecting to login'))
+                return Promise.reject(new CsrfError(new Error('CSRF refresh failed — redirecting to login')))
             }
         })
     } catch (error) {
@@ -258,6 +259,8 @@ export async function apiCall<T>(
                 ? extractTraceId(error.response.headers)
                 : lastResponseTraceId.value
         attachTraceId(error, traceId)
+        // Single choke point for API failures; catch sites that swallow the error stay covered.
+        reportError(error)
         throw error
     }
 }

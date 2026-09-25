@@ -6,6 +6,7 @@ import type { Passkey } from '@/api/models/passkey'
 import { getPasskeys, initPasskey, storePasskey } from '@/api/profile/passkeys'
 import PasskeyItem from './PasskeyItem.vue'
 import LoadErrorAlert from '@/components/Shared/LoadErrorAlert.vue'
+import { reportError } from '@/shared/sentry'
 
 const { t } = useI18n()
 
@@ -52,6 +53,8 @@ async function onAddPasskey() {
         passkeys.value = [...passkeys.value, stored]
         keyName.value = ''
     } catch (error) {
+        // Skips user-cancelled ceremonies; catches bugs in decoding the options.
+        reportError(error)
         if (error instanceof WebAuthnError) {
             if (clientExceptionCounter === 0) {
                 addError.value = t('passkeySettings.addClientErrorAgain')
