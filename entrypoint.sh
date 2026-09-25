@@ -10,12 +10,14 @@ set -e
 # SPA would resolve config to `undefined` and redirect-loop to /undefined. The release
 # metadata vars (VITE_APP_VERSION, VITE_APP_COMMIT) are display-only, so they default
 # to an empty string instead — local/ad-hoc containers won't have them set, and the
-# footer degrades gracefully when they're absent.
+# footer degrades gracefully when they're absent. VITE_SENTRY_DSN is also optional and
+# defaults to empty, which disables Sentry entirely (see src/shared/sentry.ts).
 
 : "${VITE_WEBSITE_URL:?VITE_WEBSITE_URL must be set}"
 : "${VITE_GATEWAY_URL:?VITE_GATEWAY_URL must be set}"
 : "${VITE_APP_VERSION:=}"
 : "${VITE_APP_COMMIT:=}"
+: "${VITE_SENTRY_DSN:=}"
 
 # VITE_APP_VERSION/VITE_APP_COMMIT come from a git tag or branch name (a snapshot build
 # passes the branch name as the tag, e.g. via workflow_dispatch), unlike the operator-set
@@ -34,6 +36,7 @@ sed -i \
     -e "s|__VITE_GATEWAY_URL__|${VITE_GATEWAY_URL}|g" \
     -e "s|__VITE_APP_VERSION__|${ESCAPED_VITE_APP_VERSION}|g" \
     -e "s|__VITE_APP_COMMIT__|${ESCAPED_VITE_APP_COMMIT}|g" \
+    -e "s|__VITE_SENTRY_DSN__|${VITE_SENTRY_DSN}|g" \
     "$INDEX_HTML"
 
 exec "$@"
