@@ -120,7 +120,7 @@ test.describe('S21 — Responsive / Mobile', () => {
         const profileGrid = page.locator('.grid.grid-cols-1').first()
         await expect(profileGrid).toBeVisible({ timeout: 10000 })
         const profileCols = await profileGrid.evaluate(el => getComputedStyle(el).gridTemplateColumns)
-        expect(profileCols.split(' ').length).toBe(1)
+        expect(profileCols.split(' ')).toHaveLength(1)
 
         // Settings: tabs usable on mobile
         await page.goto('/settings')
@@ -328,8 +328,8 @@ test.describe('S21 — Responsive / Mobile', () => {
 
             // All 8 seeded titles share the query substring, so the listbox should
             // be filled with every one of them (well under the API's limit of 10).
-            const optionCount = await listbox.getByRole('option').count()
-            expect(optionCount).toBe(8)
+            const options = listbox.getByRole('option')
+            await expect(options).toHaveCount(8)
 
             // Walk the ancestor chain looking for a clipping overflow (hidden/clip/auto/scroll —
             // auto and scroll clip just as visually as hidden once content overflows, they just
