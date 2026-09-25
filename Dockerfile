@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 # build stage
 FROM node:lts-alpine AS build-stage
 
@@ -13,7 +14,8 @@ COPY . .
 
 ENV NODE_OPTIONS=--openssl-legacy-provider
 
-RUN npm run build
+# Uploads source maps to Sentry when the build passes the optional sentry_auth_token secret.
+RUN --mount=type=secret,id=sentry_auth_token,env=SENTRY_AUTH_TOKEN npm run build
 
 # production stage
 FROM nginx:stable-alpine AS production-stage
