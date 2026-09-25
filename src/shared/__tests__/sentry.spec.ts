@@ -15,8 +15,11 @@ describe('initSentry', () => {
 
     it('does nothing without a DSN', () => {
         window.__APP_CONFIG__ = { VITE_SENTRY_DSN: '' }
+        // A developer's .env DSN would otherwise win via the import.meta.env fallback.
+        vi.stubEnv('VITE_SENTRY_DSN', '')
         initSentry(app)
         expect(Sentry.init).not.toHaveBeenCalled()
+        vi.unstubAllEnvs()
     })
 
     it('inits errors-only with no trace propagation to the gateway', () => {
@@ -29,6 +32,7 @@ describe('initSentry', () => {
             app,
             dsn: 'https://key@o1.ingest.sentry.io/1',
             release: 'frontend@v2.3.0',
+            environment: import.meta.env.MODE,
             tracesSampleRate: 0,
             tracePropagationTargets: [],
             ignoreErrors: IGNORED_ERRORS,

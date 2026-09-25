@@ -29,6 +29,8 @@ export function initSentry(app: App): void {
         app,
         dsn,
         release: version ? `frontend@${version}` : undefined,
+        // 'development' under the Vite dev server, 'production' in built images.
+        environment: import.meta.env.MODE,
         // Errors only; Tempo owns tracing.
         tracesSampleRate: 0,
         // sentry-trace/baggage headers would fail the gateway's CORS preflight.
