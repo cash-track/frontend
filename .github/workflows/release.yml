@@ -22,3 +22,9 @@ jobs:
     with:
       service: frontend
     secrets: inherit
+  sentry-release:
+    needs: deploy
+    uses: cash-track/.github/.github/workflows/sentry-release.yml@main
+    with:
+      project: frontend
+    secrets: inherit

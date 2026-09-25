@@ -3,6 +3,7 @@ import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import PasskeysSettings from '../PasskeysSettings.vue'
 import { Passkey } from '@/api/models/passkey'
+import { reportError } from '@/shared/sentry'
 
 const { mockGetPasskeys, mockInitPasskey, mockStorePasskey } = vi.hoisted(() => ({
     mockGetPasskeys: vi.fn(),
@@ -22,6 +23,8 @@ vi.mock('@/api/profile/passkeys', () => ({
     initPasskey: mockInitPasskey,
     storePasskey: mockStorePasskey,
 }))
+
+vi.mock('@/shared/sentry', () => ({ reportError: vi.fn() }))
 
 vi.mock('@simplewebauthn/browser', () => ({
     browserSupportsWebAuthn: () => true,
@@ -102,6 +105,20 @@ describe('PasskeysSettings', () => {
         // Must be the i18n key, NOT the raw error.message
         expect(vm.addError).toBe('passkeySettings.addClientError')
         expect(vm.addError).not.toBe('Unexpected token in JSON')
+    })
+
+    it('passes registration failures to reportError', async () => {
+        const wrapper = mount(PasskeysSettings, globalStubs)
+        await wrapper.vm.$nextTick()
+
+        const vm = wrapper.vm as unknown as { keyName: string; onAddPasskey: () => Promise<void> }
+        const failure = new SyntaxError('Invalid character')
+        mockInitPasskey.mockRejectedValueOnce(failure)
+
+        vm.keyName = 'My key'
+        await vm.onAddPasskey()
+
+        expect(reportError).toHaveBeenCalledWith(failure)
     })
 
     it('shows a retryable LoadErrorAlert when loading passkeys fails, and reloads on retry', async () => {

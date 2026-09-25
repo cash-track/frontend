@@ -5,6 +5,10 @@ import vue from '@vitejs/plugin-vue'
 import ui from '@nuxt/ui/vite'
 import vueDevTools from 'vite-plugin-vue-devtools'
 import { VitePWA } from 'vite-plugin-pwa'
+import { sentryVitePlugin } from '@sentry/vite-plugin'
+
+// Set only in CI release builds (Docker build secret); local and PR builds skip source maps.
+const sentryAuthToken = process.env.SENTRY_AUTH_TOKEN
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -46,10 +50,27 @@ export default defineConfig({
                 navigateFallbackDenylist: [/^\/api/],
                 cleanupOutdatedCaches: true,
                 clientsClaim: true,
+                // Follows build.sourcemap otherwise, and runs after the Sentry map cleanup.
+                sourcemap: false,
             },
             devOptions: { enabled: false },
         }),
+        // Must stay last. Uploads hidden source maps, then deletes them so they never ship.
+        // Events match maps by injected debug id, so no Sentry release is created here.
+        sentryVitePlugin({
+            disable: !sentryAuthToken,
+            authToken: sentryAuthToken,
+            url: 'https://de.sentry.io/',
+            org: 'cashtrack-o2',
+            project: 'frontend',
+            release: { create: false, finalize: false, inject: false },
+            sourcemaps: { filesToDeleteAfterUpload: ['./dist/**/*.map'] },
+            telemetry: false,
+        }),
     ],
+    build: {
+        sourcemap: sentryAuthToken ? 'hidden' : false,
+    },
     resolve: {
         alias: [
             { find: '@', replacement: fileURLToPath(new URL('./src', import.meta.url)) },
