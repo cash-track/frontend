@@ -138,3 +138,11 @@ added would have shipped blank.
 The client bundle is currently **74 icons / ~20 KB** (69 lucide — 41 from app code, the rest
 Nuxt UI component defaults — plus 4 heroicons and 1 simple-icons). The plugin warns at 192 KB
 and hard-fails the build at 256 KB, so there is room for hundreds more.
+
+## License
+
+Copyright (c) Volodymyr Komarov. Source-available under the
+[PolyForm Noncommercial License 1.0.0](LICENSE): free to use, modify and share
+for noncommercial purposes. Any use that earns money needs a separate license,
+see [COMMERCIAL.md](COMMERCIAL.md). Forks must not present themselves as the
+official Cash Track.
