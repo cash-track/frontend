@@ -7,6 +7,8 @@ export default mergeConfig(
   defineConfig({
     test: {
       environment: 'jsdom',
+      // Node 25+ native localStorage is undefined without --localstorage-file and shadows jsdom's.
+      execArgv: ['--no-experimental-webstorage'],
       exclude: [...configDefaults.exclude, 'e2e/**', 'old/**'],
       passWithNoTests: true,
       root: fileURLToPath(new URL('./', import.meta.url)),
