@@ -18,7 +18,8 @@ ENV NODE_OPTIONS=--openssl-legacy-provider
 RUN --mount=type=secret,id=sentry_auth_token,env=SENTRY_AUTH_TOKEN npm run build
 
 # production stage
-FROM nginx:stable-alpine AS production-stage
+# Pinned so nginx security fixes ship deliberately (1.30.7 fixes CVE-2026-123007/123633).
+FROM nginx:1.30.7-alpine AS production-stage
 
 # Release metadata, injected by entrypoint.sh into the SPA at container start (never
 # baked into the Vite build — config is deliberately resolved at runtime, see env.ts).
